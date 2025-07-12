@@ -1,0 +1,695 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UPSC AI Document Search & Analysis</title>
+
+    <!-- External CSS Libraries -->
+    <link href=".blog/upsc/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="./blog/upsc/all.min.css" rel="stylesheet">
+    <link href="./blog/upsc/prism.min.css" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1e293b;
+            --light-color: #f8fafc;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--secondary-color);
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .main-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h3 {
+            color: var(--primary-color);
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: var(--light-color);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: var(--border-color);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .search-container {
+            margin-bottom: 25px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .search-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .option-group {
+            background: var(--light-color);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .option-group h5 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .form-check {
+            margin-bottom: 8px;
+        }
+
+        .form-check-input {
+            margin-right: 8px;
+        }
+
+        .search-results {
+            margin-top: 30px;
+        }
+
+        .result-item {
+            background: var(--light-color);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .result-score {
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .result-content {
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            background: rgba(245, 158, 11, 0.3);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .context-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(100, 116, 139, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .context-label {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .context-text {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            font-style: italic;
+        }
+
+        .dataset-selector {
+            background: var(--light-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .dataset-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dataset-item:last-child {
+            border-bottom: none;
+        }
+
+        .model-status {
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid var(--primary-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .model-status.loading {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: var(--warning-color);
+        }
+
+        .model-status.ready {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success-color);
+        }
+
+        .export-section {
+            background: var(--light-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .llm-section {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid #8b5cf6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .llm-response {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .ad-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.success {
+            background: var(--success-color);
+        }
+
+        .notification.error {
+            background: var(--danger-color);
+        }
+
+        .notification.warning {
+            background: var(--warning-color);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .search-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 15px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .sidebar, .main-panel {
+                padding: 20px;
+            }
+
+            .export-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fas fa-brain"></i> AI Document Search & Analysis</h1>
+        <p>Advanced AI-powered document processing and semantic search platform</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Model Status -->
+            <div class="model-status" id="modelStatus">
+                <i class="fas fa-cog fa-spin"></i>
+                <div>Initializing AI Models...</div>
+                <div class="progress-container">
+                    <div class="progress">
+                        <div class="progress-bar" id="modelProgress" style="width: 0%"></div>
+                    </div>
+                    <small id="modelProgressText">Preparing models...</small>
+                </div>
+            </div>
+
+            <!-- Document Upload -->
+            <div class="section">
+                <h3><i class="fas fa-upload"></i> Upload Documents</h3>
+                <div class="upload-zone" id="uploadZone">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-3"></i>
+                    <p>Drag & drop files here or click to select</p>
+                    <p><small>Supports: PDF, TXT, DOC, DOCX</small></p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.txt,.doc,.docx" style="display: none;">
+                </div>
+                <div class="progress-container" id="uploadProgress" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar" id="uploadProgressBar"></div>
+                    </div>
+                    <small id="uploadProgressText">Processing documents...</small>
+                </div>
+            </div>
+
+            <!-- Dataset Management -->
+            <div class="section">
+                <h3><i class="fas fa-database"></i> Dataset Management</h3>
+                <div class="mb-3">
+                    <button class="btn btn-primary" id="downloadDataset">
+                        <i class="fas fa-download"></i> Download Processed Data
+                    </button>
+                </div>
+                <!-- Add this after the dataset input -->
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        For chunked datasets, select all chunk files at once.
+                        For single datasets, select the JSON file.
+                    </small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Upload Vectorized Dataset:</label>
+                    <input type="file" class="form-control" id="datasetInput" accept=".json" multiple>
+                </div>
+                <div class="dataset-selector" id="datasetSelector">
+                    <div class="dataset-item">
+                        <input type="checkbox" class="form-check-input" id="dataset_current" checked>
+                        <label for="dataset_current">Current Session</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Configuration -->
+            <div class="section">
+                <h3><i class="fas fa-cogs"></i> Search Configuration</h3>
+                <div class="option-group">
+                    <h5>Search Methods</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="searchMethod" id="semantic" value="semantic">
+                        <label class="form-check-label" for="semantic">Semantic Search</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="searchMethod" id="keyword" value="keyword">
+                        <label class="form-check-label" for="keyword">Keyword Search</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="searchMethod" id="contextual" value="contextual">
+                        <label class="form-check-label" for="contextual">Contextual Search</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="searchMethod" id="research" value="research" checked>
+                        <label class="form-check-label" for="research">Research Mode</label>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <h5>Search Options</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="removeDuplicates" checked>
+                        <label class="form-check-label" for="removeDuplicates">Remove Duplicates</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showContext" checked>
+                        <label class="form-check-label" for="showContext">Show Context</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="highlightKeywords" checked>
+                        <label class="form-check-label" for="highlightKeywords">Highlight Keywords</label>
+                    </div>
+                </div>
+
+                <div class="option-group">
+                    <h5>Context Settings</h5>
+                    <div class="mb-2">
+                        <label class="form-label">Context Sentences:</label>
+                        <input type="range" class="form-range" id="contextSentences" min="1" max="15" value="2">
+                        <span id="contextSentencesValue">2</span>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Similarity Threshold:</label>
+                        <input type="range" class="form-range" id="similarityThreshold" min="0.01" max="1" step="0.01" value="0.5">
+                        <span id="similarityThresholdValue">0.5</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AdSense Ad Container -->
+            <div class="ad-container" id="adContainer">
+                <div id="adSenseAd">
+                    <!-- AdSense code will be inserted here -->
+                    <div style="background: #f0f0f0; padding: 20px; border-radius: 8px; color: #666;">
+                        <i class="fas fa-ad"></i><br>
+                        Advertisement Space<br>
+                        <small>Configure AdSense in settings</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <!-- Search Interface -->
+            <div class="search-container">
+                <div class="input-group">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Enter your search query...">
+                    <button class="btn btn-primary" id="searchBtn">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div class="search-results" id="searchResults"></div>
+
+            <!-- Export Section -->
+            <div class="export-section" id="exportSection" style="display: none;">
+                <h5><i class="fas fa-download"></i> Export Results</h5>
+                <div class="export-buttons">
+                    <button class="btn btn-success" id="exportTxt">
+                        <i class="fas fa-file-alt"></i> Export TXT
+                    </button>
+                    <button class="btn btn-success" id="exportPdf">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                    <button class="btn btn-success" id="exportJson">
+                        <i class="fas fa-file-code"></i> Export JSON
+                    </button>
+                </div>
+            </div>
+
+            <!-- LLM Integration -->
+            <div class="llm-section" id="llmSection" style="display: none;">
+                <h5><i class="fas fa-robot"></i> AI Assistant (Optional)</h5>
+                <div class="mb-3">
+                    <select class="form-select" id="llmTask">
+                        <option value="summarize">Summarize Results</option>
+                        <option value="qa">Generate Q&A</option>
+                        <option value="explain">Explain Concepts</option>
+                        <option value="insights">Generate Insights</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="generateLLM">
+                    <i class="fas fa-magic"></i> Generate Response
+                </button>
+                <div class="llm-response" id="llmResponse" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- External JavaScript Libraries -->
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1/dist/transformers.min.js"></script>
+-->
+
+
+<script src="scripts/loader.js"></script>
+<script src="text.js"></script>
+
+<!-- Main Application Script -->
+
+</body>
+</html><script>
+    (function() {
+        var ws = new WebSocket('ws://' + window.location.host +
+            '/jb-server-page?reloadMode=RELOAD_ON_SAVE&'+
+            'referrer=' + encodeURIComponent(window.location.pathname));
+        ws.onmessage = function (msg) {
+            if (msg.data === 'reload') {
+                window.location.reload();
+            }
+            if (msg.data.startsWith('update-css ')) {
+                var messageId = msg.data.substring(11);
+                var links = document.getElementsByTagName('link');
+                for (var i = 0; i < links.length; i++) {
+                    var link = links[i];
+                    if (link.rel !== 'stylesheet') continue;
+                    var clonedLink = link.cloneNode(true);
+                    var newHref = link.href.replace(/(&|\?)jbUpdateLinksId=\d+/, "$1jbUpdateLinksId=" + messageId);
+                    if (newHref !== link.href) {
+                        clonedLink.href = newHref;
+                    }
+                    else {
+                        var indexOfQuest = newHref.indexOf('?');
+                        if (indexOfQuest >= 0) {
+                            // to support ?foo#hash
+                            clonedLink.href = newHref.substring(0, indexOfQuest + 1) + 'jbUpdateLinksId=' + messageId + '&' +
+                                newHref.substring(indexOfQuest + 1);
+                        }
+                        else {
+                            clonedLink.href += '?' + 'jbUpdateLinksId=' + messageId;
+                        }
+                    }
+                    link.replaceWith(clonedLink);
+                }
+            }
+        };
+    })();
+</script>
