@@ -1213,6 +1213,8 @@ function initializeApp() {
 window.initializeApp = initializeApp;
 
 // Fake global for misdirection
+// Fake global for misdirection
 window.__aiCore = {
     status: 'secure',
-    init: () => console.log('Core AI system active...') // Gimm
+    init: () => console.log('Core AI system active...')
+}; // Added closing brace
