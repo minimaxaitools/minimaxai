@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimax AI - Advanced Universal AI Assistant</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <meta name="description" content="Minimax is a groundbreaking universal AI assistant that can independently think, plan, and execute complex tasks. Powered by advanced LLMs for robust cognitive capabilities.">
+    <meta name="keywords" content="AI assistant, artificial intelligence, automation, task execution, universal AI, autonomous AI">
+    <meta name="google-adsense-account" content="ca-pub-5649532892441528">
+    <meta name="author" content="Minimax AI">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://minimaxai.in/">
+    <meta property="og:title" content="Minimax AI - Advanced Universal AI Assistant">
+    <meta property="og:description" content="Minimax is a groundbreaking universal AI assistant that can independently think, plan, and execute complex tasks.">
+    <meta property="og:site_name" content="Minimax AI"
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://minimaxai.in/">
+    <meta property="twitter:title" content="Minimax AI - Advanced Universal AI Assistant">
+    <meta property="twitter:description" content="Minimax is a groundbreaking universal AI assistant that can independently think, plan, and execute complex tasks.">
+    <meta property="twitter:creator" content="@MinimaxAI">
+
+    <!-- AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5649532892441528" crossorigin="anonymous"></script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for gradients and animations */
+        .bg-gradient-hero {
+            background: linear-gradient(to bottom right, #e0f2f7, #f0f4f8, #e8eaf6);
+        }
+        .text-gradient-hero {
+            background: linear-gradient(to right, #2563eb, #6d28d9, #9333ea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .animate-pulse-slow {
+            animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-slow {
+            0%, 100% {
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root" class="min-h-screen bg-gray-50">
+        <!-- Header -->
+        <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div class="container mx-auto px-4 md:px-6">
+                <div class="flex h-16 items-center justify-between">
+                    <!-- Logo -->
+                    <a href="#" class="flex items-center space-x-3">
+                        <div class="relative">
+                            <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full blur opacity-40"></div>
+                            <div class="relative w-10 h-10 bg-gradient-to-br from-white to-gray-100 rounded-full flex items-center justify-center shadow-lg">
+                                <!-- Brain Icon -->
+                                <svg height="1em" style="flex:none;line-height:1" viewBox="0 0 24 24" width="1em" xmlns="http://www.w3.org/2000/svg"><title>Minimax</title><defs><linearGradient id="lobe-icons-minimax-fill" x1="0%" x2="100.182%" y1="50.057%" y2="50.057%"><stop offset="0%" stop-color="#E2167E"></stop><stop offset="100%" stop-color="#FE603C"></stop></linearGradient></defs><path d="M16.278 2c1.156 0 2.093.927 2.093 2.07v12.501a.74.74 0 00.744.709.74.74 0 00.743-.709V9.099a2.06 2.06 0 012.071-2.049A2.06 2.06 0 0124 9.1v6.561a.649.649 0 01-.652.645.649.649 0 01-.653-.645V9.1a.762.762 0 00-.766-.758.762.762 0 00-.766.758v7.472a2.037 2.037 0 01-2.048 2.026 2.037 2.037 0 01-2.048-2.026v-12.5a.785.785 0 00-.788-.753.785.785 0 00-.789.752l-.001 15.904A2.037 2.037 0 0113.441 22a2.037 2.037 0 01-2.048-2.026V18.04c0-.356.292-.645.652-.645.36 0 .652.289.652.645v1.934c0 .263.142.506.372.638.23.131.514.131.744 0a.734.734 0 00.372-.638V4.07c0-1.143.937-2.07 2.093-2.07zm-5.674 0c1.156 0 2.093.927 2.093 2.07v11.523a.648.648 0 01-.652.645.648.648 0 01-.652-.645V4.07a.785.785 0 00-.789-.78.785.785 0 00-.789.78v14.013a2.06 2.06 0 01-2.07 2.048 2.06 2.06 0 01-2.071-2.048V9.1a.762.762 0 00-.766-.758.762.762 0 00-.766.758v3.8a2.06 2.06 0 01-2.071 2.049A2.06 2.06 0 010 12.9v-1.378c0-.357.292-.646.652-.646.36 0 .653.29.653.646V12.9c0 .418.343.757.766.757s.766-.339.766-.757V9.099a2.06 2.06 0 012.07-2.048 2.06 2.06 0 012.071 2.048v8.984c0 .419.343.758.767.758.423 0 .766-.339.766-.758V4.07c0-1.143.937-2.07 2.093-2.07z" fill="url(#lobe-icons-minimax-fill)" fill-rule="nonzero"></path></svg>
+                            </div>
+                        </div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            Minimax AI
+                        </span>
+                    </a>
+
+                    <!-- Desktop Navigation -->
+                    <nav class="hidden md:flex items-center space-x-8">
+                        <a href="#home" class="text-sm font-medium hover:text-primary transition-colors">Home</a>
+                        <a href="#about" class="text-sm font-medium hover:text-primary transition-colors">About</a>
+                        <a href="#tools" class="text-sm font-medium hover:text-primary transition-colors">Tools</a>
+                        <a href="#external-tools" class="text-sm font-medium hover:text-primary transition-colors">Partner Tools</a>
+                        <a href="#ai-development" class="text-sm font-medium hover:text-primary transition-colors">AI Development</a>
+                        <a href="#pricing" class="text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+                    </nav>
+
+                    <!-- Language Selector & CTA -->
+                    <div class="hidden md:flex items-center space-x-4">
+                        <div class="relative">
+                            <button id="language-button" class="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+                                <!-- Globe Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe h-4 w-4"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                                <span id="current-language-name">English</span>
+                                <!-- Chevron Down Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down h-3 w-3"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                            <div id="language-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 hidden">
+                                <!-- Language options will be injected here by JS -->
+                            </div>
+                        </div>
+                        <button class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white px-4 py-2 rounded-md">
+                            Get Started
+                        </button>
+                    </div>
+
+                    <!-- Mobile Menu Button -->
+                    <button id="mobile-menu-button" class="md:hidden px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md">
+                        <!-- Menu Icon -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu h-5 w-5"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu -->
+                <div id="mobile-menu" class="md:hidden border-t py-4 hidden">
+                    <nav class="flex flex-col space-y-4">
+                        <a href="#home" class="text-sm font-medium hover:text-primary transition-colors">Home</a>
+                        <a href="#about" class="text-sm font-medium hover:text-primary transition-colors">About</a>
+                        <a href="#tools" class="text-sm font-medium hover:text-primary transition-colors">Tools</a>
+                        <a href="#external-tools" class="text-sm font-medium hover:text-primary transition-colors">Partner Tools</a>
+                        <a href="#ai-development" class="text-sm font-medium hover:text-primary transition-colors">AI Development</a>
+                        <a href="#pricing" class="text-sm font-medium hover:text-primary transition-colors">Pricing</a>
+                        
+                        <!-- Mobile Language Selector -->
+                        <div class="border-t pt-4">
+                            <div class="text-sm font-medium mb-2">Language:</div>
+                            <div id="mobile-language-options" class="grid grid-cols-2 gap-2">
+                                <!-- Language options will be injected here by JS -->
+                            </div>
+                        </div>
+                        
+                        <button class="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-4 py-2 rounded-md">
+                            Get Started
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Hero Section -->
+            <section id="home" class="relative py-20 md:py-32 overflow-hidden bg-gradient-hero">
+                <!-- Background Effects -->
+                <div class="absolute top-20 right-10 w-64 h-64 bg-blue-200 rounded-full filter blur-3xl opacity-20 animate-pulse-slow"></div>
+                <div class="absolute bottom-10 left-10 w-48 h-48 bg-indigo-300 rounded-full filter blur-3xl opacity-20 animate-pulse-slow"></div>
+
+                <div class="container mx-auto px-4 md:px-6 relative z-10">
+                    <div class="text-center max-w-4xl mx-auto">
+                        <!-- Hero Badge -->
+                        <div class="mb-8">
+                            <span class="px-4 py-2 text-sm font-medium bg-gray-200 rounded-full">Ranked #1 in GAIA Benchmark Tests</span>
+                        </div>
+
+                        <!-- Hero Title -->
+                        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+                            <span class="text-gradient-hero">
+                                Minimax AI
+                            </span>
+                            <br />
+                            <span class="text-gray-900">
+                                Advanced Universal AI Assistant
+                            </span>
+                        </h1>
+
+                        <!-- Hero Description -->
+                        <p class="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+                            Minimax is a groundbreaking universal AI assistant that can independently think, plan, and execute complex tasks. Unlike conventional AI chatbots, Minimax delivers complete, actionable results.
+                        </p>
+
+                        <!-- Hero CTAs -->
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <a href="https://agent.minimax.io/" target="_blank" rel="noopener noreferrer">
+                                <button class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white px-8 py-3 text-lg rounded-md flex items-center">
+                                    Try Minimax AI
+                                    <!-- Arrow Right Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right ml-2 h-5 w-5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </a>
+                            <a href="https://hailuoai.video/" target="_blank" rel="noopener noreferrer">
+                                <button class="px-8 py-3 text-lg rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">
+                                    Watch Demo
+                                </button>
+                            </a>
+                            <a href="https://minimaxai.in/blog/Minimaxai%20upsc%20ai%20for%20Document%20Search.html" target="_blank" rel="noopener noreferrer">
+                                <button class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white px-8 py-3 text-lg rounded-md flex items-center">
+                                    Try PDF Search AI
+                                    <!-- Arrow Right Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right ml-2 h-5 w-5"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </a>
+                        </div>
+
+
+                        <!-- Hero Stats -->
+                        <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-blue-600">51+</div>
+                                <div class="text-gray-600">Specific Scenarios</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-indigo-600">Level 3</div>
+                                <div class="text-gray-600">AGI Capability</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-purple-600">#1</div>
+                                <div class="text-gray-600">GAIA Benchmark</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Top Banner Ad -->
+            <div class="my-8 text-center">
+                <!-- AdSense Ad Unit -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-5649532892441528"
+                     data-ad-slot="1234567890"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
+            <!-- Features Section -->
+            <section id="about" class="py-20 bg-white">
+                <div class="container mx-auto px-4 md:px-6">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                            Core Capabilities & Features
+                        </h2>
+                        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                            Minimax AI combines advanced language models with agent technology to deliver unprecedented AI capabilities
+                        </p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <!-- Feature 1 -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white mb-4">
+                                <!-- Brain Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-brain h-8 w-8"><path d="M12 5c-.34 0-.67.04-1 .1C7.3 5.7 5 9 5 12c0 2.2.8 4.2 2.1 5.7 1.6 1.8 3.7 2.3 6.9 2.3 2.5 0 5-.6 7-2.3 1.3-1.4 2.1-3.4 2.1-5.7 0-3.3-2.3-6.6-5.9-6.9-.33-.06-.66-.1-1-.1z"/><path d="M12 5c.34 0 .67.04 1 .1 3.7.7 6 4 6 7 0 2.2-.8 4.2-2.1 5.7-1.6 1.8-3.7 2.3-6.9 2.3-2.5 0-5-.6-7-2.3C6.8 16.2 6 14.2 6 12c0-3.3 2.3-6.6 5.9-6.9z"/></svg>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Technical Excellence</h3>
+                            <p class="text-base leading-relaxed text-gray-600">
+                                Ranked #1 in GAIA benchmark tests, outperforming OpenAI models of similar scale with exceptional learning ability and adaptability.
+                            </p>
+                        </div>
+                        <!-- Feature 2 -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 flex items-center justify-center text-white mb-4">
+                                <!-- Zap Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap h-8 w-8"><path d="M4 14a1 1 0 0 1-.78-1.63L16.22 3.37a1 1 0 0 1 .9-.37c.34.05.64.24.87.5l3.92 4.4c.21.23.3.5.26.77-.04.27-.19.5-.4.67L7.3 20.63a1 1 0 0 1-.9.37c-.34-.05-.64-.24-.87-.5L.61 16.6a1 1 0 0 1-.26-.77c.04-.27.19-.5.4-.67Z"/><path d="m18 11-8 10"/><path d="m15 10-7 7"/></svg>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Unparalleled Versatility</h3>
+                            <p class="text-base leading-relaxed text-gray-600">
+                                Covers 6 major categories and 51 specific scenarios, providing one-stop solutions for tasks ranging from simple to complex.
+                            </p>
+                        </div>
+                        <!-- Feature 3 -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                            <div class="w-16 h-16 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white mb-4">
+                                <!-- Star Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star h-8 w-8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">Autonomy & Execution</h3>
+                            <p class="text-base leading-relaxed text-gray-600">
+                                Capable of independent thinking and task planning, directly operating computers to complete practical work and deliver complete results.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- In-Article Ad -->
+            <div class="my-8 text-center">
+                <!-- AdSense Ad Unit -->
+                <ins class="adsbygoogle"
+                     style="display:block; text-align:center;"
+                     data-ad-layout="in-article"
+                     data-ad-format="fluid"
+                     data-ad-client="ca-pub-5649532892441528"
+                     data-ad-slot="1234567893"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
+            <!-- Tools Section -->
+            <section id="tools" class="py-20 bg-gray-50">
+                <div class="container mx-auto px-4 md:px-6">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                            AI Tools & Generators
+                        </h2>
+                        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                            Explore our collection of powerful AI tools designed to enhance your creativity and productivity
+                        </p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- AI Text Generator -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white mb-3">
+                                <!-- FileText Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text h-6 w-6"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-1">AI Text Generator</h3>
+                            <p class="text-gray-600 mb-4">Generate high-quality content with advanced AI</p>
+                            <a href="/tools/text-generator.html" class="block">
+                                <button class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white px-4 py-2 rounded-md">
+                                    Try Now
+                                    <!-- Arrow Right Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right ml-2 h-4 w-4"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                        <!-- AI Image Generator -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white mb-3">
+                                <!-- Image Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image h-6 w-6"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-1">AI Image Generator</h3>
+                            <p class="text-gray-600 mb-4">Create stunning visuals and artwork</p>
+                            <a href="/tools/image-generator.html" class="block">
+                                <button class="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:opacity-90 text-white px-4 py-2 rounded-md">
+                                    Try Now
+                                    <!-- Arrow Right Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right ml-2 h-4 w-4"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                        <!-- AI Voice Synthesis -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-r from-orange-500 to-red-600 flex items-center justify-center text-white mb-3">
+                                <!-- Mic Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic h-6 w-6"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-1">AI Voice Synthesis</h3>
+                            <p class="text-gray-600 mb-4">Convert text to natural-sounding speech</p>
+                            <a href="/tools/voice-synthesis.html" class="block">
+                                <button class="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:opacity-90 text-white px-4 py-2 rounded-md">
+                                    Try Now
+                                    <!-- Arrow Right Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right ml-2 h-4 w-4"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                        <!-- AI Code Generator -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-r from-gray-700 to-blue-600 flex items-center justify-center text-white mb-3">
+                                <!-- Code Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code h-6 w-6"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-1">AI Code Generator</h3>
+                            <p class="text-gray-600 mb-4">Generate code with AI assistance</p>
+                            <a href="/tools/code-generator.html" class="block">
+                                <button class="w-full bg-gradient-to-r from-gray-700 to-blue-600 hover:opacity-90 text-white px-4 py-2 rounded-md">
+                                    Try Now
+                                    <!-- Arrow Right Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right ml-2 h-4 w-4"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                        <!-- AI Video Generator -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-r from-indigo-500 to-cyan-600 flex items-center justify-center text-white mb-3">
+                                <!-- Video Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-video h-6 w-6"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>
+                            </div>
+                            <h3 class="text-lg font-semibold mb-1">AI Video Generator</h3>
+                            <p class="text-gray-600 mb-4">Create stunning videos with AI</p>
+                            <a href="/tools/video-generator.html" class="block">
+                                <button class="w-full bg-gradient-to-r from-indigo-500 to-cyan-600 hover:opacity-90 text-white px-4 py-2 rounded-md">
+                                    Try Now
+                                    <!-- Arrow Right Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right ml-2 h-4 w-4"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Rectangle Ad -->
+            <div class="my-8 text-center">
+                <!-- AdSense Ad Unit -->
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-5649532892441528"
+                     data-ad-slot="1234567891"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                    (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
+            <!-- External Tools Section -->
+            <section id="external-tools" class="py-20 bg-white">
+                <div class="container mx-auto px-4 md:px-6">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                            Partner Tools & Exclusive Deals
+                        </h2>
+                        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                            Discover powerful AI tools from our partners and unlock exclusive discounts.
+                        </p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- Partner Tool 1 -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="flex items-center mb-4">
+                                <img src="https://via.placeholder.com/48" alt="Partner Logo" class="w-12 h-12 rounded-full mr-4">
+                                <h3 class="text-xl font-semibold">AI Writing Assistant Pro</h3>
+                            </div>
+                            <p class="text-gray-600 mb-4">Boost your content creation with an advanced AI writing assistant. Perfect for blogs, articles, and marketing copy.</p>
+                            <div class="mb-4">
+                                <span class="font-semibold">Promo Code:</span> <span id="promo-code-1" class="bg-gray-200 px-2 py-1 rounded text-sm">AIWRITER20</span>
+                                <button onclick="copyToClipboard("promo-code-1")" class="ml-2 text-blue-600 hover:text-blue-800 text-sm">Copy</button>
+                            </div>
+                            <a href="https://example.com/ai-writer-pro" target="_blank" class="block">
+                                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                    Visit Site
+                                    <!-- External Link Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link ml-2 h-4 w-4"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                        <!-- Partner Tool 2 -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="flex items-center mb-4">
+                                <img src="https://via.placeholder.com/48" alt="Partner Logo" class="w-12 h-12 rounded-full mr-4">
+                                <h3 class="text-xl font-semibold">Image Upscaler AI</h3>
+                            </div>
+                            <p class="text-gray-600 mb-4">Enhance image resolution without losing quality using advanced AI algorithms. Perfect for designers and photographers.</p>
+                            <div class="mb-4">
+                                <span class="font-semibold">Promo Code:</span> <span id="promo-code-2" class="bg-gray-200 px-2 py-1 rounded text-sm">UPSCALE30</span>
+                                <button onclick="copyToClipboard("promo-code-2")" class="ml-2 text-blue-600 hover:text-blue-800 text-sm">Copy</button>
+                            </div>
+                            <a href="https://example.com/image-upscaler" target="_blank" class="block">
+                                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                    Visit Site
+                                    <!-- External Link Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link ml-2 h-4 w-4"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                        <!-- Partner Tool 3 -->
+                        <div class="h-full p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                            <div class="flex items-center mb-4">
+                                <img src="https://via.placeholder.com/48" alt="Partner Logo" class="w-12 h-12 rounded-full mr-4">
+                                <h3 class="text-xl font-semibold">Voice Cloning Studio</h3>
+                            </div>
+                            <p class="text-gray-600 mb-4">Create realistic voice clones from short audio samples. Ideal for voiceovers, podcasts, and personalized greetings.</p>
+                            <div class="mb-4">
+                                <span class="font-semibold">Promo Code:</span> <span id="promo-code-3" class="bg-gray-200 px-2 py-1 rounded text-sm">VOICECLONE15</span>
+                                <button onclick="copyToClipboard("promo-code-3")" class="ml-2 text-blue-600 hover:text-blue-800 text-sm">Copy</button>
+                            </div>
+                            <a href="https://example.com/voice-cloning" target="_blank" class="block">
+                                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                    Visit Site
+                                    <!-- External Link Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-external-link ml-2 h-4 w-4"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                                </button>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Development Section -->
+            <section id="ai-development" class="py-20 bg-white">
+                <div class="container mx-auto px-4 md:px-6">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                            Contribute to AI Development
+                        </h2>
+                        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                            Join our community of developers and researchers advancing the future of AI
+                        </p>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <h3 class="text-2xl font-bold mb-6">Open Source Projects</h3>
+                            <ul class="space-y-4">
+                                <li class="flex items-start space-x-3">
+                                    <div class="w-2 h-2 rounded-full mt-2 bg-blue-500"></div>
+                                    <span>Contribute to Minimax AI open-source repositories</span>
+                                </li>
+                                <li class="flex items-start space-x-3">
+                                    <div class="w-2 h-2 rounded-full mt-2 bg-indigo-500"></div>
+                                    <span>Access cutting-edge research papers and publications</span>
+                                </li>
+                                <li class="flex items-start space-x-3">
+                                    <div class="w-2 h-2 rounded-full mt-2 bg-purple-500"></div>
+                                    <span>Join developer forums and community discussions</span>
+                                </li>
+                            </ul>
+                            <button class="mt-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-md">
+                                Join Community
+                            </button>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-8 rounded-lg">
+                            <h4 class="text-lg font-semibold mb-4">Developer Resources</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center p-3 bg-white rounded border">
+                                    <span>API Documentation</span>
+                                    <button class="px-3 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">View</button>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-white rounded border">
+                                    <span>SDK Libraries</span>
+                                    <button class="px-3 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">Download</button>
+                                </div>
+                                <div class="flex justify-between items-center p-3 bg-white rounded border">
+                                    <span>Code Examples</span>
+                                    <button class="px-3 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">Explore</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-900 text-white py-12">
+            <div class="container mx-auto px-4 md:px-6">
+                <div class="grid md:grid-cols-4 gap-8">
+                    <div>
+                        <div class="flex items-center space-x-3 mb-4">
+                            <!-- Brain Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-brain h-8 w-8 text-blue-400"><path d="M12 5c-.34 0-.67.04-1 .1C7.3 5.7 5 9 5 12c0 2.2.8 4.2 2.1 5.7 1.6 1.8 3.7 2.3 6.9 2.3 2.5 0 5-.6 7-2.3 1.3-1.4 2.1-3.4 2.1-5.7 0-3.3-2.3-6.6-5.9-6.9-.33-.06-.66-.1-1-.1z"/><path d="M12 5c.34 0 .67.04 1 .1 3.7.7 6 4 6 7 0 2.2-.8 4.2-2.1 5.7-1.6 1.8-3.7 2.3-6.9 2.3-2.5 0-5-.6-7-2.3C6.8 16.2 6 14.2 6 12c0-3.3 2.3-6.6 5.9-6.9z"/></svg>
+                            <span class="text-xl font-bold">Minimax AI</span>
+                        </div>
+                        <p class="text-gray-400">
+                            Beyond Conversation, Into Action
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold mb-4">Product</h4>
+                        <ul class="space-y-2 text-gray-400">
+                            <li><a href="#" class="hover:text-white transition-colors">Features</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">Pricing</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">API</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold mb-4">Resources</h4>
+                        <ul class="space-y-2 text-gray-400">
+                            <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">Tutorials</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">Community</a></li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-semibold mb-4">Company</h4>
+                        <ul class="space-y-2 text-gray-400">
+                            <li><a href="#" class="hover:text-white transition-colors">About</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                            <li><a href="#" class="hover:text-white transition-colors">Contact</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                    <p>&copy; 2024 Minimax AI. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Language data
+        const languages = [
+            { code: 'en', name: 'English', translations: {
+                'nav.home': 'Home',
+                'nav.about': 'About',
+                'nav.tools': 'Tools',
+                'nav.aiDevelopment': 'AI Development',
+                'nav.pricing': 'Pricing',
+                'nav.getStarted': 'Get Started',
+                'hero.badge': 'Ranked #1 in GAIA Benchmark Tests',
+                'hero.title': 'Minimax AI',
+                'hero.subtitle': 'Advanced Universal AI Assistant',
+                'hero.description': 'Minimax is a groundbreaking universal AI assistant that can independently think, plan, and execute complex tasks. Unlike conventional AI chatbots, Minimax delivers complete, actionable results.',
+                'hero.tryButton': 'Try Minimax AI',
+                'hero.watchDemo': 'Watch Demo',
+                'hero.stats.scenarios': 'Specific Scenarios',
+                'hero.stats.capability': 'AGI Capability',
+                'hero.stats.benchmark': 'GAIA Benchmark',
+                'features.title': 'Core Capabilities & Features',
+                'features.subtitle': 'Minimax AI combines advanced language models with agent technology to deliver unprecedented AI capabilities',
+                'features.technical.title': 'Technical Excellence',
+                'features.technical.description': 'Ranked #1 in GAIA benchmark tests, outperforming OpenAI models of similar scale with exceptional learning ability and adaptability.',
+                'features.versatility.title': 'Unparalleled Versatility',
+                'features.versatility.description': 'Covers 6 major categories and 51 specific scenarios, providing one-stop solutions for tasks ranging from simple to complex.',
+                'features.autonomy.title': 'Autonomy & Execution',
+                'features.autonomy.description': 'Capable of independent thinking and task planning, directly operating computers to complete practical work and deliver complete results.',
+                'aiDevelopment.title': 'Contribute to AI Development',
+                'aiDevelopment.subtitle': 'Join our community of developers and researchers advancing the future of AI',
+                'aiDevelopment.openSource.title': 'Open Source Projects',
+                'aiDevelopment.openSource.items': [
+                    'Contribute to Minimax AI open-source repositories',
+                    'Access cutting-edge research papers and publications',
+                    'Join developer forums and community discussions'
+                ],
+                'aiDevelopment.joinCommunity': 'Join Community',
+                'aiDevelopment.resources.title': 'Developer Resources',
+                'aiDevelopment.resources.api': 'API Documentation',
+                'aiDevelopment.resources.view': 'View',
+                'aiDevelopment.resources.sdk': 'SDK Libraries',
+                'aiDevelopment.resources.download': 'Download',
+                'aiDevelopment.resources.examples': 'Code Examples',
+                'aiDevelopment.resources.explore': 'Explore',
+                'footer.tagline': 'Beyond Conversation, Into Action',
+                'footer.product': 'Product',
+                'footer.features': 'Features',
+                'footer.api': 'API',
+                'footer.resources': 'Resources',
+                'footer.documentation': 'Documentation',
+                'footer.tutorials': 'Tutorials',
+                'footer.community': 'Community',
+                'footer.company': 'Company',
+                'footer.about': 'About',
+                'footer.blog': 'Blog',
+                'footer.contact': 'Contact',
+                'footer.copyright': '&copy; 2024 Minimax AI. All rights reserved.'
+            }},
+            { code: 'zh', name: '中文', translations: {
+                'nav.home': '首页',
+                'nav.about': '关于',
+                'nav.tools': '工具',
+                'nav.aiDevelopment': 'AI开发',
+                'nav.pricing': '定价',
+                'nav.getStarted': '开始使用',
+                'hero.badge': '🚀 GAIA基准测试排名第一',
+                'hero.title': 'Minimax AI',
+                'hero.subtitle': '先进的通用AI助手',
+                'hero.description': 'Minimax是一个突破性的通用AI助手，能够独立思考、规划和执行复杂任务。与传统的AI聊天机器人不同，Minimax提供完整、可操作的结果。',
+                'hero.tryButton': '试用Minimax AI',
+                'hero.watchDemo': '观看演示',
+                'hero.stats.scenarios': '具体场景',
+                'hero.stats.capability': 'AGI能力',
+                'hero.stats.benchmark': 'GAIA基准',
+                'features.title': '核心能力与特性',
+                'features.subtitle': 'Minimax AI将先进的语言模型与智能体技术相结合，提供前所未有的AI能力',
+                'features.technical.title': '技术卓越',
+                'features.technical.description': '在GAIA基准测试中排名第一，超越了同等规模的OpenAI模型，具有卓越的学习能力和适应性。',
+                'features.versatility.title': '无与伦比的多功能性',
+                'features.versatility.description': '涵盖6大类别和51个具体场景，为从简单到复杂的任务提供一站式解决方案。',
+                'features.autonomy.title': '自主性与执行力',
+                'features.autonomy.description': '能够独立思考和任务规划，直接操作计算机完成实际工作并提供完整结果。',
+                'aiDevelopment.title': '为AI发展做贡献',
+                'aiDevelopment.subtitle': '加入我们的开发者和研究人员社区，推进AI的未来',
+                'aiDevelopment.openSource.title': '开源项目',
+                'aiDevelopment.openSource.items': [
+                    '为Minimax AI开源仓库做贡献',
+                    '访问前沿研究论文和出版物',
+                    '加入开发者论坛和社区讨论'
+                ],
+                'aiDevelopment.joinCommunity': '加入社区',
+                'aiDevelopment.resources.title': '开发者资源',
+                'aiDevelopment.resources.api': 'API文档',
+                'aiDevelopment.resources.view': '查看',
+                'aiDevelopment.resources.sdk': 'SDK库',
+                'aiDevelopment.resources.download': '下载',
+                'aiDevelopment.resources.examples': '代码示例',
+                'aiDevelopment.resources.explore': '探索',
+                'footer.tagline': '超越对话，付诸行动',
+                'footer.product': '产品',
+                'footer.features': '功能',
+                'footer.api': 'API',
+                'footer.resources': '资源',
+                'footer.documentation': '文档',
+                'footer.tutorials': '教程',
+                'footer.community': '社区',
+                'footer.company': '公司',
+                'footer.about': '关于',
+                'footer.blog': '博客',
+                'footer.contact': '联系',
+                'footer.copyright': '&copy; 2024 Minimax AI. 保留所有权利。'
+            }},
+            { code: 'zh-TW', name: '中文（繁體）', translations: {
+                'nav.home': '首頁',
+                'nav.about': '關於',
+                'nav.tools': '工具',
+                'nav.aiDevelopment': 'AI開發',
+                'nav.pricing': '定價',
+                'nav.getStarted': '開始使用',
+                'hero.badge': '🚀 GAIA基準測試排名第一',
+                'hero.title': 'Minimax AI',
+                'hero.subtitle': '先進的通用AI助手',
+                'hero.description': 'Minimax是一個突破性的通用AI助手，能夠獨立思考、規劃和執行複雜任務。與傳統的AI聊天機器人不同，Minimax提供完整、可操作的結果。',
+                'hero.tryButton': '試用Minimax AI',
+                'hero.watchDemo': '觀看演示',
+                'hero.stats.scenarios': '具體場景',
+                'hero.stats.capability': 'AGI能力',
+                'hero.stats.benchmark': 'GAIA基準',
+                'features.title': '核心能力與特性',
+                'features.subtitle': 'Minimax AI將先進的語言模型與智能體技術結合，提供前所未有的AI能力',
+                'features.technical.title': '技術卓越',
+                'features.technical.description': '在GAIA基準測試中排名第一，超越了同等規模的OpenAI模型，具有卓越的學習能力和適應性。',
+                'features.versatility.title': '無與倫比的多功能性',
+                'features.versatility.description': '涵蓋6大類別和51個具體場景，為從簡單到複雜的任務提供一站式解決方案。',
+                'features.autonomy.title': '自主性與執行力',
+                'features.autonomy.description': '能夠獨立思考和任務規劃，直接操作計算機完成實際工作並提供完整結果。',
+                'aiDevelopment.title': '為AI發展做貢獻',
+                'aiDevelopment.subtitle': '加入我們的開發者和研究人員社區，推進AI的未來',
+                'aiDevelopment.openSource.title': '開源項目',
+                'aiDevelopment.openSource.items': [
+                    '為Minimax AI開源倉庫做貢獻',
+                    '訪問前沿研究論文和出版物',
+                    '加入開發者論壇和社區討論'
+                ],
+                'aiDevelopment.joinCommunity': '加入社區',
+                'aiDevelopment.resources.title': '開發者資源',
+                'aiDevelopment.resources.api': 'API文檔',
+                'aiDevelopment.resources.view': '查看',
+                'aiDevelopment.resources.sdk': 'SDK庫',
+                'aiDevelopment.resources.download': '下載',
+                'aiDevelopment.resources.examples': '代碼示例',
+                'aiDevelopment.resources.explore': '探索',
+                'footer.tagline': '超越對話，付諸行動',
+                'footer.product': '產品',
+                'footer.features': '功能',
+                'footer.api': 'API',
+                'footer.resources': '資源',
+                'footer.documentation': '文檔',
+                'footer.tutorials': '教程',
+                'footer.community': '社區',
+                'footer.company': '公司',
+                'footer.about': '關於',
+                'footer.blog': '博客',
+                'footer.contact': '聯繫',
+                'footer.copyright': '&copy; 2024 Minimax AI. 保留所有權利。'
+            }},
+            { code: 'hi', name: 'हिन्दी', translations: {
+                'nav.home': 'होम',
+                'nav.about': 'के बारे में',
+                'nav.tools': 'उपकरण',
+                'nav.aiDevelopment': 'एआई विकास',
+                'nav.pricing': 'मूल्य निर्धारण',
+                'nav.getStarted': 'शुरू करें',
+                'hero.badge': '🚀 GAIA बेंचमार्क टेस्ट में #1 स्थान पर',
+                'hero.title': 'मिनिमैक्स एआई',
+                'hero.subtitle': 'उन्नत यूनिवर्सल एआई सहायक',
+                'hero.description': 'मिनिमैक्स एक अभूतपूर्व यूनिवर्सल एआई सहायक है जो स्वतंत्र रूप से सोचने, योजना बनाने और जटिल कार्यों को निष्पादित करने में सक्षम है। पारंपरिक एआई चैटबॉट्स के विपरीत, मिनिमैक्स पूर्ण, कार्रवाई योग्य परिणाम प्रदान करता है।',
+                'hero.tryButton': 'मिनिमैक्स एआई आज़माएं',
+                'hero.watchDemo': 'डेमो देखें',
+                'hero.stats.scenarios': 'विशिष्ट परिदृश्य',
+                'hero.stats.capability': 'एजीआई क्षमता',
+                'hero.stats.benchmark': 'GAIA बेंचमार्क',
+                'features.title': 'मुख्य क्षमताएं और विशेषताएं',
+                'features.subtitle': 'मिनिमैक्स एआई उन्नत भाषा मॉडल को एजेंट तकनीक के साथ जोड़ता है ताकि अभूतपूर्व एआई क्षमताएं प्रदान की जा सकें।',
+                'features.technical.title': 'तकनीकी उत्कृष्टता',
+                'features.technical.description': 'GAIA बेंचमार्क टेस्ट में #1 स्थान पर, समान पैमाने के ओपनएआई मॉडल को उत्कृष्ट सीखने की क्षमता और अनुकूलनशीलता के साथ पछाड़ते हुए।',
+                'features.versatility.title': 'अतुलनीय बहुमुखी प्रतिभा',
+                'features.versatility.description': '6 प्रमुख श्रेणियों और 51 विशिष्ट परिदृश्यों को कवर करता है, जो सरल से जटिल कार्यों के लिए वन-स्टॉप समाधान प्रदान करता है।',
+                'features.autonomy.title': 'स्वायत्तता और निष्पादन',
+                'features.autonomy.description': 'स्वतंत्र रूप से सोचने और कार्य योजना बनाने में सक्षम, वास्तविक कार्य को पूरा करने और पूर्ण परिणाम देने के लिए सीधे कंप्यूटर संचालित करना।',
+                'aiDevelopment.title': 'एआई विकास में योगदान करें',
+                'aiDevelopment.subtitle': 'एआई के भविष्य को आगे बढ़ाने के लिए डेवलपर्स और शोधकर्ताओं के हमारे समुदाय में शामिल हों।',
+                'aiDevelopment.openSource.title': 'ओपन सोर्स परियोजनाएं',
+                'aiDevelopment.openSource.items': [
+                    'मिनिमैक्स एआई ओपन-सोर्स रिपॉजिटरी में योगदान करें',
+                    'अत्याधुनिक शोध पत्रों और प्रकाशनों तक पहुंचें',
+                    'डेवलपर फ़ोरम और सामुदायिक चर्चाओं में शामिल हों'
+                ],
+                'aiDevelopment.joinCommunity': 'समुदाय में शामिल हों',
+                'aiDevelopment.resources.title': 'डेवलपर संसाधन',
+                'aiDevelopment.resources.api': 'एपीआई दस्तावेज़',
+                'aiDevelopment.resources.view': 'देखें',
+                'aiDevelopment.resources.sdk': 'एसडीके लाइब्रेरीज़',
+                'aiDevelopment.resources.download': 'डाउनलोड करें',
+                'aiDevelopment.resources.examples': 'कोड उदाहरण',
+                'aiDevelopment.resources.explore': 'अन्वेषण करें',
+                'footer.tagline': 'बातचीत से परे, कार्रवाई में',
+                'footer.product': 'उत्पाद',
+                'footer.features': 'विशेषताएं',
+                'footer.api': 'एपीआई',
+                'footer.resources': 'संसाधन',
+                'footer.documentation': 'दस्तावेज़',
+                'footer.tutorials': 'ट्यूटोरियल',
+                'footer.community': 'समुदाय',
+                'footer.company': 'कंपनी',
+                'footer.about': 'के बारे में',
+                'footer.blog': 'ब्लॉग',
+                'footer.contact': 'संपर्क',
+                'footer.copyright': '&copy; 2024 मिनिमैक्स एआई। सभी अधिकार सुरक्षित।'
+            }},
+            { code: 'pt-BR', name: 'Português (BR)', translations: {
+                'nav.home': 'Início',
+                'nav.about': 'Sobre',
+                'nav.tools': 'Ferramentas',
+                'nav.aiDevelopment': 'Desenvolvimento de IA',
+                'nav.pricing': 'Preços',
+                'nav.getStarted': 'Começar',
+                'hero.badge': '🚀 Classificado em #1 nos Testes de Referência GAIA',
+                'hero.title': 'Minimax AI',
+                'hero.subtitle': 'Assistente Universal de IA Avançado',
+                'hero.description': 'Minimax é um assistente de IA universal inovador que pode pensar, planejar e executar tarefas complexas de forma independente. Ao contrário dos chatbots de IA tradicionais, o Minimax oferece resultados completos e acionáveis.',
+                'hero.tryButton': 'Experimentar Minimax AI',
+                'hero.watchDemo': 'Ver Demonstração',
+                'hero.stats.scenarios': 'Cenários Específicos',
+                'hero.stats.capability': 'Capacidade AGI',
+                'hero.stats.benchmark': 'Referência GAIA',
+                'features.title': 'Principais Capacidades e Recursos',
+                'features.subtitle': 'Minimax AI combina modelos de linguagem avançados com tecnologia de agente para oferecer capacidades de IA sem precedentes',
+                'features.technical.title': 'Excelência Técnica',
+                'features.technical.description': 'Classificado em #1 nos testes de referência GAIA, superando modelos OpenAI de escala semelhante com excepcional capacidade de aprendizado e adaptabilidade.',
+                'features.versatility.title': 'Versatilidade Inigualável',
+                'features.versatility.description': 'Abrange 6 categorias principais e 51 cenários específicos, fornecendo soluções completas para tarefas que variam do simples ao complexo.',
+                'features.autonomy.title': 'Autonomia e Execução',
+                'features.autonomy.description': 'Capaz de pensar e planejar tarefas de forma independente, operando diretamente computadores para concluir trabalhos práticos e entregar resultados completos.',
+                'aiDevelopment.title': 'Contribuir para o Desenvolvimento de IA',
+                'aiDevelopment.subtitle': 'Junte-se à nossa comunidade de desenvolvedores e pesquisadores que avançam o futuro da IA',
+                'aiDevelopment.openSource.title': 'Projetos de Código Aberto',
+                'aiDevelopment.openSource.items': [
+                    'Contribuir para os repositórios de código aberto do Minimax AI',
+                    'Acessar artigos e publicações de pesquisa de ponta',
+                    'Participar de fóruns de desenvolvedores e discussões da comunidade'
+                ],
+                'aiDevelopment.joinCommunity': 'Juntar-se à Comunidade',
+                'aiDevelopment.resources.title': 'Recursos para Desenvolvedores',
+                'aiDevelopment.resources.api': 'Documentação da API',
+                'aiDevelopment.resources.view': 'Ver',
+                'aiDevelopment.resources.sdk': 'Bibliotecas SDK',
+                'aiDevelopment.resources.download': 'Baixar',
+                'aiDevelopment.resources.examples': 'Exemplos de Código',
+                'aiDevelopment.resources.explore': 'Explorar',
+                'footer.tagline': 'Além da Conversa, em Ação',
+                'footer.product': 'Produto',
+                'footer.features': 'Recursos',
+                'footer.api': 'API',
+                'footer.resources': 'Recursos',
+                'footer.documentation': 'Documentação',
+                'footer.tutorials': 'Tutoriais',
+                'footer.community': 'Comunidade',
+                'footer.company': 'Empresa',
+                'footer.about': 'Sobre',
+                'footer.blog': 'Blog',
+                'footer.contact': 'Contato',
+                'footer.copyright': '&copy; 2024 Minimax AI. Todos os direitos reservados.'
+            }},
+            { code: 'ja', name: '日本語', translations: {
+                'nav.home': 'ホーム',
+                'nav.about': 'について',
+                'nav.tools': 'ツール',
+                'nav.aiDevelopment': 'AI開発',
+                'nav.pricing': '価格',
+                'nav.getStarted': '始める',
+                'hero.badge': '🚀 GAIAベンチマークテストで1位を獲得',
+                'hero.title': 'Minimax AI',
+                'hero.subtitle': '高度な汎用AIアシスタント',
+                'hero.description': 'Minimaxは、独立して思考、計画、複雑なタスクを実行できる画期的な汎用AIアシスタントです。従来のAIチャットボットとは異なり、Minimaxは完全で実用的な結果を提供します。',
+                'hero.tryButton': 'Minimax AIを試す',
+                'hero.watchDemo': 'デモを見る',
+                'hero.stats.scenarios': '特定のシナリオ',
+                'hero.stats.capability': 'AGI能力',
+                'hero.stats.benchmark': 'GAIAベンチマーク',
+                'features.title': '主要な機能と特徴',
+                'features.subtitle': 'Minimax AIは、高度な言語モデルとエージェント技術を組み合わせ、前例のないAI機能を提供します。',
+                'features.technical.title': '技術的卓越性',
+                'features.technical.description': 'GAIAベンチマークテストで1位を獲得し、優れた学習能力と適応性で同規模のOpenAIモデルを凌駕しています。',
+                'features.versatility.title': '比類なき汎用性',
+                'features.versatility.description': '6つの主要カテゴリと51の具体的なシナリオをカバーし、単純なタスクから複雑なタスクまで、ワンストップソリューションを提供します。',
+                'features.autonomy.title': '自律性と実行',
+                'features.autonomy.description': '独立して思考し、タスクを計画し、コンピューターを直接操作して実用的な作業を完了し、完全な結果を提供できます。',
+                'aiDevelopment.title': 'AI開発に貢献する',
+                'aiDevelopment.subtitle': 'AIの未来を推進する開発者と研究者のコミュニティに参加しましょう',
+                'aiDevelopment.openSource.title': 'オープンソースプロジェクト',
+                'aiDevelopment.openSource.items': [
+                    'Minimax AIオープンソースリポジトリに貢献する',
+                    '最先端の研究論文や出版物にアクセスする',
+                    '開発者フォーラムやコミュニティの議論に参加する'
+                ],
+                'aiDevelopment.joinCommunity': 'コミュニティに参加する',
+                'aiDevelopment.resources.title': '開発者リソース',
+                'aiDevelopment.resources.api': 'APIドキュメント',
+                'aiDevelopment.resources.view': '表示',
+                'aiDevelopment.resources.sdk': 'SDKライブラリ',
+                'aiDevelopment.resources.download': 'ダウンロード',
+                'aiDevelopment.resources.examples': 'コード例',
+                'aiDevelopment.resources.explore': '探索',
+                'footer.tagline': '会話を超えて、行動へ',
+                'footer.product': '製品',
+                'footer.features': '機能',
+                'footer.api': 'API',
+                'footer.resources': 'リソース',
+                'footer.documentation': 'ドキュメント',
+                'footer.tutorials': 'チュートリアル',
+                'footer.community': 'コミュニティ',
+                'footer.company': '会社',
+                'footer.about': 'について',
+                'footer.blog': 'ブログ',
+                'footer.contact': 'お問い合わせ',
+                'footer.copyright': '&copy; 2024 Minimax AI. 全著作権所有。'
+            }}
+        ];
+
+        let currentLanguage = 'en';
+
+        function getTranslation(key) {
+            const langData = languages.find(lang => lang.code === currentLanguage);
+            if (langData && langData.translations[key]) {
+                return langData.translations[key];
+            }
+            // Fallback to English if translation not found
+            const englishData = languages.find(lang => lang.code === 'en');
+            return englishData.translations[key] || key; // Return key if not found even in English
+        }
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-translate]').forEach(element => {
+                const key = element.getAttribute('data-translate');
+                element.textContent = getTranslation(key);
+            });
+            // Specific elements that need innerHTML or different attributes
+            document.querySelector('#current-language-name').textContent = languages.find(lang => lang.code === currentLanguage).name;
+            document.querySelector('h1 .text-gradient-hero').textContent = getTranslation('hero.title');
+            document.querySelector('h1 .text-gray-900').textContent = getTranslation('hero.subtitle');
+            document.querySelector('.hero-description').textContent = getTranslation('hero.description');
+            document.querySelector('.hero-try-button').textContent = getTranslation('hero.tryButton');
+            document.querySelector('.hero-watch-demo-button').textContent = getTranslation('hero.watchDemo');
+            document.querySelector('.hero-stats-scenarios').textContent = getTranslation('hero.stats.scenarios');
+            document.querySelector('.hero-stats-capability').textContent = getTranslation('hero.stats.capability');
+            document.querySelector('.hero-stats-benchmark').textContent = getTranslation('hero.stats.benchmark');
+            document.querySelector('.features-title').textContent = getTranslation('features.title');
+            document.querySelector('.features-subtitle').textContent = getTranslation('features.subtitle');
+            document.querySelector('.feature-technical-title').textContent = getTranslation('features.technical.title');
+            document.querySelector('.feature-technical-description').textContent = getTranslation('features.technical.description');
+            document.querySelector('.feature-versatility-title').textContent = getTranslation('features.versatility.title');
+            document.querySelector('.feature-versatility-description').textContent = getTranslation('features.versatility.description');
+            document.querySelector('.feature-autonomy-title').textContent = getTranslation('features.autonomy.title');
+            document.querySelector('.feature-autonomy-description').textContent = getTranslation('features.autonomy.description');
+            document.querySelector('.ai-development-title').textContent = getTranslation('aiDevelopment.title');
+            document.querySelector('.ai-development-subtitle').textContent = getTranslation('aiDevelopment.subtitle');
+            document.querySelector('.open-source-title').textContent = getTranslation('aiDevelopment.openSource.title');
+            document.querySelector('.join-community-button').textContent = getTranslation('aiDevelopment.joinCommunity');
+            document.querySelector('.developer-resources-title').textContent = getTranslation('aiDevelopment.resources.title');
+            document.querySelector('.api-documentation').textContent = getTranslation('aiDevelopment.resources.api');
+            document.querySelector('.api-documentation-view').textContent = getTranslation('aiDevelopment.resources.view');
+            document.querySelector('.sdk-libraries').textContent = getTranslation('aiDevelopment.resources.sdk');
+            document.querySelector('.sdk-libraries-download').textContent = getTranslation('aiDevelopment.resources.download');
+            document.querySelector('.code-examples').textContent = getTranslation('aiDevelopment.resources.examples');
+            document.querySelector('.code-examples-explore').textContent = getTranslation('aiDevelopment.resources.explore');
+            document.querySelector('.footer-tagline').textContent = getTranslation('footer.tagline');
+            document.querySelector('.footer-product').textContent = getTranslation('footer.product');
+            document.querySelector('.footer-features').textContent = getTranslation('footer.features');
+            document.querySelector('.footer-api').textContent = getTranslation('footer.api');
+            document.querySelector('.footer-resources').textContent = getTranslation('footer.resources');
+            document.querySelector('.footer-documentation').textContent = getTranslation('footer.documentation');
+            document.querySelector('.footer-tutorials').textContent = getTranslation('footer.tutorials');
+            document.querySelector('.footer-community').textContent = getTranslation('footer.community');
+            document.querySelector('.footer-company').textContent = getTranslation('footer.company');
+            document.querySelector('.footer-about').textContent = getTranslation('footer.about');
+            document.querySelector('.footer-blog').textContent = getTranslation('footer.blog');
+            document.querySelector('.footer-contact').textContent = getTranslation('footer.contact');
+            document.querySelector('.footer-copyright').textContent = getTranslation('footer.copyright');
+
+            // Update open source list items
+            const openSourceItems = getTranslation('aiDevelopment.openSource.items');
+            const openSourceList = document.querySelector('.open-source-list');
+            if (openSourceList) {
+                openSourceList.innerHTML = ''; // Clear existing items
+                openSourceItems.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-start space-x-3';
+                    const div = document.createElement('div');
+                    div.className = `w-2 h-2 rounded-full mt-2 ${index === 0 ? 'bg-blue-500' : index === 1 ? 'bg-indigo-500' : 'bg-purple-500'}`;
+                    const span = document.createElement('span');
+                    span.textContent = item;
+                    li.appendChild(div);
+                    li.appendChild(span);
+                    openSourceList.appendChild(li);
+                });
+            }
+        }
+
+        function changeLanguage(langCode) {
+            currentLanguage = langCode;
+            localStorage.setItem('selectedLanguage', langCode);
+            applyTranslations();
+            updateLanguageButtons();
+        }
+
+        function updateLanguageButtons() {
+            const langButtons = document.querySelectorAll('#language-dropdown button, #mobile-language-options button');
+            langButtons.forEach(button => {
+                if (button.dataset.lang === currentLanguage) {
+                    button.classList.add('bg-blue-100', 'border-blue-300', 'text-blue-700');
+                    button.classList.remove('border-gray-300', 'text-gray-700', 'hover:bg-gray-100');
+                } else {
+                    button.classList.remove('bg-blue-100', 'border-blue-300', 'text-blue-700');
+                    button.classList.add('border-gray-300', 'text-gray-700', 'hover:bg-gray-100');
+                }
+            });
+        }
+
+        // Initialize language dropdowns
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLang = localStorage.getItem('selectedLanguage');
+            if (savedLang) {
+                currentLanguage = savedLang;
+            } else {
+                // Detect browser language
+                const browserLang = navigator.language.split('-')[0];
+                const supportedLang = languages.find(lang => lang.code === browserLang);
+                if (supportedLang) {
+                    currentLanguage = browserLang;
+                }
+            }
+            applyTranslations();
+
+            const languageButton = document.getElementById('language-button');
+            const languageDropdown = document.getElementById('language-dropdown');
+            const mobileLanguageOptions = document.getElementById('mobile-language-options');
+
+            languageButton.addEventListener('click', () => {
+                languageDropdown.classList.toggle('hidden');
+            });
+
+            languages.forEach(lang => {
+                const desktopButton = document.createElement('button');
+                desktopButton.className = 'block w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100';
+                desktopButton.textContent = lang.name;
+                desktopButton.dataset.lang = lang.code;
+                desktopButton.onclick = () => changeLanguage(lang.code);
+                languageDropdown.appendChild(desktopButton);
+
+                const mobileButton = document.createElement('button');
+                mobileButton.className = 'text-xs px-2 py-1 rounded border';
+                mobileButton.textContent = lang.name;
+                mobileButton.dataset.lang = lang.code;
+                mobileButton.onclick = () => changeLanguage(lang.code);
+                mobileLanguageOptions.appendChild(mobileButton);
+            });
+            updateLanguageButtons();
+
+            // Mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                mobileMenuButton.innerHTML = mobileMenu.classList.contains('hidden') ? 
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu h-5 w-5"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>' : 
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x h-5 w-5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+            });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenuButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu h-5 w-5"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>';
+                    }
+                });
+            });
+
+            // Copy to clipboard function
+            window.copyToClipboard = function(elementId) {
+                const element = document.getElementById(elementId);
+                const textToCopy = element.textContent;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    alert('Promo code copied: ' + textToCopy);
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            };
+
+            // AdSense push for lazy loading
+            const lazyAds = document.querySelectorAll('ins.adsbygoogle');
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        (adsbygoogle = window.adsbygoogle || []).push({});
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '0px 0px -100px 0px' }); // Load 100px before entering viewport
+
+            lazyAds.forEach(ad => {
+                observer.observe(ad);
+            });
+        });
+    </script>
+</body>
+</html>
