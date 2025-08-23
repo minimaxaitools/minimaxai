@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ethanol Blending in India - Critical Analysis</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Inline CSS for professional, modern design -->
+  <style>
+    /* Reset and base styles */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: linear-gradient(135deg, #f6f8fc 0%, #e9ecf4 100%);
+      color: #232a37;
+      min-height: 100vh;
+      scroll-behavior: smooth;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    /* Header styles */
+    header {
+      background: linear-gradient(90deg, #2777d6 0%, #60e3d5 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(40, 119, 214, 0.08);
+      padding: 32px 0 24px 0;
+      text-align: center;
+      position: relative;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      line-height: 1.2;
+      text-shadow: 0 2px 6px rgba(40, 119, 214, 0.07);
+    }
+    header p {
+      margin: 15px auto 0 auto;
+      font-size: 1.18rem;
+      font-weight: 400;
+      opacity: 0.92;
+      max-width: 600px;
+    }
+
+    /* Navigation Bar */
+    nav {
+      margin: 0 auto;
+      max-width: 1000px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: rgba(255,255,255,0.29);
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(40, 119, 214, 0.04);
+      padding: 12px 0 10px 0;
+      margin-top: 18px;
+    }
+    nav a {
+      text-decoration: none;
+      color: #2777d6;
+      font-weight: 500;
+      padding: 9px 22px;
+      border-radius: 22px;
+      transition: background 0.25s, color 0.2s, box-shadow 0.22s;
+      font-size: 1rem;
+      position: relative;
+    }
+    nav a.active, nav a:hover, nav a:focus {
+      background: linear-gradient(90deg,#60e3d5 0%, #2777d6 100%);
+      color: #fff;
+      box-shadow: 0 2px 14px rgba(96,227,213,0.10), 0 1px 5px rgba(39,119,214,0.06);
+      outline: none;
+    }
+
+    /* Main Content Grid */
+    .container {
+      flex: 1 1 auto;
+      margin: 32px auto 24px auto;
+      max-width: 1100px;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 6px 32px rgba(39,119,214,0.10);
+      padding: 36px 44px 42px 44px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      position: relative;
+      transition: box-shadow 0.24s;
+    }
+    /* Responsive for tablet/mobile */
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+        padding: 22px 10px 28px 10px;
+        gap: 34px;
+      }
+      nav {
+        max-width: 99vw;
+        font-size: 0.97rem;
+      }
+    }
+
+    /* Section titles and content */
+    section {
+      margin-bottom: 36px;
+    }
+    section:last-child {
+      margin-bottom: 0;
+    }
+    h2 {
+      font-size: 1.45rem;
+      margin: 0 0 12px 0;
+      color: #2777d6;
+      font-weight: 600;
+      letter-spacing: .01em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h3 {
+      font-size: 1.14rem;
+      margin: 18px 0 7px 0;
+      color: #176698;
+      font-weight: 500;
+      letter-spacing: .01em;
+    }
+    ul, ol {
+      margin: 0 0 0 18px;
+      padding: 0 0 0 6px;
+    }
+    li {
+      margin-bottom: 7px;
+      line-height: 1.6;
+      font-size: 1.01rem;
+      position: relative;
+    }
+    /* Custom list icons */
+    .pros-list > li:before {
+      content: '✔';
+      color: #17b17a;
+      margin-right: 7px;
+      font-size: 1.14em;
+      font-weight: bold;
+      vertical-align: middle;
+    }
+    .cons-list > li:before {
+      content: '⚠️';
+      margin-right: 7px;
+      font-size: 1.13em;
+      vertical-align: middle;
+    }
+    .balance-list > li:before {
+      content: '⚖️';
+      margin-right: 7px;
+      font-size: 1.13em;
+      vertical-align: middle;
+    }
+    .alternatives-list > li:before {
+      content: '💡';
+      margin-right: 7px;
+      font-size: 1.13em;
+      vertical-align: middle;
+    }
+
+    /* Card Styles for Pros/Cons/Balanced/Alt */
+    .analysis-card {
+      background: linear-gradient(135deg, #f8fbff 85%, #e5f4f3 100%);
+      border-radius: 14px;
+      box-shadow: 0 3px 18px rgba(39,119,214,0.07);
+      margin-bottom: 24px;
+      padding: 20px 22px 16px 22px;
+      transition: box-shadow 0.20s;
+      border: 1.5px solid #e3ebf7;
+    }
+    .analysis-card:hover {
+      box-shadow: 0 6px 30px rgba(39,119,214,0.13);
+      border-color: #b8e5de;
+    }
+    .icon-label {
+      user-select: none;
+      font-size: 1.38em;
+      margin-right: 7px;
+      vertical-align: middle;
+      opacity: 0.90;
+    }
+    /* Summary box */
+    .summary-box {
+      background: linear-gradient(90deg, #e3f7fb 40%, #f8fbff 100%);
+      border-left: 5px solid #2777d6;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(39,119,214,0.07);
+      padding: 18px 22px 14px 22px;
+      margin-top: 18px;
+      font-size: 1.07rem;
+      font-weight: 500;
+      line-height: 1.7;
+      color: #176698;
+      transition: border-color .2s;
+      position: relative;
+    }
+    .summary-box:hover {
+      border-color: #17b17a;
+    }
+
+    /* Section toggling (for navigation) */
+    .main-section {
+      display: none;
+      animation: fadeIn 0.5s;
+    }
+    .main-section.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+
+    /* Expand / Collapse for nested lists */
+    .expand-btn {
+      background: none;
+      border: none;
+      color: #2777d6;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.99rem;
+      padding: 0 0 0 1px;
+      transition: color .22s;
+      outline: none;
+      margin-left: -5px;
+    }
+    .expand-btn:hover, .expand-btn:focus {
+      color: #17b17a;
+      text-decoration: underline;
+    }
+    .expandable-content {
+      display: none;
+      margin-top: 7px;
+      animation: fadeIn 0.3s;
+    }
+    .expandable-content.expanded {
+      display: block;
+    }
+
+    /* Table for statistics */
+    .stat-table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #f8fbff;
+      margin-top: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(39,119,214,0.07);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 1.02rem;
+    }
+    .stat-table th, .stat-table td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #e3ebf7;
+      text-align: left;
+    }
+    .stat-table th {
+      background: #e3f7fb;
+      font-weight: 600;
+      color: #2777d6;
+    }
+    .stat-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      color: #7a8597;
+      background: #f8fbff;
+      padding: 22px 0 18px 0;
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: .01em;
+      margin-top: auto;
+    }
+
+    /* Button styles */
+    .feedback-btn {
+      display: inline-block;
+      background: linear-gradient(90deg,#2777d6 0%, #60e3d5 100%);
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 22px;
+      border: none;
+      border-radius: 25px;
+      font-size: 1.04rem;
+      margin-top: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 14px rgba(96,227,213,0.13), 0 1px 5px rgba(39,119,214,0.06);
+      transition: background 0.24s, box-shadow 0.18s, transform 0.13s;
+      outline: none;
+    }
+    .feedback-btn:hover, .feedback-btn:focus {
+      background: linear-gradient(90deg, #60e3d5 0%, #2777d6 100%);
+      box-shadow: 0 4px 22px rgba(39,119,214,0.17);
+      transform: translateY(-2px) scale(1.02);
+    }
+    /* Modal for feedback form */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 99;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: rgba(39,119,214,0.17);
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.24s;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: #fff;
+      border-radius: 13px;
+      box-shadow: 0 6px 30px rgba(39,119,214,0.20);
+      padding: 32px 36px 28px 36px;
+      max-width: 350px;
+      width: 92vw;
+      text-align: left;
+      position: relative;
+      animation: fadeIn 0.3s;
+    }
+    .close-btn {
+      position: absolute;
+      top: 13px;
+      right: 17px;
+      background: none;
+      border: none;
+      font-size: 1.7em;
+      color: #2777d6;
+      cursor: pointer;
+      opacity: 0.86;
+      transition: color 0.18s;
+    }
+    .close-btn:hover, .close-btn:focus {
+      color: #17b17a;
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      color: #2777d6;
+      font-size: 1.18rem;
+      font-weight: 600;
+    }
+    .modal-content label {
+      display: block;
+      margin-top: 12px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: #176698;
+    }
+    .modal-content input, .modal-content textarea {
+      margin-top: 5px;
+      width: 98%;
+      padding: 8px 9px;
+      font-size: 1rem;
+      border-radius: 7px;
+      border: 1.5px solid #e3ebf7;
+      box-sizing: border-box;
+      font-family: inherit;
+      outline: none;
+      transition: border 0.19s;
+      margin-bottom: 10px;
+    }
+    .modal-content input:focus, .modal-content textarea:focus {
+      border: 1.5px solid #2777d6;
+    }
+    .modal-content textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+    .modal-content .submit-btn {
+      margin-top: 5px;
+      width: 100%;
+      border-radius: 23px;
+      padding: 10px 0;
+      font-size: 1.04rem;
+    }
+    .success-msg {
+      color: #17b17a;
+      font-weight: 600;
+      margin-top: 12px;
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: .01em;
+    }
+    /* Responsive for modal */
+    @media (max-width: 500px) {
+      .modal-content {
+        padding: 18px 9vw 18px 9vw;
+        min-width: 0;
+      }
+    }
+    /* Transition for navigation container */
+    .container {
+      transition: box-shadow 0.22s, background 0.25s;
+    }
+    /* Responsive font on very small screens */
+    @media (max-width: 480px) {
+      header h1 {
+        font-size: 1.5rem;
+      }
+      header p {
+        font-size: 0.99rem;
+      }
+      .container {
+        padding: 7vw 2vw 7vw 2vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER -->
+  <header>
+    <h1>Ethanol Blending in India: Critical Analysis & Policy Overview</h1>
+    <p>
+      An in-depth look at India's ethanol blending program: economic, environmental, and policy dimensions. Explore the gains, challenges, and the road ahead for sustainable energy.
+    </p>
+    <!-- Navigation bar -->
+    <nav aria-label="Main Navigation">
+      <a href="#analysis" class="active" data-section="analysis">Critical Analysis</a>
+      <a href="#policy" data-section="policy">Political & Policy Perspective</a>
+      <a href="#feedback" data-section="feedback">Feedback</a>
+    </nav>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main>
+    <div class="container">
+      <!-- CRITICAL ANALYSIS SECTION -->
+      <section id="analysis" class="main-section active" tabindex="0">
+        <h2><span class="icon-label">📊</span>Critical Analysis</h2>
+
+        <!-- Gains / Pros -->
+        <div class="analysis-card">
+          <h3><span class="icon-label">✔</span>Gains / Pros</h3>
+          <ul class="pros-list">
+            <li>
+              Energy Security
+              <button class="expand-btn" aria-expanded="false" aria-controls="pros-energy">
+                Show details
+              </button>
+              <div id="pros-energy" class="expandable-content">
+                <ul>
+                  <li>Reduced dependence on imported crude oil</li>
+                  <li>Savings of ₹1.36 lakh crore in foreign exchange</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Economic Benefits
+              <button class="expand-btn" aria-expanded="false" aria-controls="pros-economic">
+                Show details
+              </button>
+              <div id="pros-economic" class="expandable-content">
+                <ul>
+                  <li>Growth of domestic biofuel industry</li>
+                  <li>Payments to distilleries (₹1.96 lakh crore)</li>
+                  <li>Support to farmers (₹1.18 lakh crore)</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Environmental Gains
+              <button class="expand-btn" aria-expanded="false" aria-controls="pros-environment">
+                Show details
+              </button>
+              <div id="pros-environment" class="expandable-content">
+                <ul>
+                  <li>Lower carbon dioxide emissions (698 lakh tonnes reduced)</li>
+                  <li>Cleaner combustion compared to pure petrol</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Rural & Agricultural Boost
+              <button class="expand-btn" aria-expanded="false" aria-controls="pros-rural">
+                Show details
+              </button>
+              <div id="pros-rural" class="expandable-content">
+                <ul>
+                  <li>Increased demand for sugarcane and related crops</li>
+                  <li>Additional income for farmers</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Policy & Climate Alignment
+              <button class="expand-btn" aria-expanded="false" aria-controls="pros-policy">
+                Show details
+              </button>
+              <div id="pros-policy" class="expandable-content">
+                <ul>
+                  <li>Helps achieve India’s renewable energy and emission targets</li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Cons / Risks & Side Effects -->
+        <div class="analysis-card">
+          <h3><span class="icon-label">⚠️</span>Cons / Risks & Side Effects</h3>
+          <ul class="cons-list">
+            <li>
+              Water Scarcity
+              <button class="expand-btn" aria-expanded="false" aria-controls="cons-water">
+                Show details
+              </button>
+              <div id="cons-water" class="expandable-content">
+                <ul>
+                  <li>Sugarcane is a water-intensive crop (2000–2500 litres per kg of sugarcane)</li>
+                  <li>Stress on water-scarce regions (Maharashtra, Uttar Pradesh, Karnataka)</li>
+                  <li>Groundwater depletion & irrigation dependency</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Land Use & Food Security
+              <button class="expand-btn" aria-expanded="false" aria-controls="cons-land">
+                Show details
+              </button>
+              <div id="cons-land" class="expandable-content">
+                <ul>
+                  <li>Shift of fertile land from food crops to fuel crops → food inflation risk</li>
+                  <li>“Food vs Fuel” dilemma</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Environmental Impact (Beyond CO₂)
+              <button class="expand-btn" aria-expanded="false" aria-controls="cons-envimpact">
+                Show details
+              </button>
+              <div id="cons-envimpact" class="expandable-content">
+                <ul>
+                  <li>High fertilizer & pesticide use → soil degradation, water pollution</li>
+                  <li>Water over-extraction → rivers and groundwater depletion</li>
+                  <li>Loss of biodiversity due to monoculture cropping</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Impact on Engines
+              <button class="expand-btn" aria-expanded="false" aria-controls="cons-engines">
+                Show details
+              </button>
+              <div id="cons-engines" class="expandable-content">
+                <ul>
+                  <li>Ethanol hygroscopic → corrosion in pipelines, tanks, engine parts</li>
+                  <li>Reduced energy density → 20% blend gives lower mileage than petrol</li>
+                  <li>Old vehicles may face wear-and-tear issues</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Emissions Complexity
+              <button class="expand-btn" aria-expanded="false" aria-controls="cons-emission">
+                Show details
+              </button>
+              <div id="cons-emission" class="expandable-content">
+                <ul>
+                  <li>Ethanol reduces CO₂, CO, some hydrocarbons</li>
+                  <li>But increases acetaldehyde, formaldehyde, ozone-forming pollutants</li>
+                  <li>Air quality impact depends on conditions</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              Economic Risks
+              <button class="expand-btn" aria-expanded="false" aria-controls="cons-econ">
+                Show details
+              </button>
+              <div id="cons-econ" class="expandable-content">
+                <ul>
+                  <li>Heavy dependence on sugarcane → market distortions</li>
+                  <li>Vulnerability to droughts & crop failures → unstable ethanol supply</li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Balanced Outlook -->
+        <div class="analysis-card">
+          <h3><span class="icon-label">⚖️</span>Balanced Outlook</h3>
+          <div style="display: flex; flex-direction: row; gap: 30px;">
+            <ul class="balance-list" style="flex: 1;">
+              <li>Short-Term Gains
+                <ul>
+                  <li>Boost to farmers</li>
+                  <li>Energy savings</li>
+                  <li>Climate commitments</li>
+                </ul>
+              </li>
+            </ul>
+            <ul class="balance-list" style="flex: 1;">
+              <li>Long-Term Risks
+                <ul>
+                  <li>Water stress</li>
+                  <li>Food security challenges</li>
+                  <li>Soil & groundwater damage</li>
+                  <li>Engine adaptation costs</li>
+                  <li>Emission trade-offs</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Possible Alternatives / Mitigation -->
+        <div class="analysis-card">
+          <h3><span class="icon-label">💡</span>Possible Alternatives / Mitigation</h3>
+          <ul class="alternatives-list">
+            <li>
+              Diversify ethanol sources
+              <button class="expand-btn" aria-expanded="false" aria-controls="alt-diversify">
+                Show details
+              </button>
+              <div id="alt-diversify" class="expandable-content">
+                <ul>
+                  <li>Maize, sorghum, broken rice, agricultural residues</li>
+                  <li>2G ethanol from crop waste instead of sugarcane</li>
+                </ul>
+              </div>
+            </li>
+            <li>Promote water-efficient crops & precision irrigation (drip irrigation)</li>
+            <li>Encourage flex-fuel vehicles (handle higher ethanol safely)</li>
+            <li>Research on food vs fuel crop balance</li>
+          </ul>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary-box">
+          <strong>Summary:</strong> Ethanol blending brings major economic and climate gains, but also poses sustainability risks—especially water scarcity and sugarcane dependence. Without diversifying sources and mitigating environmental impacts, long-term costs could outweigh the short-term benefits.
+        </div>
+      </section>
+
+      <!-- POLICY & POLITICAL DIMENSION SECTION -->
+      <section id="policy" class="main-section" tabindex="0">
+        <h2><span class="icon-label">🏛️</span>Political & Policy Dimension</h2>
+        <div class="analysis-card">
+          <h3><span class="icon-label">🗣️</span>Ministerial Announcement</h3>
+          <ul>
+            <li>
+              <strong>India achieved 20% ethanol blending in petrol by 2025</strong>—5 years ahead of the 2030 target.
+            </li>
+            <li>
+              Major advancement in clean energy progress.
+            </li>
+          </ul>
+        </div>
+        <div class="analysis-card">
+          <h3><span class="icon-label">📈</span>Ethanol Blending Growth</h3>
+          <table class="stat-table" aria-label="Ethanol Blending Growth Table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Ethanol Blending (%)</th>
+                <th>Ethanol Production (crore litres)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2014</td>
+                <td>1.5%</td>
+                <td>38</td>
+              </tr>
+              <tr>
+                <td>2025 (June est.)</td>
+                <td>20%</td>
+                <td>661.1</td>
+              </tr>
+            </tbody>
+          </table>
+          <ul>
+            <li>~13-fold increase in blending over 11 years.</li>
+          </ul>
+        </div>
+        <div class="analysis-card">
+          <h3><span class="icon-label">💰</span>Benefits of Ethanol-Blended Fuel</h3>
+          <ul>
+            <li>
+              <strong>Energy Security</strong>
+            </li>
+            <li>
+              <strong>Economic Gains</strong>
+              <button class="expand-btn" aria-expanded="false" aria-controls="policy-economic">
+                Show details
+              </button>
+              <div id="policy-economic" class="expandable-content">
+                <ul>
+                  <li>Foreign exchange saved: ₹1.36 lakh crore</li>
+                  <li>Payments to distilleries: ₹1.96 lakh crore</li>
+                  <li>Payments to farmers: ₹1.18 lakh crore</li>
+                  <li>Boost to domestic biofuel industry</li>
+                </ul>
+              </div>
+            </li>
+            <li>
+              <strong>Environmental Gains</strong>
+              <button class="expand-btn" aria-expanded="false" aria-controls="policy-env">
+                Show details
+              </button>
+              <div id="policy-env" class="expandable-content">
+                <ul>
+                  <li>CO₂ emissions reduced: 698 lakh tonnes</li>
+                  <li>Contribution to climate goals</li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="analysis-card">
+          <h3><span class="icon-label">🌾</span>Agriculture & Policy Support</h3>
+          <ul>
+            <li>
+              Ethanol sourced from sugarcane & several crops, strengthening Indian agriculture and supporting the rural economy.
+            </li>
+            <li>
+              <strong>Union Cabinet approval</strong> for price hike for ethanol from molasses in current marketing season.
+            </li>
+          </ul>
+        </div>
+        <div class="summary-box">
+          <strong>Summary:</strong> India achieved 20% ethanol blending in petrol by 2025 (ahead of target). Blending grew from 1.5% (2014) to 20% (2025), providing significant economic, environmental and agricultural benefits, with strong policy backing supporting long-term sustainability.
+        </div>
+      </section>
+
+      <!-- FEEDBACK SECTION -->
+      <section id="feedback" class="main-section" tabindex="0">
+        <h2><span class="icon-label">💬</span>Feedback</h2>
+        <div class="analysis-card" style="text-align:center;">
+          <p style="font-size:1.08rem; color:#176698; margin-bottom: 10px;">
+            Share your thoughts or suggestions about this content!
+          </p>
+          <button class="feedback-btn" id="open-feedback">
+            Open Feedback Form
+          </button>
+        </div>
+        <!-- Feedback modal (hidden by default) -->
+        <div class="modal" id="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
+          <div class="modal-content">
+            <button class="close-btn" id="close-feedback" aria-label="Close feedback form">&times;</button>
+            <h3 id="feedback-modal-title">Feedback Form</h3>
+            <form id="feedback-form" autocomplete="off">
+              <label for="name">Name</label>
+              <input type="text" id="name" name="name" placeholder="Your name" maxlength="45" required>
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="Your email" maxlength="60" required>
+              <label for="message">Message</label>
+              <textarea id="message" name="message" placeholder="Your feedback..." maxlength="400" required></textarea>
+              <button type="submit" class="feedback-btn submit-btn">Submit</button>
+              <div id="feedback-success" class="success-msg" style="display:none;">
+                Thank you for your feedback!
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    &copy; 2024 thanol Blending in India Critical Analysis & Policy Overview.
+  </footer>
+
+  <!-- Inline JavaScript for interactions -->
+  <script>
+    // NAVIGATION: Show/hide main sections and set active nav link
+    const navLinks = document.querySelectorAll('nav a');
+    const mainSections = document.querySelectorAll('.main-section');
+
+    function showSection(sectionId) {
+      mainSections.forEach(section => {
+        if (section.id === sectionId) {
+          section.classList.add('active');
+          section.setAttribute('tabindex', '0');
+        } else {
+          section.classList.remove('active');
+          section.setAttribute('tabindex', '-1');
+        }
+      });
+      navLinks.forEach(link => {
+        if (link.getAttribute('data-section') === sectionId) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+      // Scroll to top of the content when changing sections (for mobile)
+      document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
+      localStorage.setItem('activeSection', sectionId); // for session persistence
+    }
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sectionId = link.getAttribute('data-section');
+        showSection(sectionId);
+        history.replaceState(null, '', '#' + sectionId);
+      });
+    });
+
+    // On page load, show section from hash or last visited
+    document.addEventListener('DOMContentLoaded', () => {
+      let sectionId = location.hash.replace('#','') || localStorage.getItem('activeSection') || 'analysis';
+      if (!document.getElementById(sectionId)) sectionId = 'analysis';
+      showSection(sectionId);
+    });
+
+    // EXPAND / COLLAPSE: Show/hide expandable sublists
+    // Use event delegation for better performance
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('expand-btn')) {
+        e.preventDefault();
+        const btn = e.target;
+        const contentId = btn.getAttribute('aria-controls');
+        const content = document.getElementById(contentId);
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+          content.classList.remove('expanded');
+          btn.setAttribute('aria-expanded', 'false');
+          btn.textContent = 'Show details';
+        } else {
+          content.classList.add('expanded');
+          btn.setAttribute('aria-expanded', 'true');
+          btn.textContent = 'Hide details';
+        }
+      }
+    });
+
+    // FEEDBACK MODAL: Open/close modal dialog
+    const feedbackBtn = document.getElementById('open-feedback');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const closeFeedbackBtn = document.getElementById('close-feedback');
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackSuccess = document.getElementById('feedback-success');
+
+    if (feedbackBtn) {
+      feedbackBtn.addEventListener('click', () => {
+        feedbackModal.classList.add('active');
+        setTimeout(() => {
+          document.getElementById('name').focus();
+        }, 200);
+      });
+    }
+    if (closeFeedbackBtn) {
+      closeFeedbackBtn.addEventListener('click', () => {
+        feedbackModal.classList.remove('active');
+        feedbackForm.reset();
+        feedbackSuccess.style.display = 'none';
+      });
+    }
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (feedbackModal.classList.contains('active') && e.key === 'Escape') {
+        feedbackModal.classList.remove('active');
+        feedbackForm.reset();
+        feedbackSuccess.style.display = 'none';
+      }
+    });
+    // Close modal when clicking outside content
+    feedbackModal.addEventListener('click', function(e) {
+      if (e.target === feedbackModal) {
+        feedbackModal.classList.remove('active');
+        feedbackForm.reset();
+        feedbackSuccess.style.display = 'none';
+      }
+    });
+
+    // FEEDBACK FORM: Validate & 'submit' (demo only)
+    feedbackForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      // Demo only: show success, don't actually send
+      feedbackSuccess.style.display = 'block';
+      setTimeout(() => {
+        feedbackModal.classList.remove('active');
+        feedbackForm.reset();
+        feedbackSuccess.style.display = 'none';
+      }, 1850);
+    });
+
+    // Accessibility: Focus trap in modal
+    feedbackModal.addEventListener('keydown', function(e) {
+      if (!feedbackModal.classList.contains('active')) return;
+      const focusable = feedbackModal.querySelectorAll('input, textarea, button');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.key === 'Tab') {
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    });
+
+    // Smoothly scroll to top when switching sections (for better mobile experience)
+    // Already handled in showSection()
+
+    // Optional: If hash changes in URL (e.g., back/forward button), update section
+    window.addEventListener('hashchange', function() {
+      const sectionId = location.hash.replace('#','') || 'analysis';
+      if (document.getElementById(sectionId)) {
+        showSection(sectionId);
+      }
+    });
+  </script>
+</body>
+</html>
