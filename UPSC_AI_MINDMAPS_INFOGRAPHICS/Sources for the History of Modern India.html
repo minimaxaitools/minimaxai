@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sources for the History of Modern India</title>
+  <!-- Responsive viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Inline CSS for style, layout, typography, gradients, transitions, and responsiveness -->
+  <style>
+    /* Root variables for color scheme */
+    :root {
+      --primary: #174a74;
+      --secondary: #f9f6f1;
+      --accent: #ffbc42;
+      --soft: #e1eaf3;
+      --text: #21313c;
+      --shadow: 0 4px 16px rgba(23,74,116,0.10);
+      --gradient: linear-gradient(135deg, #e1eaf3 0%, #f9f6f1 100%);
+      --gradient-header: linear-gradient(90deg, #174a74 0%, #4daedb 100%);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: var(--gradient);
+      color: var(--text);
+      min-height: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Gradient header styling */
+    header {
+      background: var(--gradient-header);
+      color: #fff;
+      padding: 2rem 1rem 1.5rem 1rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    header h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2.5rem;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+      text-shadow: 0 2px 16px rgba(23,74,116,0.12);
+    }
+    header p {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 400;
+      opacity: 0.97;
+      letter-spacing: 0.01em;
+    }
+
+    /* Navigation bar */
+    nav {
+      background: #fff;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: center;
+      position: sticky;
+      top: 0;
+      z-index: 99;
+      transition: box-shadow 0.2s;
+    }
+    nav ul {
+      display: flex;
+      flex-wrap: wrap;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+      width: 100%;
+      max-width: 1200px;
+    }
+    nav li {
+      margin: 0;
+      flex: 1 1 120px;
+    }
+    nav a {
+      display: block;
+      padding: 1rem 1.2rem;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 1.07rem;
+      letter-spacing: 0.01em;
+      border-bottom: 2.5px solid transparent;
+      transition: color 0.20s, border-bottom 0.3s, background 0.3s;
+      text-align: center;
+    }
+    nav a:hover, nav a.active {
+      color: var(--accent);
+      border-bottom: 2.5px solid var(--accent);
+      background: #f7f2e7;
+    }
+
+    /* Main content area with subtle shadow, max-width, grid layout */
+    main {
+      margin: 2.5rem auto 2rem auto;
+      max-width: 1100px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      border-radius: 1rem;
+      padding: 2.2rem 2.2rem 2rem 2.2rem;
+      display: grid;
+      grid-template-columns: 1fr minmax(0, 310px);
+      gap: 2.2rem;
+      transition: box-shadow 0.2s;
+    }
+
+    /* Content area */
+    .content {
+      min-width: 0;
+    }
+    .content section {
+      margin-bottom: 2.5rem;
+    }
+    .content h2 {
+      font-size: 2rem;
+      margin: 0 0 1.2rem 0;
+      color: var(--primary);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+    }
+    .content h3 {
+      margin-top: 1.6rem;
+      font-size: 1.25rem;
+      color: #21547d;
+      display: flex;
+      align-items: center;
+      gap: 0.4em;
+      font-weight: 500;
+    }
+    .content ul, .content ol {
+      margin: 0.75rem 0 0.75rem 1.3rem;
+      padding: 0 0 0 0.5rem;
+      line-height: 1.7;
+    }
+    .content p {
+      margin: 0.7rem 0 0.7rem 0;
+      line-height: 1.7;
+    }
+    .info-card {
+      background: var(--soft);
+      border-radius: 0.8rem;
+      box-shadow: 0 2px 8px rgba(23,74,116,0.08);
+      padding: 1.2rem 1.4rem;
+      margin: 1.3rem 0;
+      font-size: 1.03rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1.1rem;
+      transition: box-shadow 0.18s, background 0.2s;
+    }
+    .info-card:hover {
+      box-shadow: 0 6px 18px rgba(23,74,116,0.14);
+      background: #f3f6fa;
+    }
+    .info-card .icon {
+      font-size: 1.8rem;
+      flex-shrink: 0;
+      margin-top: 0.18em;
+    }
+
+    /* Sidebar: Table of Contents, Search, Quiz */
+    aside {
+      min-width: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 2.2rem;
+    }
+    .toc {
+      background: var(--soft);
+      border-radius: 0.7rem;
+      padding: 1.1rem 1rem 1.1rem 1.5rem;
+      box-shadow: 0 1.5px 8px rgba(23,74,116,0.07);
+      font-size: 1.04rem;
+      margin-bottom: 0.5rem;
+      transition: box-shadow 0.2s, background 0.2s;
+    }
+    .toc h4 {
+      margin: 0 0 0.7rem 0;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .toc ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .toc li {
+      margin-bottom: 0.38rem;
+    }
+    .toc a {
+      color: #21547d;
+      text-decoration: none;
+      transition: color 0.2s;
+      font-weight: 500;
+    }
+    .toc a:hover {
+      color: var(--accent);
+    }
+
+    /* Search widget */
+    .search-box {
+      background: var(--soft);
+      border-radius: 0.7rem;
+      padding: 1.1rem 1rem 1.2rem 1rem;
+      box-shadow: 0 1.5px 8px rgba(23,74,116,0.07);
+      margin-bottom: 1.2rem;
+      transition: box-shadow 0.2s, background 0.2s;
+    }
+    .search-box h4 {
+      margin: 0 0 0.7rem 0;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .search-group {
+      display: flex;
+      gap: 0.7rem;
+    }
+    .search-group input[type="text"] {
+      padding: 0.45rem 0.9rem;
+      font-size: 1rem;
+      border: 1.5px solid #b9c8d7;
+      border-radius: 0.4rem;
+      outline: none;
+      font-family: inherit;
+      background: #fff;
+      transition: border 0.18s;
+      flex: 1;
+    }
+    .search-group input[type="text"]:focus {
+      border: 1.5px solid var(--accent);
+    }
+    .search-group button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 0.4rem;
+      padding: 0.45rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s, transform 0.17s;
+      box-shadow: 0 2px 7px rgba(23,74,116,0.05);
+      display: flex;
+      align-items: center;
+      gap: 0.47em;
+    }
+    .search-group button:hover {
+      background: #3576a8;
+      transform: translateY(-2px) scale(1.04);
+    }
+    .search-result {
+      margin-top: 0.9rem;
+      font-size: 0.97rem;
+      color: #21547d;
+      min-height: 1.5em;
+    }
+
+    /* Quiz widget */
+    .quiz-box {
+      background: var(--soft);
+      border-radius: 0.7rem;
+      padding: 1.1rem 1rem 1.2rem 1rem;
+      box-shadow: 0 1.5px 8px rgba(23,74,116,0.07);
+      transition: box-shadow 0.2s, background 0.2s;
+      margin-bottom: 1.3rem;
+    }
+    .quiz-box h4 {
+      margin: 0 0 0.7rem 0;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .quiz-question {
+      margin: 0.7em 0;
+      font-weight: 500;
+    }
+    .quiz-options {
+      margin: 0 0 1em 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5em;
+    }
+    .quiz-options li {
+      background: #fff;
+      border-radius: 0.4rem;
+      padding: 0.48em 0.9em;
+      border: 1.5px solid #b9c8d7;
+      cursor: pointer;
+      transition: background 0.18s, border 0.18s, color 0.2s;
+      font-size: 1rem;
+      user-select: none;
+    }
+    .quiz-options li:hover:not(.selected):not(.correct):not(.incorrect) {
+      background: #f7f2e7;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+    }
+    .quiz-options li.selected {
+      background: #eaf6fa;
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+    }
+    .quiz-options li.correct {
+      background: #e7f8e1;
+      border: 1.5px solid #42c875;
+      color: #21853b;
+      font-weight: 600;
+    }
+    .quiz-options li.incorrect {
+      background: #fceaea;
+      border: 1.5px solid #ee6b6b;
+      color: #b93434;
+      font-weight: 600;
+    }
+    .quiz-feedback {
+      font-size: 0.99em;
+      min-height: 1.5em;
+      margin-bottom: 0.65em;
+      font-weight: 500;
+      transition: color 0.18s;
+    }
+    .quiz-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.7em;
+    }
+    .quiz-actions button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 0.4rem;
+      padding: 0.4rem 1.1rem;
+      font-size: 0.99rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.2s, transform 0.15s;
+      box-shadow: 0 2px 7px rgba(23,74,116,0.04);
+    }
+    .quiz-actions button:hover {
+      background: #3576a8;
+      transform: translateY(-2px) scale(1.04);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1020px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 1.2rem 0.5rem 1rem 0.5rem;
+        gap: 2rem;
+      }
+      aside {
+        margin-top: 1.2rem;
+      }
+    }
+    @media (max-width: 800px) {
+      nav ul {
+        flex-direction: column;
+      }
+      nav li {
+        flex: 1 1 auto;
+      }
+      header h1 {
+        font-size: 2rem;
+      }
+      .content h2 {
+        font-size: 1.35rem;
+      }
+    }
+    @media (max-width: 480px) {
+      header {
+        padding: 1.2rem 0.3rem 0.9rem 0.3rem;
+      }
+      main {
+        padding: 0.5rem 0.1rem;
+      }
+      .content section {
+        margin-bottom: 1.3rem;
+      }
+      .info-card {
+        padding: 0.8rem;
+      }
+      .toc, .search-box, .quiz-box {
+        padding: 0.7rem;
+      }
+    }
+
+    /* Custom scrollbar for aesthetic */
+    ::-webkit-scrollbar {
+      width: 8px;
+      background: #e8edf1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #b9c8d7;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- HEADER: Gradient, title, subtitle -->
+  <header>
+    <h1>Sources for the History of Modern India <span title="Book">📖</span></h1>
+    <p>Dive into the diverse and rich sources that illuminate the history of modern India, from archives and official records to memoirs, newspapers, oral tradition, and art.</p>
+  </header>
+
+  <!-- NAVIGATION: Smooth scrolling, active section highlighting -->
+  <nav>
+    <ul>
+      <li><a href="#abundance" class="active">Abundance</a></li>
+      <li><a href="#archives">Archives</a></li>
+      <li><a href="#sources-approaches">Sources & Approaches</a></li>
+      <li><a href="#european-records">European Records</a></li>
+      <li><a href="#contemporary-works">Contemporary Works</a></li>
+      <li><a href="#newspapers">Newspapers</a></li>
+      <li><a href="#other-sources">Other Sources</a></li>
+      <li><a href="#archival-materials">Archival Materials</a></li>
+      <li><a href="#biographies-memoirs">Biographies & Memoirs</a></li>
+      <li><a href="#oral-literature">Oral & Literature</a></li>
+      <li><a href="#painting">Painting</a></li>
+      <li><a href="#summary">Summary</a></li>
+    </ul>
+  </nav>
+
+  <!-- MAIN LAYOUT: Grid with main content and sidebar widgets -->
+  <main>
+    <!-- MAIN CONTENT -->
+    <div class="content">
+
+      <!-- Abundance of material -->
+      <section id="abundance">
+        <h2><span>🗂️</span> Abundance of Historical Material</h2>
+        <div class="info-card">
+          <span class="icon">⏳</span>
+          <span>
+            The history of modern India (mid-18th to mid-20th century) is illuminated by a vast wealth of archival, literary, oral, and artistic sources. These materials offer historians a multidimensional perspective on the nation's past.
+          </span>
+        </div>
+      </section>
+
+      <!-- Importance of Archives -->
+      <section id="archives">
+        <h2><span>🏛️</span> Importance of Archives</h2>
+        <div class="info-card">
+          <span class="icon">🗄️</span>
+          <span>
+            Archives are invaluable for constructing history. They house collections of historical records and documents—primarily <strong>primary source documents</strong> created as part of administrative, legal, social, or commercial activity.
+          </span>
+        </div>
+        <ul>
+          <li>These documents are unique/original and not intended for future generations.</li>
+          <li>Official records include papers of government agencies at all levels.</li>
+        </ul>
+      </section>
+
+      <!-- Sources and Approaches -->
+      <section id="sources-approaches">
+        <h2><span>🧭</span> Sources & Approaches</h2>
+        <h3><span>🔍</span> Sources for the History of Modern India</h3>
+        <p>Modern Indian history can be explored through diverse sources and methodological approaches, allowing for a comprehensive understanding of the nation's evolution.</p>
+        <h3><span>🏛️</span> Major Approaches</h3>
+        <ul>
+          <li>Political, social, and economic perspectives</li>
+          <li>Use of interdisciplinary techniques</li>
+          <li>Reliance on factual and interpretative evidence</li>
+        </ul>
+      </section>
+
+      <!-- Records of European Companies -->
+      <section id="european-records">
+        <h2><span>🌍</span> Records of European Companies</h2>
+        <h3><span>⛵</span> East India Company (1600-1857)</h3>
+        <ul>
+          <li>Extensive documentation on trading conditions and administrative policies.</li>
+        </ul>
+        <h3><span>👑</span> British Crown Administration</h3>
+        <ul>
+          <li>Large variety and volume of official records.</li>
+          <li>Helps trace developments over time and reveals decision-making processes.</li>
+        </ul>
+        <h3><span>🇵🇹🇳🇱🇫🇷</span> Other European Companies</h3>
+        <ul>
+          <li>Portuguese, Dutch, French records are vital for 17th and 18th century economic and political history.</li>
+        </ul>
+      </section>
+
+      <!-- Contemporary and Semicontemporary Works -->
+      <section id="contemporary-works">
+        <h2><span>🖋️</span> Contemporary & Semicontemporary Works</h2>
+        <div class="info-card">
+          <span class="icon">✈️</span>
+          <span>
+            Memoirs, biographies, and travel accounts provide unique and personal insights into the 18th and early 19th centuries, offering glimpses into the lives, thoughts, and travels of key historical figures.
+          </span>
+        </div>
+      </section>
+
+      <!-- Newspapers and Journals -->
+      <section id="newspapers">
+        <h2><span>📰</span> Newspapers & Journals</h2>
+        <ul>
+          <li>Emergence in late 18th century; valuable for understanding 19th and 20th century Indian society.</li>
+          <li>Covers diverse aspects: social, political, and economic developments.</li>
+          <li>Powerful voice in nationalist movements and social reforms.</li>
+        </ul>
+      </section>
+
+      <!-- Other Sources -->
+      <section id="other-sources">
+        <h2><span>🗃️</span> Other Sources</h2>
+        <ul>
+          <li><strong>Oral evidence</strong> – personal reminiscences and oral tradition.</li>
+          <li><strong>Creative literature</strong> – novels, poetry, and drama.</li>
+          <li><strong>Paintings</strong> – visual records illuminating socio-economic and political context.</li>
+        </ul>
+      </section>
+
+      <!-- Archival Materials -->
+      <section id="archival-materials">
+        <h2><span>🏛️</span> Archival Materials</h2>
+        <h3><span>📄</span> Four Categories of Official Records</h3>
+        <ul>
+          <li>Central government archives</li>
+          <li>State government archives</li>
+          <li>Records of intermediate and subordinate authorities</li>
+          <li>Judicial records</li>
+        </ul>
+        <h3><span>🇮🇳</span> Central Government Archives</h3>
+        <ul>
+          <li><strong>National Archives of India, New Delhi</strong> – authentic, reliable sources across public, revenue, political, military, commercial, judicial, and educational departments.</li>
+          <li><strong>Survey of India</strong> – maps and journals providing geographical, socio-economic, and historical insights.</li>
+          <li>Proceedings from public, judicial, legislative departments on social and religious policies.</li>
+          <li>Educational records and home political records.</li>
+        </ul>
+        <h3><span>🏰</span> State Government Archives</h3>
+        <ul>
+          <li>British Indian provinces and princely states.</li>
+          <li>Records include Khalsa Darbar (Lahore), Peshwa Daftar (Maratha), Rajasthan State Archives, and others.</li>
+        </ul>
+        <h3><span>🏛️</span> Archives of Three Presidencies</h3>
+        <ul>
+          <li>Bengal, Madras, and Bombay Presidencies – official and judicial records.</li>
+        </ul>
+        <h3><span>🌍</span> Archives of Other European Powers</h3>
+        <ul>
+          <li>Portuguese (Goa), Dutch, French, Danish records.</li>
+        </ul>
+        <h3><span>⚖️</span> Judicial Records</h3>
+        <ul>
+          <li>Mayor’s Courts, Supreme Courts, Recorder’s Courts.</li>
+          <li>Proceedings, minutes, wills, letters—key for genealogical and socio-economic research.</li>
+        </ul>
+        <h3><span>📚</span> Published Archives</h3>
+        <ul>
+          <li>Parliamentary papers, select committee reports, royal commissions, debates, gazettes, laws, and regulations.</li>
+        </ul>
+        <h3><span>🏠</span> Private Archives</h3>
+        <ul>
+          <li>Papers of important individuals and families.</li>
+          <li>Leaders of Indian National Congress (Nehru Memorial Museum & Library) and economic archives.</li>
+        </ul>
+        <h3><span>🌏</span> Foreign Repositories</h3>
+        <ul>
+          <li>England (India Office Records), France, Netherlands, Denmark, Portugal, Pakistan – vital records and correspondence.</li>
+        </ul>
+      </section>
+
+      <!-- Biographies, Memoirs, and Travel Accounts -->
+      <section id="biographies-memoirs">
+        <h2><span>✈️📖</span> Biographies, Memoirs, & Travel Accounts</h2>
+        <ul>
+          <li>Accounts by travellers, traders, missionaries, civil servants, and Indian leaders.</li>
+          <li>Missionary journals: Bishop Heber, Abbe Dubois.</li>
+          <li>British & non-British travellers: George Forster, Benjamin Heyne, Alexander Burnes, Victor Jacquemont.</li>
+          <li>Indispensable for reconstructing modern Indian history.</li>
+        </ul>
+      </section>
+
+      <!-- Oral Evidence and Creative Literature -->
+      <section id="oral-literature">
+        <h2><span>🎤📚</span> Oral Evidence & Creative Literature</h2>
+        <h3><span>🎤</span> Oral Evidence</h3>
+        <ul>
+          <li>Non-written, personal reminiscences.</li>
+          <li>Broadens historical inquiry and corroborates other sources.</li>
+        </ul>
+        <h3><span>📚</span> Creative Literature</h3>
+        <ul>
+          <li>Novel genre developed post Indo-European contact in 19th century.</li>
+          <li>Notable writers: Bankim Chandra Chatterji (Bengali), Icharam Suryaram Desai (Gujarati), Girija Devi (Tamil), Vaikom Muhammad Basheer (Malayalam), and many more.</li>
+          <li>Common themes: realism, focus on marginalised, vivid depictions of society.</li>
+        </ul>
+      </section>
+
+      <!-- Painting -->
+      <section id="painting">
+        <h2><span>🎨</span> Painting</h2>
+        <ul>
+          <li>Provides socio-economic, political, cultural insights.</li>
+          <li><strong>Company Paintings/Patna Kalam</strong> – celebrates trades, festivals, and customs until photography’s advent.</li>
+          <li><strong>Mutiny of 1857 paintings</strong> – British and Indian perspectives (e.g., Relief of Lucknow, In Memoriam).</li>
+          <li><strong>Kalighat painting (19th c., Calcutta)</strong> – mythological and social commentary.</li>
+          <li><strong>Nationalist art movement</strong> – Nandalal Bose, Raja Ravi Varma, Abanindranath Tagore, and others focusing on Indian heritage.</li>
+        </ul>
+      </section>
+
+      <!-- Summary -->
+      <section id="summary">
+        <h2><span>📝</span> Summary: Sources of Modern Indian History</h2>
+        <ul>
+          <li><strong>Archival Materials</strong>: Public (government, presidencies, judiciary), Private (families, nationalist leaders), Foreign repositories.</li>
+          <li><strong>Biographies and Memoirs</strong>: Travellers, missionaries, Indian leaders.</li>
+          <li><strong>Newspapers and Journals</strong>: Indian and overseas publications.</li>
+          <li><strong>Other Sources</strong>: Oral tradition, creative literature, paintings.</li>
+        </ul>
+      </section>
+    </div>
+    <!-- SIDEBAR: Table of Contents, Search, Quiz -->
+    <aside>
+      <!-- Table of Contents -->
+      <nav class="toc" aria-label="Table of Contents">
+        <h4>Table of Contents</h4>
+        <ul>
+          <li><a href="#abundance">Abundance of Material</a></li>
+          <li><a href="#archives">Importance of Archives</a></li>
+          <li><a href="#sources-approaches">Sources & Approaches</a></li>
+          <li><a href="#european-records">European Records</a></li>
+          <li><a href="#contemporary-works">Contemporary Works</a></li>
+          <li><a href="#newspapers">Newspapers & Journals</a></li>
+          <li><a href="#other-sources">Other Sources</a></li>
+          <li><a href="#archival-materials">Archival Materials</a></li>
+          <li><a href="#biographies-memoirs">Biographies & Memoirs</a></li>
+          <li><a href="#oral-literature">Oral Evidence & Literature</a></li>
+          <li><a href="#painting">Painting</a></li>
+          <li><a href="#summary">Summary</a></li>
+        </ul>
+      </nav>
+      <!-- Search Widget -->
+      <div class="search-box" aria-label="Search">
+        <h4>Quick Search</h4>
+        <div class="search-group">
+          <input type="text" id="searchInput" placeholder="Search topics..." aria-label="Search field">
+          <button id="searchBtn" aria-label="Search"><span>🔍</span></button>
+        </div>
+        <div class="search-result" id="searchResult"></div>
+      </div>
+      <!-- Interactive Quiz -->
+      <div class="quiz-box" aria-label="Quiz">
+        <h4>Quiz: Test Your Knowledge</h4>
+        <div class="quiz-question" id="quizQuestion">Loading...</div>
+        <ul class="quiz-options" id="quizOptions"></ul>
+        <div class="quiz-feedback" id="quizFeedback"></div>
+        <div class="quiz-actions">
+          <button id="quizNextBtn" style="display:none;">Next</button>
+          <button id="quizRestartBtn" style="display:none;">Restart</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+  <!-- Smooth scrolling, navigation highlighting, search, quiz JS -->
+  <script>
+    // === Smooth scrolling for nav and ToC links ===
+    // Attach to all <a> with href='#...'
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', function(e) {
+        // Only smooth scroll for on-page links
+        const href = this.getAttribute('href');
+        if (href.length > 1 && document.querySelector(href)) {
+          e.preventDefault();
+          document.querySelector(href).scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+          // Set focus for accessibility
+          setTimeout(() => {
+            document.querySelector(href).setAttribute('tabindex', '-1');
+            document.querySelector(href).focus();
+          }, 500);
+        }
+      });
+    });
+
+    // === Navigation bar: Highlight active section on scroll ===
+    // Get nav links
+    const navLinks = Array.from(document.querySelectorAll('nav ul li a'));
+    // Get section elements referenced by nav
+    const sectionIds = navLinks.map(a => a.getAttribute('href')).filter(id => id.startsWith('#'));
+    const sections = sectionIds.map(id => document.querySelector(id));
+    window.addEventListener('scroll', () => {
+      let fromTop = window.scrollY + 90; // nav height offset
+      let currentSection = null;
+      // Find the current visible section
+      for (let i = 0; i < sections.length; i++) {
+        const sect = sections[i];
+        if (sect && sect.offsetTop <= fromTop) {
+          currentSection = navLinks[i];
+        }
+      }
+      // Remove active from all, add to current
+      navLinks.forEach(a => a.classList.remove('active'));
+      if (currentSection) currentSection.classList.add('active');
+    });
+
+    // === Table of Contents: highlight (and sync with nav) ===
+    // ToC links are separate; highlight on click
+    const tocLinks = Array.from(document.querySelectorAll('.toc a'));
+    tocLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        tocLinks.forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // === SEARCH FUNCTIONALITY (Sidebar) ===
+    // Search through headings and section text
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchResult = document.getElementById('searchResult');
+    // Build a map of section id -> text content
+    const allSections = Array.from(document.querySelectorAll('.content section'));
+    const searchIndex = allSections.map(section => ({
+      id: section.id,
+      title: section.querySelector('h2') ? section.querySelector('h2').innerText : '',
+      text: section.innerText
+    }));
+    // On search: show top 3 matching sections (by substring match)
+    function doSearch() {
+      const term = searchInput.value.trim().toLowerCase();
+      if (!term) {
+        searchResult.innerHTML = '';
+        return;
+      }
+      // Score by appearances in title, then in text
+      const results = searchIndex.map(item => {
+        let score = 0;
+        if (item.title.toLowerCase().includes(term)) score += 7;
+        if (item.text.toLowerCase().includes(term)) score += 1;
+        return {...item, score};
+      }).filter(r => r.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3);
+
+      if (results.length === 0) {
+        searchResult.innerHTML = '<span style="color:#b93434;">No results found.</span>';
+      } else {
+        searchResult.innerHTML = results.map(r =>
+          `<a href="#${r.id}" style="display:block;margin-bottom:0.4em;color:#174a74;text-decoration:underline;font-weight:500;">${r.title.replace(/<[^>]+>/g,'')}</a>`
+        ).join('');
+      }
+    }
+    // Search on click or Enter
+    searchBtn.addEventListener('click', doSearch);
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doSearch();
+    });
+
+    // === QUIZ WIDGET ===
+    // Quiz data: {q, options, answer, explanation}
+    const quizData = [
+      {
+        q: "Which collection is regarded as the most authentic and reliable source for modern Indian history?",
+        options: [
+          "National Archives of India, New Delhi",
+          "Bombay Secretariat Record Office",
+          "Calcutta Gazette",
+          "Bengal Presidency Archives"
+        ],
+        answer: 0,
+        explanation: "The National Archives of India, New Delhi holds the most comprehensive collection of authentic records."
+      },
+      {
+        q: "Which type of source is considered a 'primary source document'?",
+        options: [
+          "Modern textbook",
+          "Original administrative/legal record",
+          "Historical fiction novel",
+          "Contemporary magazine article"
+        ],
+        answer: 1,
+        explanation: "Primary sources are unique original documents created as part of administrative, legal, or social activity."
+      },
+      {
+        q: "Which of the following was NOT a major European power with archives on Indian history?",
+        options: [
+          "Portuguese",
+          "Dutch",
+          "German",
+          "French"
+        ],
+        answer: 2,
+        explanation: "Germany did not have significant colonial presence or archives on India like the others."
+      },
+      {
+        q: "Which genre developed in India due to Indo-European contact in the 19th century?",
+        options: [
+          "Epic poetry",
+          "Modern novel",
+          "Classical dance drama",
+          "Oral folklore"
+        ],
+        answer: 1,
+        explanation: "Indo-European contact led to the rise of the modern Indian novel."
+      },
+      {
+        q: "What is the value of Company Paintings (Patna Kalam) in Indian history?",
+        options: [
+          "They depict trades, festivals, and attire of people before photography.",
+          "They are religious scriptures.",
+          "They are legal documents.",
+          "They are British parliamentary debates."
+        ],
+        answer: 0,
+        explanation: "Company Paintings provide visual documentation of social and cultural life before the camera."
+      }
+    ];
+    let quizState = {
+      current: 0,
+      selected: null,
+      completed: false,
+      correctCount: 0
+    };
+    // Elements
+    const quizQuestion = document.getElementById('quizQuestion');
+    const quizOptions = document.getElementById('quizOptions');
+    const quizFeedback = document.getElementById('quizFeedback');
+    const quizNextBtn = document.getElementById('quizNextBtn');
+    const quizRestartBtn = document.getElementById('quizRestartBtn');
+
+    // Render current question and options
+    function renderQuiz() {
+      const { current, completed } = quizState;
+      quizOptions.innerHTML = '';
+      quizFeedback.textContent = '';
+      quizNextBtn.style.display = 'none';
+      quizRestartBtn.style.display = 'none';
+
+      if (completed) {
+        // Show final result
+        quizQuestion.textContent = `Quiz Completed! 🎉`;
+        quizFeedback.innerHTML = `<span style="color:var(--primary);">You scored ${quizState.correctCount} out of ${quizData.length}.</span>`;
+        quizRestartBtn.style.display = 'inline-block';
+        return;
+      }
+
+      const data = quizData[current];
+      quizQuestion.textContent = `Q${current+1}. ${data.q}`;
+      data.options.forEach((opt, idx) => {
+        const li = document.createElement('li');
+        li.textContent = opt;
+        li.tabIndex = 0;
+        li.setAttribute('role', 'button');
+        // Click handler for answer select
+        li.addEventListener('click', () => selectAnswer(idx));
+        li.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectAnswer(idx);
+          }
+        });
+        quizOptions.appendChild(li);
+      });
+    }
+    // Handle answer selection
+    function selectAnswer(idx) {
+      // Prevent double select
+      if (quizState.selected !== null) return;
+      quizState.selected = idx;
+      const data = quizData[quizState.current];
+      // Mark options
+      Array.from(quizOptions.children).forEach((li, i) => {
+        li.classList.remove('correct', 'incorrect', 'selected');
+        if (i === idx) {
+          if (i === data.answer) {
+            li.classList.add('correct');
+          } else {
+            li.classList.add('incorrect');
+          }
+        }
+        if (i === data.answer) {
+          li.classList.add('correct');
+        }
+      });
+      // Feedback
+      if (idx === data.answer) {
+        quizFeedback.innerHTML = `<span style="color:#21853b;">Correct! ${data.explanation}</span>`;
+        quizState.correctCount++;
+      } else {
+        quizFeedback.innerHTML = `<span style="color:#b93434;">Incorrect.</span> <span style="color:var(--primary);">${data.explanation}</span>`;
+      }
+      quizNextBtn.style.display = (quizState.current < quizData.length - 1) ? 'inline-block' : 'none';
+      quizRestartBtn.style.display = (quizState.current === quizData.length - 1) ? 'inline-block' : 'none';
+      // Mark selected for styling
+      quizOptions.children[idx].classList.add('selected');
+    }
+    // Next question
+    quizNextBtn.addEventListener('click', () => {
+      quizState.current++;
+      quizState.selected = null;
+      renderQuiz();
+    });
+    // Restart quiz
+    quizRestartBtn.addEventListener('click', () => {
+      quizState = { current: 0, selected: null, completed: false, correctCount: 0 };
+      renderQuiz();
+    });
+    // On first load
+    renderQuiz();
+    // Show next button only after answer selected
+    quizOptions.addEventListener('click', () => {
+      if (quizState.selected !== null && quizState.current < quizData.length - 1) {
+        quizNextBtn.style.display = 'inline-block';
+      }
+      if (quizState.selected !== null && quizState.current === quizData.length - 1) {
+        quizRestartBtn.style.display = 'inline-block';
+        quizState.completed = true;
+        renderQuiz();
+      }
+    });
+
+    // Accessibility: allow keyboard for quiz options
+    quizOptions.addEventListener('keydown', (e) => {
+      if (quizState.selected !== null) return;
+      let focusIdx = Array.from(quizOptions.children).findIndex(li => li === document.activeElement);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (focusIdx < quizOptions.children.length - 1)
+          quizOptions.children[focusIdx + 1].focus();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (focusIdx > 0)
+          quizOptions.children[focusIdx - 1].focus();
+      }
+    });
+  </script>
+</body>
+</html>
