@@ -1,0 +1,2637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puter.js AI Code Assistant</title>
+  <!-- Include Puter.js SDK -->
+  <script src="https://js.puter.com/v2/"></script>
+  <!-- Include marked.js for markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Include Prism.js for code syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+  <style>
+    /* Modern CSS Reset and Base Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Container and Layout */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    /* Header Section */
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .header h1 {
+      color: #4a5568;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: #718096;
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    /* Status indicator */
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .status-connected {
+      background: linear-gradient(135deg, #48bb78, #38a169);
+      color: white;
+    }
+
+    .status-disconnected {
+      background: linear-gradient(135deg, #f56565, #e53e3e);
+      color: white;
+    }
+
+    /* Main Content Grid */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      height: calc(100vh - 200px);
+    }
+
+    /* Settings Panel */
+    .settings-panel {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      overflow-y: auto;
+    }
+
+    .settings-panel h2 {
+      color: #4a5568;
+      font-size: 1.8rem;
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-row-triple {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #4a5568;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+
+    /* Range Input Styling */
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #e2e8f0;
+      outline: none;
+      -webkit-appearance: none;
+      margin: 10px 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.1);
+    }
+
+    /* Textarea for prompt input */
+    #user-prompt {
+      min-height: 120px;
+      resize: vertical;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    /* Button Styles */
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #f7fafc, #edf2f7);
+      color: #4a5568;
+      border: 2px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #edf2f7, #e2e8f0);
+      transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Loading Animation */
+    .loading {
+      position: relative;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Output Panel */
+    .output-panel {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .output-panel h2 {
+      color: #4a5568;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    /* Tab Navigation */
+    .tab-nav {
+      display: flex;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #718096;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-btn:hover {
+      color: #4a5568;
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Output Display */
+    .output-display {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 25px;
+      border-radius: 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      min-height: 200px;
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Markdown Styling */
+    .markdown-output {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      overflow-y: auto;
+      min-height: 200px;
+    }
+
+    .markdown-output h1,
+    .markdown-output h2,
+    .markdown-output h3,
+    .markdown-output h4,
+    .markdown-output h5,
+    .markdown-output h6 {
+      color: #2d3748;
+      margin: 20px 0 10px 0;
+      font-weight: 600;
+    }
+
+    .markdown-output p {
+      margin: 15px 0;
+      color: #4a5568;
+    }
+
+    .markdown-output pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 15px 0;
+    }
+
+    .markdown-output code {
+      background: #f7fafc;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: #e53e3e;
+    }
+
+    .markdown-output pre code {
+      background: transparent;
+      padding: 0;
+      color: inherit;
+    }
+
+    /* Progress Bar */
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        height: auto;
+      }
+
+      .form-row,
+      .form-row-triple {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .container {
+        padding: 15px;
+      }
+
+      .settings-panel,
+      .output-panel {
+        padding: 20px;
+      }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #5a67d8, #6b46c1);
+    }
+
+    /* Toast Notifications */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      border-left: 4px solid #48bb78;
+      z-index: 1000;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast.error {
+      border-left-color: #f56565;
+    }
+
+    /* Authentication and Usage Monitoring Styles */
+    .auth-section {
+      margin-top: 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .auth-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      color: #4a5568;
+      font-weight: 600;
+    }
+
+    .usage-display {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .usage-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 15px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 8px;
+      min-width: 120px;
+    }
+
+    .usage-label {
+      font-size: 0.8rem;
+      color: #718096;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .usage-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #4a5568;
+    }
+
+    .usage-value.warning {
+      color: #ed8936;
+    }
+
+    .usage-value.danger {
+      color: #f56565;
+    }
+
+    /* Mobile responsive for auth section */
+    @media (max-width: 768px) {
+      .auth-controls {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .usage-display {
+        justify-content: center;
+      }
+
+      .usage-item {
+        min-width: 100px;
+      }
+    }
+
+
+  </style>
+</head>
+<body>
+<div class="container">
+  <!-- Header Section -->
+  <header class="header">
+    <h1>🤖 Puter.js AI Code Assistant</h1>
+    <p>Powerful AI-driven development tool with advanced language models</p>
+    <div id="connection-status" class="status-indicator status-disconnected">
+      <span>●</span> <span id="status-text">Initializing...</span>
+    </div>
+
+    <!-- Authentication and Usage Monitoring Section -->
+    <div id="auth-container" class="auth-section">
+      <div id="login-section" class="auth-controls">
+        <button id="login-btn" class="btn btn-secondary">
+          🔐 Sign In to Puter
+        </button>
+      </div>
+
+      <div id="user-section" class="auth-controls" style="display: none;">
+        <div id="user-info" class="user-info">
+          <span id="user-name">Not signed in</span>
+          <button id="logout-btn" class="btn btn-secondary">
+            🚪 Sign Out
+          </button>
+        </div>
+
+        <div id="usage-display" class="usage-display">
+          <div class="usage-item">
+            <span class="usage-label">Tokens Used:</span>
+            <span id="tokens-used" class="usage-value">0</span>
+          </div>
+          <div class="usage-item">
+            <span class="usage-label">Tokens Remaining:</span>
+            <span id="tokens-remaining" class="usage-value">∞</span>
+          </div>
+          <div class="usage-item">
+            <span class="usage-label">Requests Today:</span>
+            <span id="requests-today" class="usage-value">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </header>
+
+  <!-- Main Content Grid -->
+  <div class="main-content">
+    <!-- Settings Panel -->
+    <div class="settings-panel">
+      <h2>⚙️ AI Configuration</h2>
+
+      <!-- Model Selection Row -->
+      <div class="form-row-triple">
+        <div class="form-group">
+          <label for="ai-model">AI Model for Generation</label>
+          <select id="ai-model">
+            <option value="claude-sonnet-4">Claude Sonnet 4 (Recommended)</option>
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="claude-opus-4">Claude Opus 4</option>
+            <option value="gpt-4.1">GPT-4.1</option>
+            <option value="o1-mini">o1-mini</option>
+            <option value="gpt-4o-mini">GPT-4o Mini</option>
+            <option value="deepseek-chat">DeepSeek Chat</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+            <option value="o1">o1</option>
+            <option value="o1-pro">o1-pro</option>
+            <option value="o3">o3</option>
+            <option value="o3-mini">o3-mini</option>
+            <option value="o4-mini">o4-mini</option>
+            <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+            <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+            <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
+            <option value="claude-3-7-sonnet">Claude 3.7 Sonnet</option>
+            <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+            <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            <option value="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo">Meta Llama 3.1 8B Instruct Turbo</option>
+            <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Meta Llama 3.1 70B Instruct Turbo</option>
+            <option value="meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo">Meta Llama 3.1 405B Instruct Turbo</option>
+            <option value="mistral-large-latest">Mistral Large Latest</option>
+            <option value="pixtral-large-latest">Pixtral Large Latest</option>
+            <option value="codestral-latest">Codestral Latest</option>
+            <option value="google/gemma-2-27b-it">Google Gemma 2 27B IT</option>
+            <option value="grok-beta">Grok Beta</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="max-tokens">Max Tokens for Response</label>
+        <select id="max-tokens">
+          <option value="4096">4,096 tokens</option>
+          <option value="8192" selected>8,192 tokens (Recommended)</option>
+          <option value="16384">16,384 tokens</option>
+          <option value="32000">32,000 tokens</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="response-style">Response Style</label>
+        <select id="response-style">
+          <option value="code">Code-Focused</option>
+          <option value="detailed">Detailed Explanation</option>
+          <option value="concise">Concise & Direct</option>
+          <option value="tutorial">Tutorial Style</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Temperature and Generation Mode -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="temperature">Temperature (0-1)</label>
+        <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.7">
+        <span id="temperature-value" style="color: #718096; font-size: 0.9rem;">0.7</span>
+      </div>
+      <div class="form-group">
+        <label for="generation-mode">Generation Mode</label>
+        <select id="generation-mode">
+          <option value="single">Single Generation</option>
+          <option value="streaming" selected>Streaming (Real-time)</option>
+          <option value="iterative">Iterative (Multiple Parts)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- User Prompt Input -->
+    <div class="form-group">
+      <label for="user-prompt">Your Query/Code Request</label>
+      <textarea
+              id="user-prompt"
+              placeholder="Enter your coding question, request for code generation, debugging help, or any development-related query...
+
+Examples:
+- Create a React component for user authentication
+- Explain how async/await works in JavaScript
+- Debug this Python function that's not working
+- Generate a REST API using Node.js and Express
+- Help me optimize this SQL query"
+      ></textarea>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="form-row">
+      <button id="generate-btn" class="btn btn-primary">
+        🚀 Generate AI Response
+      </button>
+      <button id="clear-btn" class="btn btn-secondary">
+        🗑️ Clear All
+      </button>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progress-bar" style="display: none;">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <!-- Output Panel -->
+  <div class="output-panel">
+    <h2>📄 AI Response</h2>
+
+    <!-- Tab Navigation with Download/Copy Controls -->
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="markdown">📝 Markdown</button>
+      <button class="tab-btn" data-tab="raw">🔤 Raw Output</button>
+      <button class="tab-btn" data-tab="code">💻 Code Only</button>
+
+      <!-- Download and Copy Controls -->
+      <div class="tab-controls">
+        <button class="control-btn copy-btn" onclick="app.handleCopyCurrentTab()" title="Copy current tab content">
+          📋 Copy
+        </button>
+        <div class="download-dropdown">
+          <button class="control-btn download-btn" onclick="app.toggleDownloadMenu()" title="Download options">
+            📥 Download ▼
+          </button>
+          <div class="download-menu" id="download-menu">
+            <button onclick="app.handleDownload('md')">📄 Markdown (.md)</button>
+            <button onclick="app.handleDownload('txt')">📝 Text (.txt)</button>
+            <button onclick="app.handleDownload('html')">🌐 HTML (.html)</button>
+            <button onclick="app.handleDownload('json')">📊 JSON (.json)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Markdown Tab -->
+    <div id="markdown-tab" class="tab-content active">
+      <div id="markdown-output" class="markdown-output">
+        <div style="text-align: center; color: #718096; padding: 40px;">
+          <h3>Welcome to Puter.js AI Code Assistant! 👋</h3>
+          <p>Enter your coding question or request above and click "Generate AI Response" to get started.</p>
+          <p><strong>Features:</strong></p>
+          <ul style="text-align: left; max-width: 400px; margin: 20px auto;">
+            <li>Multiple AI models (Claude, GPT-4, Gemini)</li>
+            <li>Real-time streaming responses</li>
+            <li>Code syntax highlighting</li>
+            <li>Markdown formatting</li>
+            <li>Adjustable AI parameters</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Raw Output Tab -->
+    <div id="raw-tab" class="tab-content">
+      <div id="raw-output" class="output-display">
+        Ready to process your AI requests...
+
+        This panel shows the raw response from the AI model before any formatting is applied.
+      </div>
+    </div>
+
+    <!-- Code Only Tab -->
+    <div id="code-tab" class="tab-content">
+      <div id="code-output" class="output-display">
+        // Code blocks will be extracted and displayed here
+        // This view focuses on just the executable code from AI responses
+
+        console.log("Ready to extract and highlight code from AI responses!");
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+  puter.ai.chat("What is life?")
+          .then(response => {
+            // Response received, do nothing with it
+            console.log("AI responded (but not shown):", response);
+          })
+          .catch(error => {
+            // Error occurred, optionally log or suppress
+            console.error("AI error:", error);
+          });
+</script>
+
+<script>
+  /**
+   * Puter.js AI Code Assistant Application
+   * This application provides a complete interface for interacting with Puter.js AI capabilities
+   * Features: Multiple AI models, streaming responses, markdown rendering, code highlighting
+   */
+
+  class PuterAIApp {
+    constructor() {
+      // Initialize application state
+      this.puter = null;
+      this.isConnected = false;
+      this.currentStream = null;
+      this.currentCodeBlocks = []; // Store current code blocks for copying
+
+      this.isAuthenticated = false;
+      this.userInfo = null;
+      this.usageStats = {
+        tokensUsed: 0,
+        tokensRemaining: 0,
+        requestsToday: 0,
+        lastUpdated: null
+      };
+      this.usageUpdateInterval = null;
+
+
+      // DOM element references
+      this.elements = {
+        // Status elements
+        connectionStatus: document.getElementById('connection-status'),
+        statusText: document.getElementById('status-text'),
+
+        // Form elements
+        aiModel: document.getElementById('ai-model'),
+        maxTokens: document.getElementById('max-tokens'),
+        responseStyle: document.getElementById('response-style'),
+        temperature: document.getElementById('temperature'),
+        temperatureValue: document.getElementById('temperature-value'),
+        generationMode: document.getElementById('generation-mode'),
+        userPrompt: document.getElementById('user-prompt'),
+
+        // Button elements
+        generateBtn: document.getElementById('generate-btn'),
+        clearBtn: document.getElementById('clear-btn'),
+
+        // Progress elements
+        progressBar: document.getElementById('progress-bar'),
+        progressFill: document.getElementById('progress-fill'),
+
+        // Tab elements
+        tabBtns: document.querySelectorAll('.tab-btn'),
+        markdownOutput: document.getElementById('markdown-output'),
+        rawOutput: document.getElementById('raw-output'),
+        codeOutput: document.getElementById('code-output'),
+
+        // Elements for Auth UI
+        authContainer: document.getElementById('auth-container'),
+        loginBtn: document.getElementById('login-btn'),
+        logoutBtn: document.getElementById('logout-btn'),
+        userInfo: document.getElementById('user-info'),
+        usageDisplay: document.getElementById('usage-display'),
+        tokensUsed: document.getElementById('tokens-used'),
+        tokensRemaining: document.getElementById('tokens-remaining'),
+        requestsToday: document.getElementById('requests-today')
+
+      };
+
+      // Initialize the application
+      this.init();
+    }
+
+    /**
+     * Initialize the application
+     * Sets up event listeners and attempts to connect to Puter.js
+     */
+    async init() {
+      console.log('🚀 Initializing Puter.js AI Code Assistant...');
+
+      // Set up event listeners
+      this.setupEventListeners();
+
+      // Initialize Puter.js connection
+      await this.initializePuter();
+
+      console.log('✅ Application initialized successfully');
+    }
+
+    /**
+     * Set up all event listeners for the application
+     */
+    setupEventListeners() {
+      // Temperature slider update
+      this.elements.temperature.addEventListener('input', (e) => {
+        this.elements.temperatureValue.textContent = e.target.value;
+      });
+
+      // Generate button click
+      this.elements.generateBtn.addEventListener('click', () => {
+        this.handleGenerate();
+      });
+
+      // Clear button click
+      this.elements.clearBtn.addEventListener('click', () => {
+        this.handleClear();
+      });
+
+      // Tab navigation
+      this.elements.tabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          this.switchTab(e.target.dataset.tab);
+        });
+      });
+
+      // Enter key in prompt textarea (Ctrl+Enter to generate)
+      this.elements.userPrompt.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+          e.preventDefault();
+          this.handleGenerate();
+        }
+      });
+
+      // Close download menu when clicking outside (ADD THIS in setupEventListeners function)
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.download-dropdown')) {
+          this.hideDownloadMenu();
+        }
+      });
+
+
+      // Authentication event listeners
+      if (this.elements.loginBtn) {
+        this.elements.loginBtn.addEventListener('click', () => {
+          this.handleLogin();
+        });
+      }
+
+      if (this.elements.logoutBtn) {
+        this.elements.logoutBtn.addEventListener('click', () => {
+          this.handleLogout();
+        });
+      }
+
+
+      console.log('📡 Event listeners set up successfully');
+    }
+
+    /**
+     * Initialize connection to Puter.js
+     */
+    async initializePuter() {
+      try {
+        // Check if Puter.js is available
+        if (typeof window.puter === 'undefined') {
+          throw new Error('Puter.js not loaded');
+        }
+
+        this.puter = window.puter;
+        this.isConnected = true;
+
+        // Update connection status
+        this.updateConnectionStatus(true, 'Connected to Puter.js');
+
+        console.log('🔗 Successfully connected to Puter.js');
+
+        // Check if user is already authenticated
+        try {
+          if (this.puter.auth && typeof this.puter.auth.getUser === 'function') {
+            const user = await this.puter.auth.getUser();
+            if (user) {
+              this.isAuthenticated = true;
+              this.userInfo = user;
+              this.updateAuthUI();
+              this.startUsageMonitoring();
+              console.log('👤 User already authenticated:', user.username || user.email);
+            }
+          }
+        } catch (authError) {
+          console.log('👤 User not authenticated, login required');
+        }
+      // Update auth UI regardless
+        this.updateAuthUI();
+
+      } catch (error) {
+        console.error('❌ Failed to initialize Puter.js:', error);
+        this.updateConnectionStatus(false, 'Connection Failed');
+        this.showToast('Failed to connect to Puter.js. Please refresh the page.', 'error');
+      }
+    }
+
+    /**
+     * Handle user login to Puter
+     */
+    async handleLogin() {
+      try {
+        this.elements.loginBtn.disabled = true;
+        this.elements.loginBtn.textContent = 'Signing in...';
+
+        // Check if user is already authenticated
+        if (this.puter.auth && typeof this.puter.auth.getUser === 'function') {
+          const user = await this.puter.auth.getUser();
+          if (user) {
+            this.isAuthenticated = true;
+            this.userInfo = user;
+            this.updateAuthUI();
+            this.startUsageMonitoring();
+            this.showToast('Already signed in!', 'success');
+            return;
+          }
+        }
+
+        // Attempt to sign in
+        if (this.puter.auth && typeof this.puter.auth.signIn === 'function') {
+          await this.puter.auth.signIn();
+          const user = await this.puter.auth.getUser();
+
+          if (user) {
+            this.isAuthenticated = true;
+            this.userInfo = user;
+            this.updateAuthUI();
+            this.startUsageMonitoring();
+            this.showToast('Successfully signed in!', 'success');
+          } else {
+            throw new Error('Sign in completed but user info not available');
+          }
+        } else {
+          // Fallback: assume already authenticated if Puter is working
+          this.isAuthenticated = true;
+          this.userInfo = { username: 'Puter User' };
+          this.updateAuthUI();
+          this.startUsageMonitoring();
+          this.showToast('Connected to Puter services', 'success');
+        }
+
+      } catch (error) {
+        console.error('Login failed:', error);
+        this.showToast(`Login failed: ${error.message}`, 'error');
+      } finally {
+        this.elements.loginBtn.disabled = false;
+        this.elements.loginBtn.textContent = '🔐 Sign In to Puter';
+      }
+    }
+
+    /**
+     * Handle user logout from Puter
+     */
+    async handleLogout() {
+      try {
+        this.elements.logoutBtn.disabled = true;
+        this.elements.logoutBtn.textContent = 'Signing out...';
+
+        // Stop usage monitoring
+        this.stopUsageMonitoring();
+
+        // Sign out from Puter if method exists
+        if (this.puter.auth && typeof this.puter.auth.signOut === 'function') {
+          await this.puter.auth.signOut();
+        }
+
+        // Reset authentication state
+        this.isAuthenticated = false;
+        this.userInfo = null;
+        this.resetUsageStats();
+        this.updateAuthUI();
+
+        this.showToast('Successfully signed out', 'success');
+
+      } catch (error) {
+        console.error('Logout failed:', error);
+        this.showToast(`Logout failed: ${error.message}`, 'error');
+      } finally {
+        this.elements.logoutBtn.disabled = false;
+        this.elements.logoutBtn.textContent = '🚪 Sign Out';
+      }
+    }
+
+    /**
+     * Update authentication UI based on current state
+     */
+    updateAuthUI() {
+      const loginSection = document.getElementById('login-section');
+      const userSection = document.getElementById('user-section');
+      const userName = document.getElementById('user-name');
+
+      if (this.isAuthenticated && this.userInfo) {
+        // Show user section, hide login section
+        if (loginSection) loginSection.style.display = 'none';
+        if (userSection) userSection.style.display = 'flex';
+
+        // Update user name display
+        if (userName) {
+          const displayName = this.userInfo.username ||
+                  this.userInfo.email ||
+                  this.userInfo.name ||
+                  'Puter User';
+          userName.textContent = `👋 ${displayName}`;
+        }
+      } else {
+        // Show login section, hide user section
+        if (loginSection) loginSection.style.display = 'block';
+        if (userSection) userSection.style.display = 'none';
+
+        if (userName) userName.textContent = 'Not signed in';
+      }
+    }
+
+
+    /**
+     * Start monitoring usage statistics
+     */
+    startUsageMonitoring() {
+      // Update usage immediately
+      this.updateUsageStats();
+
+      // Set up periodic updates every 30 seconds
+      if (this.usageUpdateInterval) {
+        clearInterval(this.usageUpdateInterval);
+      }
+
+      this.usageUpdateInterval = setInterval(() => {
+        this.updateUsageStats();
+      }, 30000); // Update every 30 seconds
+
+      console.log('📊 Usage monitoring started');
+    }
+
+    /**
+     * Stop monitoring usage statistics
+     */
+    stopUsageMonitoring() {
+      if (this.usageUpdateInterval) {
+        clearInterval(this.usageUpdateInterval);
+        this.usageUpdateInterval = null;
+      }
+      console.log('📊 Usage monitoring stopped');
+    }
+
+    /**
+     * Update usage statistics from Puter API
+     */
+    async updateUsageStats() {
+      try {
+        // Try to get usage information from Puter API
+        if (this.puter && this.puter.auth && this.isAuthenticated) {
+
+          // Attempt to get usage stats if API supports it
+          let usageData = null;
+
+          // Try different possible API endpoints/methods for usage
+          if (typeof this.puter.getUsage === 'function') {
+            usageData = await this.puter.getUsage();
+          } else if (typeof this.puter.auth.getUsage === 'function') {
+            usageData = await this.puter.auth.getUsage();
+          } else if (typeof this.puter.ai.getUsage === 'function') {
+            usageData = await this.puter.ai.getUsage();
+          }
+
+          if (usageData) {
+            // Update usage stats from API response
+            this.usageStats = {
+              tokensUsed: usageData.tokensUsed || usageData.tokens_used || 0,
+              tokensRemaining: usageData.tokensRemaining || usageData.tokens_remaining || '∞',
+              requestsToday: usageData.requestsToday || usageData.requests_today || 0,
+              lastUpdated: new Date()
+            };
+          } else {
+            // Fallback: estimate usage based on requests made
+            this.estimateUsage();
+          }
+
+        } else {
+          // Not authenticated, reset stats
+          this.resetUsageStats();
+        }
+
+        // Update UI display
+        this.updateUsageDisplay();
+
+      } catch (error) {
+        console.warn('Failed to update usage stats:', error);
+        // Continue with estimated usage on error
+        this.estimateUsage();
+        this.updateUsageDisplay();
+      }
+    }
+
+    /**
+     * Estimate usage based on local tracking (fallback method)
+     */
+    estimateUsage() {
+      // Get stored usage from localStorage
+      const storedUsage = localStorage.getItem('puter_usage_stats');
+
+      if (storedUsage) {
+        try {
+          const parsed = JSON.parse(storedUsage);
+          // Check if data is from today
+          const today = new Date().toDateString();
+          const storedDate = new Date(parsed.lastUpdated).toDateString();
+
+          if (today === storedDate) {
+            this.usageStats = parsed;
+          } else {
+            // Reset daily stats for new day
+            this.usageStats.requestsToday = 0;
+            this.usageStats.lastUpdated = new Date();
+          }
+        } catch (e) {
+          console.warn('Failed to parse stored usage stats');
+        }
+      }
+    }
+
+    /**
+     * Reset usage statistics
+     */
+    resetUsageStats() {
+      this.usageStats = {
+        tokensUsed: 0,
+        tokensRemaining: '∞',
+        requestsToday: 0,
+        lastUpdated: new Date()
+      };
+
+      // Clear stored usage
+      localStorage.removeItem('puter_usage_stats');
+      this.updateUsageDisplay();
+    }
+
+    /**
+     * Update the usage display in UI
+     */
+    updateUsageDisplay() {
+      const tokensUsedEl = this.elements.tokensUsed;
+      const tokensRemainingEl = this.elements.tokensRemaining;
+      const requestsTodayEl = this.elements.requestsToday;
+
+      if (tokensUsedEl) {
+        tokensUsedEl.textContent = this.formatNumber(this.usageStats.tokensUsed);
+
+        // Add warning colors based on usage
+        tokensUsedEl.className = 'usage-value';
+        if (this.usageStats.tokensUsed > 50000) {
+          tokensUsedEl.classList.add('warning');
+        }
+        if (this.usageStats.tokensUsed > 100000) {
+          tokensUsedEl.classList.add('danger');
+        }
+      }
+
+      if (tokensRemainingEl) {
+        const remaining = this.usageStats.tokensRemaining;
+        tokensRemainingEl.textContent = typeof remaining === 'number' ?
+                this.formatNumber(remaining) : remaining;
+
+        // Add warning colors for low remaining tokens
+        tokensRemainingEl.className = 'usage-value';
+        if (typeof remaining === 'number') {
+          if (remaining < 10000) {
+            tokensRemainingEl.classList.add('danger');
+          } else if (remaining < 25000) {
+            tokensRemainingEl.classList.add('warning');
+          }
+        }
+      }
+
+      if (requestsTodayEl) {
+        requestsTodayEl.textContent = this.formatNumber(this.usageStats.requestsToday);
+
+        // Add warning for high request count
+        requestsTodayEl.className = 'usage-value';
+        if (this.usageStats.requestsToday > 100) {
+          requestsTodayEl.classList.add('warning');
+        }
+        if (this.usageStats.requestsToday > 200) {
+          requestsTodayEl.classList.add('danger');
+        }
+      }
+    }
+
+    /**
+     * Format numbers for display (e.g., 1000 -> 1K)
+     */
+    formatNumber(num) {
+      if (typeof num !== 'number') return num;
+
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+      }
+      if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+      }
+      return num.toString();
+    }
+
+    /**
+     * Track usage for a request (call this after each AI request)
+     */
+    trackUsage(tokensUsed = 0) {
+      this.usageStats.tokensUsed += tokensUsed;
+      this.usageStats.requestsToday += 1;
+      this.usageStats.lastUpdated = new Date();
+
+      // Store in localStorage
+      localStorage.setItem('puter_usage_stats', JSON.stringify(this.usageStats));
+
+      // Update display
+      this.updateUsageDisplay();
+    }
+
+    /**
+     * Update the connection status indicator
+     * @param {boolean} connected - Whether the connection is established
+     * @param {string} message - Status message to display
+     */
+    updateConnectionStatus(connected, message) {
+      this.elements.connectionStatus.className = `status-indicator ${connected ? 'status-connected' : 'status-disconnected'}`;
+      this.elements.statusText.textContent = message;
+    }
+
+    /**
+     * Handle the generate button click
+     * Processes user input and sends request to AI
+     */
+    async handleGenerate() {
+      const prompt = this.elements.userPrompt.value.trim();
+
+      if (!prompt) {
+        this.showToast('Please enter a prompt before generating', 'error');
+        return;
+      }
+
+      if (!this.isConnected) {
+        this.showToast('Not connected to Puter.js', 'error');
+        return;
+      }
+
+      // Disable generate button and show loading state
+      this.setGeneratingState(true);
+
+      try {
+        // Get AI configuration
+        const config = this.getAIConfiguration();
+
+        // Add style context to prompt
+        const enhancedPrompt = this.enhancePrompt(prompt, config.style);
+
+        console.log('🤖 Generating AI response with config:', config);
+
+        // Check if streaming is enabled
+        if (config.stream) {
+          await this.handleStreamingGeneration(enhancedPrompt, config);
+        } else {
+          await this.handleSingleGeneration(enhancedPrompt, config);
+        }
+
+      } catch (error) {
+        console.error('❌ Error generating AI response:', error);
+        this.showToast(`Error: ${error.message}`, 'error');
+        this.displayError(error.message);
+      } finally {
+        this.setGeneratingState(false);
+      }
+    }
+
+    /**
+     * Get current AI configuration from form inputs
+     * @returns {Object} Configuration object for AI request
+     */
+    getAIConfiguration() {
+      return {
+        model: this.elements.aiModel.value,
+        max_tokens: parseInt(this.elements.maxTokens.value),
+        temperature: parseFloat(this.elements.temperature.value),
+        style: this.elements.responseStyle.value,
+        stream: this.elements.generationMode.value === 'streaming'
+      };
+    }
+
+    /**
+     * Enhance the user prompt with style context
+     * @param {string} prompt - User's original prompt
+     * @param {string} style - Selected response style
+     * @returns {string} Enhanced prompt with style context
+     */
+    enhancePrompt(prompt, style) {
+      const styleContexts = {
+        'code': 'Focus on providing clean, well-commented code examples. Include implementation details and best practices.',
+        'detailed': 'Provide comprehensive explanations with step-by-step breakdowns, examples, and context.',
+        'concise': 'Keep responses brief and to the point while maintaining accuracy and completeness.',
+        'tutorial': 'Structure the response as a learning-focused tutorial with explanations, examples, and practice suggestions.'
+      };
+
+      const context = styleContexts[style] || styleContexts['detailed'];
+      return `${context}\n\nUser Query: ${prompt}`;
+    }
+
+    /**
+     * Handle streaming AI generation with real-time updates (IMPROVED VERSION)
+     * @param {string} prompt - Enhanced user prompt
+     * @param {Object} config - AI configuration object
+     */
+    async handleStreamingGeneration(prompt, config) {
+      this.showProgress(true);
+      this.clearAllOutputs();
+
+      try {
+        console.log('🌊 Starting streaming generation...');
+
+        const response = await this.puter.ai.chat(prompt, {
+          model: config.model,
+          stream: true,
+          max_tokens: config.max_tokens,
+          temperature: config.temperature
+        });
+
+        // Check if response indicates an error
+        if (response && response.success === false) {
+          throw new Error(response.error?.message || 'AI request failed');
+        }
+
+        let accumulatedResponse = '';
+        let chunkCount = 0;
+
+        // Handle different response formats with proper type checking
+        if (typeof response === 'string') {
+          // Direct string response
+          accumulatedResponse = response;
+          this.updateAllOutputs(accumulatedResponse);
+        } else if (response && response.text) {
+          // Response with text property
+          accumulatedResponse = String(response.text);
+          this.updateAllOutputs(accumulatedResponse);
+        } else if (response && response[Symbol.asyncIterator]) {
+          // Actual streaming response
+          try {
+            for await (const chunk of response) {
+              if (chunk && typeof chunk === 'object') {
+                let chunkText = '';
+
+                // Extract text from chunk safely
+                if (chunk.text) {
+                  chunkText = String(chunk.text);
+                } else if (chunk.content) {
+                  chunkText = String(chunk.content);
+                } else if (chunk.delta && chunk.delta.content) {
+                  chunkText = String(chunk.delta.content);
+                }
+
+                if (chunkText) {
+                  accumulatedResponse += chunkText;
+                  chunkCount++;
+                  this.updateAllOutputs(accumulatedResponse);
+                  const progress = Math.min((chunkCount * 2), 90);
+                  this.updateProgress(progress);
+                  this.autoScrollOutputs();
+                }
+              }
+            }
+          } catch (streamError) {
+            console.warn('Streaming interrupted:', streamError);
+            // If streaming fails, treat accumulated response as final
+            if (accumulatedResponse) {
+              console.log('Using accumulated response despite streaming error');
+            } else {
+              throw streamError;
+            }
+          }
+        } else {
+          // Fallback: convert entire response to string
+          accumulatedResponse = JSON.stringify(response, null, 2);
+          this.updateAllOutputs(accumulatedResponse);
+        }
+
+        // Ensure we have some response
+        if (!accumulatedResponse.trim()) {
+          throw new Error('No content received from AI');
+        }
+
+        this.updateProgress(100);
+        this.showToast('AI response generated successfully!', 'success');
+        // Track usage after successful generation
+        const estimatedTokens = Math.ceil(accumulatedResponse.length / 4); // Rough estimate: 4 chars per token
+        this.trackUsage(estimatedTokens);
+
+        console.log(`✅ Streaming completed: ${chunkCount} chunks processed`);
+
+      } catch (error) {
+        console.error('❌ Streaming error:', error);
+        const errorMessage = error.message || error.toString() || 'Unknown streaming error';
+        this.displayError(`Streaming failed: ${errorMessage}`);
+        throw new Error(errorMessage);
+      } finally {
+        this.showProgress(false);
+      }
+    }
+
+    /**
+     * Handle single (non-streaming) AI generation (FIXED VERSION)
+     * @param {string} prompt - Enhanced user prompt
+     * @param {Object} config - AI configuration object
+     */
+    async handleSingleGeneration(prompt, config) {
+      this.showProgress(true);
+      this.clearAllOutputs();
+
+      try {
+        console.log('⚡ Starting single generation...');
+        this.updateProgress(30);
+
+        const response = await this.puter.ai.chat(prompt, {
+          model: config.model,
+          max_tokens: config.max_tokens,
+          temperature: config.temperature
+        });
+
+        this.updateProgress(70);
+
+        // Check for error response
+        if (response && response.success === false) {
+          throw new Error(response.error?.message || 'AI request failed');
+        }
+
+        // Extract response text with proper type checking - FIX FOR .trim ERROR
+        let responseText = '';
+
+        // Handle different response formats safely
+        if (typeof response === 'string') {
+          responseText = response;
+        } else if (response && typeof response === 'object') {
+          // Try different possible response properties
+          if (response.message && response.message.content) {
+            responseText = String(response.message.content);
+          } else if (response.text) {
+            responseText = String(response.text);
+          } else if (response.content) {
+            responseText = String(response.content);
+          } else if (response.choices && response.choices[0] && response.choices[0].message) {
+            responseText = String(response.choices[0].message.content || '');
+          } else {
+            // Last resort: stringify the entire response
+            responseText = JSON.stringify(response, null, 2);
+          }
+        } else {
+          // Convert any other type to string
+          responseText = String(response || 'No response received');
+        }
+
+        // Now safely call trim on the guaranteed string
+        responseText = responseText.trim();
+
+        if (!responseText) {
+          throw new Error('Empty response received from AI');
+        }
+
+        this.updateProgress(90);
+        this.updateAllOutputs(responseText);
+        this.updateProgress(100);
+        this.showToast('AI response generated successfully!', 'success');
+
+        // Track usage after successful generation
+        const estimatedTokens = Math.ceil(accumulatedResponse.length / 4); // Rough estimate: 4 chars per token
+        this.trackUsage(estimatedTokens);
+
+        console.log('✅ Single generation completed');
+
+      } catch (error) {
+        console.error('❌ Single generation error:', error);
+        const errorMessage = error.message || error.toString() || 'Unknown generation error';
+        this.displayError(`Generation failed: ${errorMessage}`);
+        throw new Error(errorMessage);
+      } finally {
+        this.showProgress(false);
+      }
+    }
+
+
+    /**
+     * Update raw output display
+     * @param {string} content - Raw response content
+     */
+    updateRawOutput(content) {
+      this.elements.rawOutput.textContent = content;
+    }
+
+    /**
+     * Update markdown output with rendered HTML
+     * @param {string} content - Markdown content to render
+     */
+    updateMarkdownOutput(content) {
+      try {
+        // Use marked.js to render markdown
+        const renderedHTML = marked.parse(content);
+        this.elements.markdownOutput.innerHTML = renderedHTML;
+
+        // Highlight code blocks if Prism.js is available
+        if (window.Prism) {
+          Prism.highlightAllUnder(this.elements.markdownOutput);
+        }
+      } catch (error) {
+        console.error('Markdown rendering error:', error);
+        this.elements.markdownOutput.innerHTML = `<pre>${this.escapeHtml(content)}</pre>`;
+      }
+    }
+
+    /**
+     * Extract and display code blocks from response (SAFER VERSION)
+     * @param {string} content - Full response content
+     */
+    updateCodeOutput(content) {
+      try {
+        // Safely convert content to string first
+        const safeContent = this.safeStringify(content);
+        const codeBlocks = this.extractCodeBlocks(safeContent);
+
+        if (codeBlocks && codeBlocks.length > 0) {
+          const codeHTML = codeBlocks.map((block, index) => {
+            // Safely escape the code for HTML attributes
+            const escapedCode = this.escapeHtml(block.code);
+            const language = block.language || 'text';
+
+            return `<div class="code-block">
+            <div class="code-header">
+                <span class="code-language">${this.escapeHtml(language)} (${block.type || 'code'})</span>
+                <button class="copy-code-btn" onclick="app.copyCodeToClipboard(${index})">Copy</button>
+            </div>
+            <pre><code class="language-${this.escapeHtml(language)}">${escapedCode}</code></pre>
+        </div>`;
+          }).join('');
+
+          this.elements.codeOutput.innerHTML = codeHTML;
+
+          // Store code blocks for copying
+          this.currentCodeBlocks = codeBlocks;
+
+          // Highlight syntax safely
+          if (window.Prism) {
+            try {
+              Prism.highlightAllUnder(this.elements.codeOutput);
+            } catch (prismError) {
+              console.warn('Prism highlighting failed:', prismError);
+            }
+          }
+
+        } else {
+          this.elements.codeOutput.innerHTML = '<div class="no-code">No code blocks found in response</div>';
+        }
+
+      } catch (error) {
+        console.error('Error updating code output:', error);
+        this.elements.codeOutput.innerHTML = '<div class="error-display">Error processing code blocks</div>';
+      }
+    }
+
+
+    /**
+     * Update all output displays at once (NEW HELPER FUNCTION)
+     * @param {string} content - Content to display in all outputs
+     */
+    updateAllOutputs(content) {
+      this.updateRawOutput(content);
+      this.updateMarkdownOutput(content);
+      this.updateCodeOutput(content);
+    }
+
+
+    /**
+     * Copy code block to clipboard (safer method)
+     * @param {number} blockIndex - Index of code block to copy
+     */
+    copyCodeToClipboard(blockIndex) {
+      try {
+        if (this.currentCodeBlocks && this.currentCodeBlocks[blockIndex]) {
+          const code = this.currentCodeBlocks[blockIndex].code;
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(() => {
+              this.showToast('Code copied to clipboard!', 'success');
+            }).catch(() => {
+              this.fallbackCopyTextToClipboard(code);
+            });
+          } else {
+            this.fallbackCopyTextToClipboard(code);
+          }
+        }
+      } catch (error) {
+        console.error('Copy failed:', error);
+        this.showToast('Failed to copy code', 'error');
+      }
+    }
+
+    /**
+     * Fallback copy method for older browsers
+     * @param {string} text - Text to copy
+     */
+    fallbackCopyTextToClipboard(text) {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        this.showToast('Code copied to clipboard!', 'success');
+      } catch (error) {
+        console.error('Fallback copy failed:', error);
+        this.showToast('Copy not supported in this browser', 'error');
+      }
+    }
+
+
+
+    /**
+     * Extract code blocks from markdown/text content (FIXED VERSION)
+     * @param {string} content - Content to extract code from
+     * @returns {Array} Array of code block objects
+     */
+    extractCodeBlocks(content) {
+      const codeBlocks = [];
+
+      try {
+        // Validate input
+        if (!content || typeof content !== 'string') {
+          return codeBlocks;
+        }
+
+        // Limit content length to prevent memory issues
+        const maxContentLength = 50000; // 50KB limit
+        const safeContent = content.length > maxContentLength
+                ? content.substring(0, maxContentLength) + '\n...[truncated]'
+                : content;
+
+        // Extract fenced code blocks (```language\ncode\n```)
+        const fencedCodeRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+        let match;
+        let matchCount = 0;
+        const maxMatches = 20; // Limit number of code blocks
+
+        // Reset regex lastIndex to ensure clean matching
+        fencedCodeRegex.lastIndex = 0;
+
+        while ((match = fencedCodeRegex.exec(safeContent)) !== null && matchCount < maxMatches) {
+          try {
+            const language = match[1] || 'text';
+            const code = match[2] ? match[2].trim() : '';
+
+            if (code.length > 0 && code.length < 10000) { // Max 10KB per code block
+              codeBlocks.push({
+                language: language,
+                code: code,
+                type: 'fenced'
+              });
+              matchCount++;
+            }
+          } catch (blockError) {
+            console.warn('Error processing code block:', blockError);
+            continue;
+          }
+        }
+
+        // If no fenced blocks found, look for inline code
+        if (codeBlocks.length === 0) {
+          const inlineCodeRegex = /`([^`\n]{1,500})`/g;
+          inlineCodeRegex.lastIndex = 0;
+
+          while ((match = inlineCodeRegex.exec(safeContent)) !== null && matchCount < maxMatches) {
+            try {
+              const code = match[1].trim();
+              if (code.length > 2) { // Only meaningful code snippets
+                codeBlocks.push({
+                  language: 'text',
+                  code: code,
+                  type: 'inline'
+                });
+                matchCount++;
+              }
+            } catch (inlineError) {
+              console.warn('Error processing inline code:', inlineError);
+              continue;
+            }
+          }
+        }
+
+        // If still no code blocks, look for indented code blocks
+        if (codeBlocks.length === 0) {
+          const lines = safeContent.split('\n');
+          let codeBuffer = [];
+          let inCodeBlock = false;
+
+          for (let i = 0; i < Math.min(lines.length, 1000); i++) { // Limit lines processed
+            const line = lines[i];
+            const isCodeLine = line.startsWith('    ') || line.startsWith('\t');
+
+            if (isCodeLine && line.trim().length > 0) {
+              codeBuffer.push(line);
+              inCodeBlock = true;
+            } else if (inCodeBlock && codeBuffer.length > 0) {
+              const code = codeBuffer.join('\n').trim();
+              if (code.length > 10) { // Only substantial code blocks
+                codeBlocks.push({
+                  language: 'text',
+                  code: code,
+                  type: 'indented'
+                });
+
+                if (codeBlocks.length >= maxMatches) break;
+              }
+              codeBuffer = [];
+              inCodeBlock = false;
+            }
+          }
+
+          // Handle remaining buffer
+          if (inCodeBlock && codeBuffer.length > 0) {
+            const code = codeBuffer.join('\n').trim();
+            if (code.length > 10) {
+              codeBlocks.push({
+                language: 'text',
+                code: code,
+                type: 'indented'
+              });
+            }
+          }
+        }
+
+      } catch (error) {
+        console.error('Error in extractCodeBlocks:', error);
+        // Return safe fallback
+        return [{
+          language: 'text',
+          code: 'Error extracting code blocks from response',
+          type: 'error'
+        }];
+      }
+
+      // Ensure we don't return too many blocks
+      return codeBlocks.slice(0, 15);
+    }
+
+
+    /**
+     * Setup copy buttons for code blocks
+     */
+    setupCodeCopyButtons() {
+      const copyButtons = this.elements.codeOutput.querySelectorAll('.copy-code-btn');
+      copyButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const code = e.target.dataset.code;
+          try {
+            await navigator.clipboard.writeText(code);
+            e.target.textContent = 'Copied!';
+            setTimeout(() => {
+              e.target.textContent = 'Copy';
+            }, 2000);
+            this.showToast('Code copied to clipboard!', 'success');
+          } catch (error) {
+            console.error('Copy failed:', error);
+            this.showToast('Failed to copy code', 'error');
+          }
+        });
+      });
+    }
+
+    /**
+     * Handle clear button functionality
+     */
+    handleClear() {
+      this.clearAllOutputs();
+      this.elements.userPrompt.value = '';
+      this.showToast('All outputs cleared', 'info');
+    }
+
+    /**
+     * Clear all output displays
+     */
+    clearAllOutputs() {
+      this.elements.markdownOutput.innerHTML = `
+        <div style="text-align: center; color: #718096; padding: 40px;">
+            <h3>Ready to generate AI responses! 🚀</h3>
+            <p>Your AI-generated content will appear here...</p>
+        </div>
+    `;
+      this.elements.rawOutput.textContent = 'Raw AI response will appear here...';
+      this.elements.codeOutput.innerHTML = '<div class="no-code">Extracted code blocks will appear here...</div>';
+    }
+
+    /**
+     * Switch between output tabs
+     * @param {string} tabName - Name of tab to switch to
+     */
+    switchTab(tabName) {
+      // Update tab buttons
+      this.elements.tabBtns.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabName) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update tab content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+
+      const targetTab = document.getElementById(`${tabName}-tab`);
+      if (targetTab) {
+        targetTab.classList.add('active');
+      }
+    }
+
+    /**
+     * Show/hide progress bar with animation
+     * @param {boolean} show - Whether to show progress bar
+     */
+    showProgress(show) {
+      this.elements.progressBar.style.display = show ? 'block' : 'none';
+      if (!show) {
+        this.updateProgress(0);
+      }
+    }
+
+    /**
+     * Update progress bar percentage
+     * @param {number} percentage - Progress percentage (0-100)
+     */
+    updateProgress(percentage) {
+      this.elements.progressFill.style.width = `${percentage}%`;
+    }
+
+    /**
+     * Set generating state (disable/enable buttons)
+     * @param {boolean} generating - Whether currently generating
+     */
+    setGeneratingState(generating) {
+      this.elements.generateBtn.disabled = generating;
+
+      if (generating) {
+        this.elements.generateBtn.classList.add('loading');
+        this.elements.generateBtn.textContent = 'Generating...';
+      } else {
+        this.elements.generateBtn.classList.remove('loading');
+        this.elements.generateBtn.textContent = '🚀 Generate AI Response';
+      }
+    }
+
+    /**
+     * Auto-scroll outputs if user hasn't manually scrolled
+     */
+    autoScrollOutputs() {
+      const outputs = [
+        this.elements.markdownOutput.parentElement,
+        this.elements.rawOutput,
+        this.elements.codeOutput
+      ];
+
+      outputs.forEach(output => {
+        if (output && this.isNearBottom(output)) {
+          output.scrollTop = output.scrollHeight;
+        }
+      });
+    }
+
+    /**
+     * Check if element is scrolled near bottom
+     * @param {Element} element - Element to check
+     * @returns {boolean} Whether element is near bottom
+     */
+    isNearBottom(element) {
+      const threshold = 100; // pixels from bottom
+      return element.scrollTop >= (element.scrollHeight - element.offsetHeight - threshold);
+    }
+
+    /**
+     * Display error in outputs
+     * @param {string} errorMessage - Error message to display
+     */
+    displayError(errorMessage) {
+      const errorHTML = `
+        <div class="error-display" style="color: #f56565; padding: 20px; text-align: center;">
+            <h3>❌ Generation Error</h3>
+            <p>${this.escapeHtml(errorMessage)}</p>
+            <p style="font-size: 0.9rem; color: #718096;">Please try again or check your connection.</p>
+        </div>
+    `;
+
+      this.elements.markdownOutput.innerHTML = errorHTML;
+      this.elements.rawOutput.textContent = `Error: ${errorMessage}`;
+      this.elements.codeOutput.innerHTML = errorHTML;
+    }
+
+
+    /**
+     * Download content as file (NEW FUNCTION)
+     * @param {string} content - Content to download
+     * @param {string} filename - Name of file
+     * @param {string} mimeType - MIME type of file
+     */
+    downloadContent(content, filename, mimeType) {
+      try {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        this.showToast(`Downloaded ${filename}`, 'success');
+      } catch (error) {
+        console.error('Download failed:', error);
+        this.showToast('Download failed', 'error');
+      }
+    }
+
+    /**
+     * Copy content to clipboard (NEW FUNCTION)
+     * @param {string} content - Content to copy
+     * @param {string} type - Type of content for toast message
+     */
+    async copyToClipboard(content, type = 'content') {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(content);
+          this.showToast(`${type} copied to clipboard!`, 'success');
+        } else {
+          this.fallbackCopyTextToClipboard(content);
+          this.showToast(`${type} copied to clipboard!`, 'success');
+        }
+      } catch (error) {
+        console.error('Copy failed:', error);
+        this.showToast('Failed to copy to clipboard', 'error');
+      }
+    }
+
+    /**
+     * Get current tab content (NEW FUNCTION)
+     * @param {string} tabType - Type of tab (markdown, raw, code)
+     * @returns {string} Content of the specified tab
+     */
+    getCurrentTabContent(tabType) {
+      switch (tabType) {
+        case 'markdown':
+          return this.elements.markdownOutput.innerHTML;
+        case 'raw':
+          return this.elements.rawOutput.textContent;
+        case 'code':
+          if (this.currentCodeBlocks && this.currentCodeBlocks.length > 0) {
+            return this.currentCodeBlocks.map(block =>
+                    `// ${block.language} - ${block.type}\n${block.code}`
+            ).join('\n\n');
+          }
+          return 'No code blocks found';
+        default:
+          return this.elements.rawOutput.textContent;
+      }
+    }
+
+
+    /**
+     * Handle copying current tab content (NEW FUNCTION)
+     */
+    handleCopyCurrentTab() {
+      const activeTab = document.querySelector('.tab-btn.active');
+      if (!activeTab) return;
+
+      const tabType = activeTab.dataset.tab;
+      const content = this.getCurrentTabContent(tabType);
+
+      if (tabType === 'markdown') {
+        // For markdown tab, copy the raw markdown instead of HTML
+        this.copyToClipboard(this.elements.rawOutput.textContent, 'Markdown content');
+      } else {
+        this.copyToClipboard(content, `${tabType} content`);
+      }
+    }
+
+    /**
+     * Handle download based on format (NEW FUNCTION)
+     * @param {string} format - Download format (md, txt, html, json)
+     */
+    handleDownload(format) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+      const activeTab = document.querySelector('.tab-btn.active');
+      const tabType = activeTab ? activeTab.dataset.tab : 'raw';
+
+      let content, filename, mimeType;
+
+      switch (format) {
+        case 'md':
+          content = this.elements.rawOutput.textContent;
+          filename = `ai-response-${timestamp}.md`;
+          mimeType = 'text/markdown';
+          break;
+        case 'txt':
+          content = this.elements.rawOutput.textContent;
+          filename = `ai-response-${timestamp}.txt`;
+          mimeType = 'text/plain';
+          break;
+        case 'html':
+          content = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Response - ${timestamp}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+${this.elements.markdownOutput.innerHTML}
+</body>
+</html>`;
+          filename = `ai-response-${timestamp}.html`;
+          mimeType = 'text/html';
+          break;
+        case 'json':
+          const data = {
+            timestamp: new Date().toISOString(),
+            model: this.elements.aiModel.value,
+            prompt: this.elements.userPrompt.value,
+            rawResponse: this.elements.rawOutput.textContent,
+            codeBlocks: this.currentCodeBlocks || []
+          };
+          content = JSON.stringify(data, null, 2);
+          filename = `ai-response-${timestamp}.json`;
+          mimeType = 'application/json';
+          break;
+        default:
+          content = this.elements.rawOutput.textContent;
+          filename = `ai-response-${timestamp}.txt`;
+          mimeType = 'text/plain';
+      }
+
+      this.downloadContent(content, filename, mimeType);
+      this.hideDownloadMenu();
+    }
+
+    /**
+     * Toggle download menu visibility (NEW FUNCTION)
+     */
+    toggleDownloadMenu() {
+      const menu = document.getElementById('download-menu');
+      menu.classList.toggle('show');
+    }
+
+    /**
+     * Hide download menu (NEW FUNCTION)
+     */
+    hideDownloadMenu() {
+      const menu = document.getElementById('download-menu');
+      menu.classList.remove('show');
+    }
+
+
+    /**
+     * Show toast notification
+     * @param {string} message - Message to display
+     * @param {string} type - Type of notification (success, error, info, warning)
+     */
+    showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+
+      document.body.appendChild(toast);
+
+      // Trigger show animation
+      setTimeout(() => toast.classList.add('show'), 100);
+
+      // Auto remove
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          if (document.body.contains(toast)) {
+            document.body.removeChild(toast);
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    /**
+     * Escape HTML characters for safe display
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    /**
+     * Safely convert any value to string (NEW HELPER FUNCTION)
+     * @param {any} value - Value to convert to string
+     * @returns {string} Safe string representation
+     */
+    safeStringify(value) {
+      if (typeof value === 'string') {
+        return value;
+      }
+
+      if (value === null || value === undefined) {
+        return '';
+      }
+
+      if (typeof value === 'object') {
+        try {
+          return JSON.stringify(value, null, 2);
+        } catch (e) {
+          return String(value);
+        }
+      }
+
+      return String(value);
+    }
+
+    /**
+     * Download content as file
+     * @param {string} content - Content to download
+     * @param {string} filename - Name of file
+     * @param {string} mimeType - MIME type of file
+     */
+    downloadContent(content, filename, mimeType) {
+      try {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        this.showToast(`Downloaded ${filename}`, 'success');
+      } catch (error) {
+        console.error('Download failed:', error);
+        this.showToast('Download failed', 'error');
+      }
+    }
+
+    /**
+     * Copy content to clipboard
+     * @param {string} content - Content to copy
+     * @param {string} type - Type of content for toast message
+     */
+    async copyToClipboard(content, type = 'content') {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(content);
+          this.showToast(`${type} copied to clipboard!`, 'success');
+        } else {
+          this.fallbackCopyTextToClipboard(content);
+          this.showToast(`${type} copied to clipboard!`, 'success');
+        }
+      } catch (error) {
+        console.error('Copy failed:', error);
+        this.showToast('Failed to copy to clipboard', 'error');
+      }
+    }
+
+    /**
+     * Get current tab content
+     * @param {string} tabType - Type of tab (markdown, raw, code)
+     * @returns {string} Content of the specified tab
+     */
+    getCurrentTabContent(tabType) {
+      switch (tabType) {
+        case 'markdown':
+          return this.elements.rawOutput.textContent; // Return raw markdown, not HTML
+        case 'raw':
+          return this.elements.rawOutput.textContent;
+        case 'code':
+          if (this.currentCodeBlocks && this.currentCodeBlocks.length > 0) {
+            return this.currentCodeBlocks.map(block =>
+                    `// ${block.language} - ${block.type}\n${block.code}`
+            ).join('\n\n');
+          }
+          return 'No code blocks found';
+        default:
+          return this.elements.rawOutput.textContent;
+      }
+    }
+
+    /**
+     * Handle copying current tab content
+     */
+    handleCopyCurrentTab() {
+      const activeTab = document.querySelector('.tab-btn.active');
+      if (!activeTab) return;
+
+      const tabType = activeTab.dataset.tab;
+      const content = this.getCurrentTabContent(tabType);
+      this.copyToClipboard(content, `${tabType} content`);
+    }
+
+    /**
+     * Handle download based on format
+     * @param {string} format - Download format (md, txt, html, json)
+     */
+    handleDownload(format) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+
+      let content, filename, mimeType;
+
+      switch (format) {
+        case 'md':
+          content = this.elements.rawOutput.textContent;
+          filename = `ai-response-${timestamp}.md`;
+          mimeType = 'text/markdown';
+          break;
+        case 'txt':
+          content = this.elements.rawOutput.textContent;
+          filename = `ai-response-${timestamp}.txt`;
+          mimeType = 'text/plain';
+          break;
+        case 'html':
+          content = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Response - ${timestamp}</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        code { background: #f5f5f5; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+${this.elements.markdownOutput.innerHTML}
+</body>
+</html>`;
+          filename = `ai-response-${timestamp}.html`;
+          mimeType = 'text/html';
+          break;
+        case 'json':
+          const data = {
+            timestamp: new Date().toISOString(),
+            model: this.elements.aiModel.value,
+            prompt: this.elements.userPrompt.value,
+            rawResponse: this.elements.rawOutput.textContent,
+            codeBlocks: this.currentCodeBlocks || []
+          };
+          content = JSON.stringify(data, null, 2);
+          filename = `ai-response-${timestamp}.json`;
+          mimeType = 'application/json';
+          break;
+        default:
+          content = this.elements.rawOutput.textContent;
+          filename = `ai-response-${timestamp}.txt`;
+          mimeType = 'text/plain';
+      }
+
+      this.downloadContent(content, filename, mimeType);
+      this.hideDownloadMenu();
+    }
+
+    /**
+     * Toggle download menu visibility
+     */
+    toggleDownloadMenu() {
+      const menu = document.getElementById('download-menu');
+      menu.classList.toggle('show');
+    }
+
+    /**
+     * Hide download menu
+     */
+    hideDownloadMenu() {
+      const menu = document.getElementById('download-menu');
+      menu.classList.remove('show');
+    }
+
+
+
+  }
+
+
+
+  // Initialize the application when DOM is ready
+  // UPDATE the DOMContentLoaded event listener to store app reference:
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Starting Puter.js AI Code Assistant...');
+    app = new PuterAIApp(); // Store global reference
+  });
+
+
+  // Global error handler
+  window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+  });
+
+  // Handle unhandled promise rejections
+  window.addEventListener('unhandledrejection', (e) => {
+    console.error('Unhandled promise rejection:', e.reason);
+  });
+
+
+  // ADD THIS at the very end before closing
+  // Global reference for onclick handlers
+  let app;
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    if (app && app.stopUsageMonitoring) {
+      app.stopUsageMonitoring();
+    }
+  });
+
+</script>
+
+<!-- Additional CSS for code blocks and enhanced styling -->
+<style>
+  .code-block {
+    margin: 15px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+
+  .code-header {
+    background: #f7fafc;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .code-language {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #4a5568;
+    text-transform: uppercase;
+  }
+
+  .copy-code-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .copy-code-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+  }
+
+  .no-code {
+    text-align: center;
+    color: #718096;
+    padding: 40px;
+    font-style: italic;
+  }
+
+  .error-display {
+    border: 2px solid #fed7d7;
+    border-radius: 8px;
+    background: #fef5e7;
+  }
+
+  /* Enhanced toast styles */
+  .toast {
+    min-width: 300px;
+    font-weight: 500;
+  }
+
+  .toast.success {
+    border-left-color: #48bb78;
+  }
+
+  .toast.error {
+    border-left-color: #f56565;
+  }
+
+  .toast.warning {
+    border-left-color: #ed8936;
+  }
+
+  .toast.info {
+    border-left-color: #4299e1;
+  }
+
+  /* Loading animation for generate button */
+  .btn.loading {
+    position: relative;
+    color: transparent !important;
+  }
+
+  .btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  /* Enhanced progress bar */
+  .progress-bar {
+    background: linear-gradient(90deg, #e2e8f0, #cbd5e0);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .progress-fill {
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Download and Copy Controls */
+  .tab-controls {
+    margin-left: auto;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .control-btn {
+    padding: 8px 16px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .control-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+  }
+
+  .download-dropdown {
+    position: relative;
+  }
+
+  .download-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+  }
+
+  .download-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .download-menu button {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.9rem;
+  }
+
+  .download-menu button:hover {
+    background: #f7fafc;
+  }
+
+  .download-menu button:first-child {
+    border-radius: 8px 8px 0 0;
+  }
+
+  .download-menu button:last-child {
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* Enhanced tab navigation layout */
+  .tab-nav {
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid #e2e8f0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+  }
+
+  /* Close dropdown when clicking outside */
+  .download-dropdown.active .download-menu {
+    display: block;
+  }
+
+  /* Mobile responsiveness for controls */
+  @media (max-width: 768px) {
+    .tab-controls {
+      flex-direction: column;
+      gap: 5px;
+      margin-left: 0;
+      margin-top: 10px;
+    }
+
+    .tab-nav {
+      flex-wrap: wrap;
+    }
+
+    .control-btn {
+      font-size: 0.8rem;
+      padding: 6px 12px;
+    }
+  }
+
+
+</style>
+
+</html>
