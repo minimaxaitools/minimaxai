@@ -54,6 +54,31 @@ class ModernUIOverlay {
             }
         });
 
+        // Add touch support for modern overlay
+        this.overlay.addEventListener('touchstart', (e) => {
+            const target = e.target;
+            const panel = target.closest('.modern-panel');
+            if (panel && this.preventCanvasInteraction) {
+                e.stopPropagation();
+            }
+        }, { passive: false });
+
+        this.overlay.addEventListener('touchmove', (e) => {
+            const target = e.target;
+            const panel = target.closest('.modern-panel');
+            if (panel && this.preventCanvasInteraction) {
+                e.stopPropagation();
+            }
+        }, { passive: false });
+
+        this.overlay.addEventListener('touchend', (e) => {
+            const target = e.target;
+            const panel = target.closest('.modern-panel');
+            if (panel && this.preventCanvasInteraction) {
+                e.stopPropagation();
+            }
+        }, { passive: false });
+
         document.body.appendChild(this.overlay);
         document.body.appendChild(this.toggleButton);
 
