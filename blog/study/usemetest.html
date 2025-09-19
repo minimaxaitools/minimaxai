@@ -1,0 +1,1879 @@
+2<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced  Studio — Multi-Provider Support</title>
+
+  <!-- External Dependencies -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://js.puter.com/v2/"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+
+  <style>
+    /* ===== CSS Variables ===== */
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --accent: #22c55e;
+      --accent-2: #14b8a6;
+      --border: #1f2937;
+      --radius: 14px;
+      --shadow: 0 8px 24px rgba(0,0,0,.45);
+      --bubble-user: #0c142a;
+      --bubble-ai: #0e162f;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    [data-theme="light"] {
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --muted: #6b7280;
+      --text: #0b1224;
+      --accent: #16a34a;
+      --accent-2: #06b6d4;
+      --border: #e5e7eb;
+      --bubble-user: #ffffff;
+      --bubble-ai: #f8fafc;
+      --shadow: 0 8px 24px rgba(2,6,23,.08);
+    }
+
+    @media (prefers-color-scheme: light) {
+      [data-theme="system"] {
+        --bg: #f3f4f6;
+        --panel: #ffffff;
+        --muted: #6b7280;
+        --text: #0b1224;
+        --accent: #16a34a;
+        --accent-2: #06b6d4;
+        --border: #e5e7eb;
+        --bubble-user: #ffffff;
+        --bubble-ai: #f8fafc;
+        --shadow: 0 8px 24px rgba(2,6,23,.08);
+      }
+    }
+
+    /* ===== Base Styles ===== */
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      color: var(--text);
+      background: linear-gradient(180deg, var(--panel), var(--bg));
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    .app {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ===== Top Bar ===== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: saturate(120%) blur(8px);
+      background: color-mix(in oklab, var(--panel) 70%, transparent);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar .inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand .logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: var(--shadow);
+    }
+
+    .brand h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .grow {
+      flex: 1;
+    }
+
+    /* ===== Form Controls ===== */
+    select, .btn, input[type="text"], input[type="url"], input[type="number"], input[type="range"] {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 20%, transparent);
+    }
+
+    .btn {
+      cursor: pointer;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #0b1224;
+      border-color: transparent;
+    }
+
+    /* ===== Advanced Settings Panel ===== */
+    .settings-panel {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: none;
+      animation: slideDown 0.3s ease;
+    }
+
+    .settings-panel.open {
+      display: block;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setting-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .range-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .range-value {
+      min-width: 50px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    input[type="range"] {
+      flex: 1;
+      padding: 0;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* ===== Main Chat Area ===== */
+    .main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .messages {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px 0;
+      min-height: 100%;
+    }
+
+    /* ===== Message Bubbles ===== */
+    .msg {
+      display: grid;
+      gap: 12px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bubble-user);
+      max-width: min(800px, 100%);
+      width: fit-content;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .msg:hover {
+      box-shadow: var(--shadow);
+    }
+
+    .msg.assistant {
+      align-self: flex-start;
+      grid-template-columns: 40px 1fr;
+      background: var(--bubble-ai);
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      grid-template-columns: 1fr 40px;
+    }
+
+    .msg.system {
+      align-self: center;
+      background: color-mix(in oklab, var(--warning) 10%, var(--panel));
+      border-color: var(--warning);
+      max-width: 600px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--panel);
+      border: 2px solid var(--border);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .content {
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    /* ===== Markdown Styling ===== */
+    .content h1, .content h2, .content h3, .content h4, .content h5, .content h6 {
+      margin: 16px 0 8px 0;
+      color: var(--text);
+    }
+
+    .content p {
+      margin: 8px 0;
+    }
+
+    .content ul, .content ol {
+      margin: 8px 0;
+      padding-left: 24px;
+    }
+
+    .content blockquote {
+      margin: 12px 0;
+      padding: 12px 16px;
+      border-left: 4px solid var(--accent);
+      background: color-mix(in oklab, var(--accent) 5%, transparent);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .content code {
+      background: var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    }
+
+    .content pre {
+      background: var(--border);
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    .content pre code {
+      background: none;
+      padding: 0;
+    }
+
+    /* ===== Message Toolbar ===== */
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: all 0.15s ease;
+      margin-top: 8px;
+    }
+
+    .msg:hover .toolbar {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toolbar-row {
+      display: flex;
+    }
+
+    .msg.assistant .toolbar-row {
+      grid-column: 2;
+      justify-content: flex-start;
+    }
+
+    .msg.user .toolbar-row {
+      grid-column: 1;
+      justify-content: flex-end;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    /* ===== Status and Counter ===== */
+    .status-bar {
+      text-align: center;
+      padding: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ===== Composer ===== */
+    .composer {
+      position: sticky;
+      bottom: 0;
+      padding: 16px;
+      background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 90%, transparent));
+      backdrop-filter: blur(8px);
+    }
+
+    .composer .panel {
+      max-width: 1200px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .composer textarea {
+      width: 100%;
+      min-height: 80px;
+      max-height: 300px;
+      resize: vertical;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      padding: 16px;
+      font: 500 15px/1.6 Inter, system-ui;
+      font-family: inherit;
+    }
+
+    .composer textarea::placeholder {
+      color: var(--muted);
+    }
+
+    .composer .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: color-mix(in oklab, var(--border) 20%, transparent);
+    }
+
+    .composer .status {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ===== Edit Mode ===== */
+    .edit-box {
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 12px;
+      background: var(--panel);
+    }
+
+    .edit-box textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: vertical;
+      background: transparent;
+      color: inherit;
+      border: none;
+      outline: none;
+      font: 500 15px/1.6 Inter;
+      font-family: inherit;
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    /* ===== Loading Animation ===== */
+    .typing {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      opacity: 0.6;
+      animation: blink 1.2s infinite ease-in-out;
+    }
+
+    .dot:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .dot:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    @keyframes blink {
+      0%, 80%, 100% {
+        opacity: 0.2;
+        transform: translateY(0);
+      }
+      40% {
+        opacity: 1;
+        transform: translateY(-2px);
+      }
+    }
+
+    /* ===== Toast Notifications ===== */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateX(100px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+      max-width: 300px;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .toast.error {
+      border-color: var(--danger);
+      background: color-mix(in oklab, var(--danger) 10%, var(--panel));
+    }
+
+    .toast.success {
+      border-color: var(--accent);
+      background: color-mix(in oklab, var(--accent) 10%, var(--panel));
+    }
+
+    /* ===== Responsive Design ===== */
+    @media (max-width: 768px) {
+      .topbar .inner {
+        gap: 8px;
+        padding: 10px 12px;
+      }
+
+      .brand h1 {
+        display: none;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+
+      .msg {
+        padding: 16px;
+        max-width: 100%;
+      }
+
+      .msg.assistant {
+        grid-template-columns: 32px 1fr;
+      }
+
+      .msg.user {
+        grid-template-columns: 1fr 32px;
+      }
+
+      .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+      }
+
+      .main {
+        padding: 12px;
+      }
+
+      .composer {
+        padding: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topbar .inner {
+        flex-wrap: wrap;
+      }
+
+      .composer textarea {
+        min-height: 60px;
+        padding: 12px;
+      }
+
+      .composer .row {
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+      }
+    }
+
+    /* ===== Utility Classes ===== */
+    .hidden {
+      display: none !important;
+    }
+
+    .loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .error-text {
+      color: var(--danger);
+    }
+
+    .success-text {
+      color: var(--accent);
+    }
+
+    .muted-text {
+      color: var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <!-- ===== Top Bar ===== -->
+  <div class="topbar">
+    <div class="inner">
+      <div class="brand">
+        <div class="logo" aria-label=" Studio">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2c2.9 0 5.5 1.2 7.4 3.1l-2.1 2.1A8 8 0 1 0 20 12h3a11 11 0 1 1-11-10Z" fill="white"/>
+            <path d="M14.5 7h2v10h-2V7Zm-7 3h2v7h-2v-7Z" fill="white" opacity=".9"/>
+          </svg>
+        </div>
+        <h1> Studio</h1>
+      </div>
+
+      <div class="grow"></div>
+
+      <!-- Provider Selection -->
+      <select id="provider" title="AI Provider">
+        <option value="puter" selected>Puter AI</option>
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic</option>
+        <option value="google">Google AI</option>
+      </select>
+
+      <!-- Model Selection -->
+      <select id="model" title="Model">
+        <option value="gpt-5-nano" selected>gpt-5-nano</option>
+        <option value="gpt-5-mini">gpt-5-mini</option>
+        <option value="gpt-5">gpt-5</option>
+        <option value="gpt-4o">gpt-4o</option>
+        <option value="gpt-4o-mini">gpt-4o-mini</option>
+        <option value="o1">o1</option>
+        <option value="o1-mini">o1-mini</option>
+        <option value="claude-sonnet-4">Claude Sonnet 4 (Recommended)</option>
+        <option value="claude-opus-4">Claude Opus 4</option>
+        <option value="gpt-4.1">GPT-4.1</option>
+        <option value="deepseek-chat">DeepSeek Chat</option>
+        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+        <option value="o1-pro">o1-pro</option>
+        <option value="o3">o3</option>
+        <option value="o3-mini">o3-mini</option>
+        <option value="o4-mini">o4-mini</option>
+        <option value="gpt-4.1-mini">GPT-4.1 Mini</option>
+        <option value="gpt-4.1-nano">GPT-4.1 Nano</option>
+        <option value="gpt-4.5-preview">GPT-4.5 Preview</option>
+        <option value="claude-3-7-sonnet">Claude 3.7 Sonnet</option>
+        <option value="claude-3-5-sonnet">Claude 3.5 Sonnet</option>
+        <option value="deepseek-reasoner">DeepSeek Reasoner</option>
+        <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+        <option value="meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo">Meta Llama 3.1 8B Instruct Turbo</option>
+        <option value="meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo">Meta Llama 3.1 70B Instruct Turbo</option>
+        <option value="meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo">Meta Llama 3.1 405B Instruct Turbo</option>
+        <option value="mistral-large-latest">Mistral Large Latest</option>
+        <option value="pixtral-large-latest">Pixtral Large Latest</option>
+        <option value="codestral-latest">Codestral Latest</option>
+        <option value="google/gemma-2-27b-it">Google Gemma 2 27B IT</option>
+        <option value="grok-beta">Grok Beta</option>
+      </select>
+
+
+      <!-- Chat History -->
+      <select id="history" title="Chat History">
+        <option value="">Select Chat...</option>
+      </select>
+
+      <!-- Theme Toggle -->
+      <select id="theme" title="Theme">
+        <option value="system" selected>🌓 System</option>
+        <option value="dark">🌙 Dark</option>
+        <option value="light">☀️ Light</option>
+      </select>
+
+      <!-- Action Buttons -->
+      <button id="settingsToggle" class="btn" title="Advanced Settings">
+        ⚙️ Settings
+      </button>
+      <button id="newChat" class="btn" title="New Chat">
+        ➕ New
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== Advanced Settings Panel ===== -->
+  <div id="settingsPanel" class="settings-panel" aria-hidden="true">
+    <div class="settings-grid">
+      <!-- API Configuration -->
+      <div class="setting-group">
+        <div class="setting-label">API Configuration</div>
+        <input id="apiKey" type="text" placeholder="API Key (optional for Puter)" autocomplete="off">
+        <input id="baseUrl" type="url" placeholder="Custom Base URL (optional)">
+      </div>
+
+      <!-- Model Parameters -->
+      <div class="setting-group">
+        <div class="setting-label">Temperature</div>
+        <div class="range-container">
+          <input id="temperature" type="range" min="0" max="2" step="0.1" value="0.7">
+          <span class="range-value" id="temperatureValue">0.7</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Max Tokens</div>
+        <div class="range-container">
+          <input id="maxTokens" type="range" min="100" max="32000" step="100" value="32000">
+          <span class="range-value" id="maxTokensValue">32000</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Top P</div>
+        <div class="range-container">
+          <input id="topP" type="range" min="0" max="1" step="0.05" value="0.9">
+          <span class="range-value" id="topPValue">0.9</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Frequency Penalty</div>
+        <div class="range-container">
+          <input id="frequencyPenalty" type="range" min="0" max="2" step="0.1" value="0">
+          <span class="range-value" id="frequencyPenaltyValue">0</span>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Presence Penalty</div>
+        <div class="range-container">
+          <input id="presencePenalty" type="range" min="0" max="2" step="0.1" value="0">
+          <span class="range-value" id="presencePenaltyValue">0</span>
+        </div>
+      </div>
+
+      <!-- System Settings -->
+      <div class="setting-group">
+        <div class="setting-label">System Prompt</div>
+        <input id="systemPrompt" type="text" placeholder="You are a helpful AI assistant...">
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Image URL (Vision)</div>
+        <input id="imageUrl" type="url" placeholder="https://example.com/image.jpg">
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-label">Streaming</div>
+        <select id="streaming">
+          <option value="true" selected>✅ Enabled</option>
+          <option value="false">❌ Disabled</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Main Chat Area ===== -->
+  <main class="main">
+    <div id="messages" class="messages" role="log" aria-live="polite" aria-label="Chat messages"></div>
+    <div class="status-bar">
+      <span id="messageCount" class="muted-text">0 messages</span>
+    </div>
+  </main>
+
+  <!-- ===== Message Composer ===== -->
+  <div class="composer">
+    <div class="panel">
+        <textarea
+                id="messageInput"
+                placeholder="Type your message here... (Shift+Enter for new line, Enter to send)"
+                rows="3"
+                aria-label="Message input"
+        ></textarea>
+      <div class="row">
+        <div class="status" id="connectionStatus">
+          <span class="muted-text">🔌 Connecting to Puter AI...</span>
+        </div>
+        <button id="sendButton" class="btn primary" disabled>
+          <span>🚀 Send</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Toast Notification ===== -->
+<div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+<script>
+  /**
+   * Advanced  Studio
+   * A comprehensive chat interface supporting multiple AI providers
+   * with advanced configuration options and chat management
+   */
+
+          // ===== Utility Functions =====
+  const $ = (selector, parent = document) => parent.querySelector(selector);
+  const $$ = (selector, parent = document) => parent.querySelectorAll(selector);
+
+  // ===== Constants =====
+  const STORAGE_KEYS = {
+    SESSIONS: 'ai-chat-sessions',
+    CURRENT_SESSION: 'ai-chat-current',
+    SETTINGS: 'ai-chat-settings',
+    THEME: 'ai-chat-theme'
+  };
+
+  const DEFAULT_SETTINGS = {
+    provider: 'puter',
+    model: 'gpt-5-nano',
+    temperature: 0.7,
+    maxTokens: 32000,
+    topP: 0.9,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    streaming: true,
+    systemPrompt: '',
+    apiKey: '',
+    baseUrl: '',
+    imageUrl: ''
+  };
+
+  const CONTEXT_SETTINGS = {
+    maxTurns: 20,
+    maxCharacters: 12000000
+  };
+
+  // ===== Global State =====
+  let state = {
+    sessions: [],
+    currentSessionId: null,
+    currentMessages: [],
+    settings: { ...DEFAULT_SETTINGS },
+    isLoading: false,
+    editingMessageIndex: null,
+    puterReady: false
+  };
+
+  // ===== DOM Elements =====
+  const elements = {
+    // Top bar
+    provider: $('#provider'),
+    model: $('#model'),
+    history: $('#history'),
+    theme: $('#theme'),
+    settingsToggle: $('#settingsToggle'),
+    newChat: $('#newChat'),
+
+    // Settings panel
+    settingsPanel: $('#settingsPanel'),
+    apiKey: $('#apiKey'),
+    baseUrl: $('#baseUrl'),
+    temperature: $('#temperature'),
+    temperatureValue: $('#temperatureValue'),
+    maxTokens: $('#maxTokens'),
+    maxTokensValue: $('#maxTokensValue'),
+    topP: $('#topP'),
+    topPValue: $('#topPValue'),
+    frequencyPenalty: $('#frequencyPenalty'),
+    frequencyPenaltyValue: $('#frequencyPenaltyValue'),
+    presencePenalty: $('#presencePenalty'),
+    presencePenaltyValue: $('#presencePenaltyValue'),
+    systemPrompt: $('#systemPrompt'),
+    imageUrl: $('#imageUrl'),
+    streaming: $('#streaming'),
+
+    // Chat area
+    messages: $('#messages'),
+    messageCount: $('#messageCount'),
+
+    // Composer
+    messageInput: $('#messageInput'),
+    sendButton: $('#sendButton'),
+    connectionStatus: $('#connectionStatus'),
+
+    // Toast
+    toast: $('#toast')
+  };
+
+  // ===== Storage Functions =====
+  function saveToStorage(key, data) {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+      return true;
+    } catch (error) {
+      console.error('Failed to save to storage:', error);
+      showToast('Failed to save data', 'error');
+      return false;
+    }
+  }
+
+  function loadFromStorage(key, defaultValue = null) {
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : defaultValue;
+    } catch (error) {
+      console.error('Failed to load from storage:', error);
+      return defaultValue;
+    }
+  }
+
+  // ===== Session Management =====
+  function createNewSession(title = 'New Chat') {
+    const session = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      title: title.slice(0, 60) || 'New Chat',
+      created: new Date().toISOString(),
+      updated: new Date().toISOString(),
+      messages: []
+    };
+
+    state.sessions.unshift(session);
+    state.currentSessionId = session.id;
+    state.currentMessages = [];
+
+    saveSessions();
+    updateHistoryDropdown();
+    updateMessageCount();
+    renderMessages();
+
+    return session;
+  }
+
+  function loadSessions() {
+    state.sessions = loadFromStorage(STORAGE_KEYS.SESSIONS, []);
+    state.currentSessionId = loadFromStorage(STORAGE_KEYS.CURRENT_SESSION, null);
+
+    if (state.sessions.length === 0) {
+      createNewSession();
+    } else if (state.currentSessionId) {
+      const session = state.sessions.find(s => s.id === state.currentSessionId);
+      if (session) {
+        state.currentMessages = [...session.messages];
+      } else {
+        state.currentSessionId = state.sessions[0].id;
+        state.currentMessages = [...state.sessions[0].messages];
+      }
+    }
+  }
+
+  function saveSessions() {
+    // Update current session with current messages
+    if (state.currentSessionId) {
+      const session = state.sessions.find(s => s.id === state.currentSessionId);
+      if (session) {
+        session.messages = [...state.currentMessages];
+        session.updated = new Date().toISOString();
+      }
+    }
+
+    saveToStorage(STORAGE_KEYS.SESSIONS, state.sessions);
+    saveToStorage(STORAGE_KEYS.CURRENT_SESSION, state.currentSessionId);
+  }
+
+  function switchToSession(sessionId) {
+    if (state.currentSessionId === sessionId) return;
+
+    // Save current session
+    saveSessions();
+
+    // Switch to new session
+    const session = state.sessions.find(s => s.id === sessionId);
+    if (session) {
+      state.currentSessionId = sessionId;
+      state.currentMessages = [...session.messages];
+      saveToStorage(STORAGE_KEYS.CURRENT_SESSION, sessionId);
+      renderMessages();
+      updateMessageCount();
+    }
+  }
+
+  function updateHistoryDropdown() {
+    elements.history.innerHTML = '<option value="">Select Chat...</option>' +
+            state.sessions.map(session =>
+                    `<option value="${session.id}" ${session.id === state.currentSessionId ? 'selected' : ''}>
+            ${escapeHtml(session.title)}
+          </option>`
+            ).join('');
+  }
+
+  // ===== Settings Management =====
+  function loadSettings() {
+    const saved = loadFromStorage(STORAGE_KEYS.SETTINGS, {});
+    state.settings = { ...DEFAULT_SETTINGS, ...saved };
+    applySettingsToUI();
+  }
+
+  function saveSettings() {
+    saveToStorage(STORAGE_KEYS.SETTINGS, state.settings);
+  }
+
+  function applySettingsToUI() {
+    elements.provider.value = state.settings.provider;
+    elements.model.value = state.settings.model;
+    elements.apiKey.value = state.settings.apiKey;
+    elements.baseUrl.value = state.settings.baseUrl;
+    elements.temperature.value = state.settings.temperature;
+    elements.temperatureValue.textContent = state.settings.temperature;
+    elements.maxTokens.value = state.settings.maxTokens;
+    elements.maxTokensValue.textContent = state.settings.maxTokens;
+    elements.topP.value = state.settings.topP;
+    elements.topPValue.textContent = state.settings.topP;
+    elements.frequencyPenalty.value = state.settings.frequencyPenalty;
+    elements.frequencyPenaltyValue.textContent = state.settings.frequencyPenalty;
+    elements.presencePenalty.value = state.settings.presencePenalty;
+    elements.presencePenaltyValue.textContent = state.settings.presencePenalty;
+    elements.systemPrompt.value = state.settings.systemPrompt;
+    elements.imageUrl.value = state.settings.imageUrl;
+    elements.streaming.value = state.settings.streaming.toString();
+  }
+
+  function updateSettingFromUI(key, value) {
+    state.settings[key] = value;
+    saveSettings();
+  }
+
+  // ===== Theme Management =====
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    saveToStorage(STORAGE_KEYS.THEME, theme);
+  }
+
+  function loadTheme() {
+    const saved = loadFromStorage(STORAGE_KEYS.THEME, 'system');
+    elements.theme.value = saved;
+    applyTheme(saved);
+  }
+
+  // ===== Message Management =====
+  function addMessage(role, content, metadata = {}) {
+    const message = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+      role,
+      content,
+      timestamp: new Date().toISOString(),
+      ...metadata
+    };
+
+    state.currentMessages.push(message);
+    saveSessions();
+    updateMessageCount();
+
+    return message;
+  }
+
+  function updateMessage(index, content) {
+    if (state.currentMessages[index]) {
+      state.currentMessages[index].content = content;
+      state.currentMessages[index].updated = new Date().toISOString();
+      saveSessions();
+    }
+  }
+
+  function deleteMessage(index) {
+    if (index >= 0 && index < state.currentMessages.length) {
+      state.currentMessages.splice(index, 1);
+      saveSessions();
+      renderMessages();
+      updateMessageCount();
+    }
+  }
+
+  function updateMessageCount() {
+    const count = state.currentMessages.length;
+    elements.messageCount.textContent = `${count} message${count !== 1 ? 's' : ''}`;
+  }
+
+  // ===== Message Rendering =====
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function formatMessageContent(content, role) {
+    if (!content) return '';
+
+    // For AI messages, try to render as markdown
+    if (role === 'assistant' && window.marked) {
+      try {
+        return marked.parse(content);
+      } catch (error) {
+        console.warn('Markdown parsing failed:', error);
+        return escapeHtml(content).replace(/\n/g, '<br>');
+      }
+    }
+
+    // For user messages, preserve line breaks
+    return escapeHtml(content).replace(/\n/g, '<br>');
+  }
+
+  function createMessageElement(message, index) {
+    const messageEl = document.createElement('div');
+    messageEl.className = `msg ${message.role}`;
+    messageEl.dataset.index = index;
+    messageEl.dataset.messageId = message.id;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
+    avatar.textContent = message.role === 'assistant' ? '🤖' :
+            message.role === 'system' ? '⚙️' : '👤';
+
+    const content = document.createElement('div');
+    content.className = 'content';
+    content.innerHTML = formatMessageContent(message.content, message.role);
+
+    const toolbarRow = document.createElement('div');
+    toolbarRow.className = 'toolbar-row';
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'toolbar';
+
+    // Add action buttons
+    const copyBtn = createIconButton('📋', 'Copy', () => copyMessage(index));
+    toolbar.appendChild(copyBtn);
+
+    if (message.role === 'user') {
+      const editBtn = createIconButton('✏️', 'Edit', () => editMessage(index));
+      toolbar.appendChild(editBtn);
+    }
+
+    const deleteBtn = createIconButton('🗑️', 'Delete', () => deleteMessage(index));
+    toolbar.appendChild(deleteBtn);
+
+    toolbarRow.appendChild(toolbar);
+
+    if (message.role === 'assistant') {
+      messageEl.appendChild(avatar);
+      messageEl.appendChild(content);
+      messageEl.appendChild(toolbarRow);
+    } else {
+      messageEl.appendChild(content);
+      messageEl.appendChild(avatar);
+      messageEl.appendChild(toolbarRow);
+    }
+
+    return messageEl;
+  }
+
+  function createIconButton(icon, title, onClick) {
+    const button = document.createElement('button');
+    button.className = 'icon-btn';
+    button.title = title;
+    button.innerHTML = `${icon} ${title}`;
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
+  function renderMessages() {
+    elements.messages.innerHTML = '';
+
+    state.currentMessages.forEach((message, index) => {
+      const messageEl = createMessageElement(message, index);
+      elements.messages.appendChild(messageEl);
+    });
+
+    // Scroll to bottom
+    elements.messages.scrollTop = elements.messages.scrollHeight;
+  }
+
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      elements.messages.scrollTop = elements.messages.scrollHeight;
+    });
+  }
+
+  // ===== Message Actions =====
+  async function copyMessage(index) {
+    const message = state.currentMessages[index];
+    if (!message) return;
+
+    try {
+      await navigator.clipboard.writeText(message.content);
+      showToast('Message copied to clipboard', 'success');
+    } catch (error) {
+      console.error('Failed to copy message:', error);
+      showToast('Failed to copy message', 'error');
+    }
+  }
+
+  function editMessage(index) {
+    const message = state.currentMessages[index];
+    if (!message || message.role !== 'user' || state.editingMessageIndex !== null) return;
+
+    state.editingMessageIndex = index;
+    const messageEl = elements.messages.querySelector(`[data-index="${index}"]`);
+    const contentEl = messageEl.querySelector('.content');
+
+    const originalContent = message.content;
+
+    // Create edit interface
+    contentEl.innerHTML = '';
+    const editBox = document.createElement('div');
+    editBox.className = 'edit-box';
+
+    const textarea = document.createElement('textarea');
+    textarea.value = originalContent;
+    textarea.style.cssText = `
+        width: 100%;
+        min-height: 100px;
+        resize: vertical;
+        background: transparent;
+        color: inherit;
+        border: none;
+        outline: none;
+        font: 500 15px/1.6 Inter;
+        font-family: inherit;
+      `;
+
+    const actions = document.createElement('div');
+    actions.className = 'edit-actions';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn primary';
+    saveBtn.textContent = '💾 Save & Regenerate';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn';
+    cancelBtn.textContent = '❌ Cancel';
+
+    actions.appendChild(saveBtn);
+    actions.appendChild(cancelBtn);
+    editBox.appendChild(textarea);
+    editBox.appendChild(actions);
+    contentEl.appendChild(editBox);
+
+    textarea.focus();
+    textarea.select();
+
+    const finishEdit = () => {
+      state.editingMessageIndex = null;
+      renderMessages();
+    };
+
+    saveBtn.addEventListener('click', () => {
+      const newContent = textarea.value.trim();
+      if (!newContent) {
+        showToast('Message cannot be empty', 'error');
+        return;
+      }
+
+      // Update message and truncate conversation from this point
+      updateMessage(index, newContent);
+      state.currentMessages = state.currentMessages.slice(0, index + 1);
+
+      // Update session title if editing first message
+      if (index === 0) {
+        const session = state.sessions.find(s => s.id === state.currentSessionId);
+        if (session) {
+          session.title = newContent.slice(0, 60) || 'New Chat';
+          updateHistoryDropdown();
+        }
+      }
+
+      saveSessions();
+      finishEdit();
+
+      // Generate new response
+      generateResponse(newContent);
+    });
+
+    cancelBtn.addEventListener('click', finishEdit);
+  }
+
+  // ===== AI Communication =====
+  async function waitForPuter(timeout = 15000) {
+    if (window.puter?.ai?.chat) return true;
+
+    const start = Date.now();
+    return new Promise(resolve => {
+      const checkInterval = setInterval(() => {
+        if (window.puter?.ai?.chat) {
+          clearInterval(checkInterval);
+          resolve(true);
+        } else if (Date.now() - start > timeout) {
+          clearInterval(checkInterval);
+          resolve(false);
+        }
+      }, 100);
+    });
+  }
+
+  function buildContextualPrompt(userMessage) {
+    const messages = state.currentMessages.slice(-CONTEXT_SETTINGS.maxTurns);
+    let prompt = '';
+
+    // Add system prompt if provided
+    if (state.settings.systemPrompt.trim()) {
+      prompt += `System: ${state.settings.systemPrompt.trim()}\n\n`;
+    }
+
+    // Add conversation history
+    messages.forEach(msg => {
+      const role = msg.role === 'user' ? 'User' : 'Assistant';
+      prompt += `${role}: ${msg.content}\n`;
+    });
+
+    prompt += 'Assistant:';
+
+    // Truncate if too long
+    if (prompt.length > CONTEXT_SETTINGS.maxCharacters) {
+      const excess = prompt.length - CONTEXT_SETTINGS.maxCharacters;
+      const systemPart = state.settings.systemPrompt.trim() ?
+              `System: ${state.settings.systemPrompt.trim()}\n\n` : '';
+      const mainPart = prompt.slice(systemPart.length);
+      prompt = systemPart + mainPart.slice(excess);
+    }
+
+    return prompt;
+  }
+
+  async function generateResponse(userMessage) {
+    if (state.isLoading) {
+      showToast('Please wait for the current request to complete', 'error');
+      return;
+    }
+
+    state.isLoading = true;
+    updateLoadingState(true);
+
+    // Add user message if not already added
+    if (!userMessage || state.currentMessages[state.currentMessages.length - 1]?.content !== userMessage) {
+      addMessage('user', userMessage);
+      renderMessages();
+    }
+
+    // Add assistant message placeholder
+    const assistantMessage = addMessage('assistant', '');
+    const assistantIndex = state.currentMessages.length - 1;
+    renderMessages();
+
+    // Show typing indicator
+    const messageEl = elements.messages.querySelector(`[data-index="${assistantIndex}"] .content`);
+    messageEl.innerHTML = '<span class="typing"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+
+    try {
+      if (state.settings.provider === 'puter') {
+        await generateWithPuter(assistantIndex, userMessage);
+      } else {
+        await generateWithExternalAPI(assistantIndex, userMessage);
+      }
+    } catch (error) {
+      console.error('Generation failed:', error);
+      updateMessage(assistantIndex, `❌ Error: ${error.message}`);
+      showToast('Failed to generate response', 'error');
+    } finally {
+      state.isLoading = false;
+      updateLoadingState(false);
+      renderMessages();
+      scrollToBottom();
+    }
+  }
+
+  async function generateWithPuter(assistantIndex, userMessage) {
+    const prompt = buildContextualPrompt(userMessage);
+    const options = {
+      model: state.settings.model,
+      stream: state.settings.streaming
+    };
+
+    if (state.settings.streaming) {
+      const stream = state.settings.imageUrl ?
+              await puter.ai.chat(prompt, state.settings.imageUrl, options) :
+              await puter.ai.chat(prompt, options);
+
+      let fullResponse = '';
+
+      if (stream && typeof stream[Symbol.asyncIterator] === 'function') {
+        // Handle async iterator stream
+        for await (const chunk of stream) {
+          const text = typeof chunk === 'string' ? chunk : (chunk?.text || '');
+          if (!text) continue;
+
+          fullResponse += text;
+          updateMessage(assistantIndex, fullResponse);
+
+          // Update the message element in real-time
+          const messageEl = elements.messages.querySelector(`[data-index="${assistantIndex}"] .content`);
+          if (messageEl) {
+            messageEl.innerHTML = formatMessageContent(fullResponse, 'assistant');
+          }
+
+          scrollToBottom();
+        }
+      } else {
+        // Fallback for non-streaming response
+        const response = typeof stream === 'string' ? stream : (stream?.text || String(stream || ''));
+        updateMessage(assistantIndex, response);
+      }
+    } else {
+      // Non-streaming mode
+      const response = state.settings.imageUrl ?
+              await puter.ai.chat(prompt, state.settings.imageUrl, options) :
+              await puter.ai.chat(prompt, options);
+
+      const text = typeof response === 'string' ? response : (response?.text || String(response || ''));
+      updateMessage(assistantIndex, text);
+    }
+  }
+
+  async function generateWithExternalAPI(assistantIndex, userMessage) {
+    const { provider, apiKey, baseUrl } = state.settings;
+
+    if (!apiKey) {
+      throw new Error(`API key required for ${provider}`);
+    }
+
+    const messages = buildMessagesArray(userMessage);
+    const requestBody = buildAPIRequestBody(messages);
+    const url = getAPIEndpoint(provider, baseUrl);
+    const headers = getAPIHeaders(provider, apiKey);
+
+    if (state.settings.streaming) {
+      await handleStreamingResponse(url, headers, requestBody, assistantIndex);
+    } else {
+      await handleNonStreamingResponse(url, headers, requestBody, assistantIndex);
+    }
+  }
+
+  function buildMessagesArray(userMessage) {
+    const messages = [];
+
+    // Add system message if provided
+    if (state.settings.systemPrompt.trim()) {
+      messages.push({
+        role: 'system',
+        content: state.settings.systemPrompt.trim()
+      });
+    }
+
+    // Add conversation history (last 20 messages for context)
+    const recentMessages = state.currentMessages.slice(-20);
+    recentMessages.forEach(msg => {
+      messages.push({
+        role: msg.role === 'assistant' ? 'assistant' : 'user',
+        content: msg.content
+      });
+    });
+
+    return messages;
+  }
+
+  function buildAPIRequestBody(messages) {
+    const body = {
+      model: state.settings.model,
+      messages: messages,
+      temperature: parseFloat(state.settings.temperature),
+      max_tokens: parseInt(state.settings.maxTokens),
+      top_p: parseFloat(state.settings.topP),
+      frequency_penalty: parseFloat(state.settings.frequencyPenalty),
+      presence_penalty: parseFloat(state.settings.presencePenalty),
+      stream: state.settings.streaming
+    };
+
+    // Add image support for vision models if URL provided
+    if (state.settings.imageUrl && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      lastMessage.content = [
+        { type: 'text', text: lastMessage.content },
+        { type: 'image_url', image_url: { url: state.settings.imageUrl } }
+      ];
+    }
+
+    return body;
+  }
+
+  function getAPIEndpoint(provider, customBaseUrl) {
+    if (customBaseUrl) {
+      return `${customBaseUrl.replace(/\/$/, '')}/chat/completions`;
+    }
+
+    const endpoints = {
+      openai: 'https://api.openai.com/v1/chat/completions',
+      anthropic: 'https://api.anthropic.com/v1/messages',
+      google: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent'
+    };
+
+    return endpoints[provider] || endpoints.openai;
+  }
+
+  function getAPIHeaders(provider, apiKey) {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    switch (provider) {
+      case 'openai':
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        break;
+      case 'anthropic':
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        headers['anthropic-version'] = '2023-06-01';
+        break;
+      case 'google':
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        break;
+      default:
+        headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    return headers;
+  }
+
+  async function handleStreamingResponse(url, headers, requestBody, assistantIndex) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullResponse = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n').filter(line => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = extractContentFromResponse(parsed, state.settings.provider);
+              if (content) {
+                fullResponse += content;
+                updateMessage(assistantIndex, fullResponse);
+
+                // Update UI in real-time
+                const messageEl = elements.messages.querySelector(`[data-index="${assistantIndex}"] .content`);
+                if (messageEl) {
+                  messageEl.innerHTML = formatMessageContent(fullResponse, 'assistant');
+                }
+                scrollToBottom();
+              }
+            } catch (e) {
+              console.warn('Failed to parse streaming chunk:', e);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  async function handleNonStreamingResponse(url, headers, requestBody, assistantIndex) {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ ...requestBody, stream: false })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = extractContentFromResponse(data, state.settings.provider);
+    updateMessage(assistantIndex, content || 'No response received');
+  }
+
+  function extractContentFromResponse(data, provider) {
+    switch (provider) {
+      case 'openai':
+        return data.choices?.[0]?.delta?.content || data.choices?.[0]?.message?.content || '';
+      case 'anthropic':
+        return data.delta?.text || data.content?.[0]?.text || '';
+      case 'google':
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      default:
+        return data.choices?.[0]?.delta?.content || data.choices?.[0]?.message?.content || '';
+    }
+  }
+
+  function updateLoadingState(isLoading) {
+    elements.sendButton.disabled = isLoading;
+    elements.messageInput.disabled = isLoading;
+
+    if (isLoading) {
+      elements.sendButton.innerHTML = '<span>⏳ Generating...</span>';
+      elements.connectionStatus.innerHTML = '<span class="muted-text">🤖 AI is thinking...</span>';
+    } else {
+      elements.sendButton.innerHTML = '<span>🚀 Send</span>';
+      elements.connectionStatus.innerHTML = '<span class="muted-text">🔌 Ready</span>';
+    }
+  }
+
+  function showToast(message, type = 'info') {
+    elements.toast.textContent = message;
+    elements.toast.className = `toast ${type} show`;
+
+    setTimeout(() => {
+      elements.toast.classList.remove('show');
+    }, 3000);
+  }
+
+
+  // ===== Application Initialization =====
+  async function initializeApp() {
+    try {
+      // Load saved data
+      loadSessions();
+      loadSettings();
+      loadTheme();
+
+      // Setup event listeners
+      setupEventListeners();
+
+      // Initialize Puter.js
+      elements.connectionStatus.innerHTML = '<span class="muted-text">🔌 Connecting to Puter AI...</span>';
+      state.puterReady = await waitForPuter();
+
+      if (state.puterReady) {
+        elements.connectionStatus.innerHTML = '<span class="success-text">✅ Puter AI Ready</span>';
+        elements.sendButton.disabled = false;
+      } else {
+        elements.connectionStatus.innerHTML = '<span class="error-text">❌ Puter AI Failed to Load</span>';
+        showToast('Puter AI failed to load. External APIs may still work with valid API keys.', 'error');
+      }
+
+      // Render initial state
+      updateHistoryDropdown();
+      renderMessages();
+      updateMessageCount();
+
+      // Focus input
+      elements.messageInput.focus();
+
+    } catch (error) {
+      console.error('Initialization failed:', error);
+      showToast('App initialization failed', 'error');
+    }
+  }
+
+  function setupEventListeners() {
+    // Settings panel toggle
+    elements.settingsToggle.addEventListener('click', () => {
+      const isOpen = elements.settingsPanel.classList.toggle('open');
+      elements.settingsPanel.setAttribute('aria-hidden', !isOpen);
+    });
+
+    // New chat
+    elements.newChat.addEventListener('click', () => {
+      createNewSession();
+      elements.messageInput.focus();
+    });
+
+    // Provider/model changes
+    elements.provider.addEventListener('change', (e) => {
+      updateSettingFromUI('provider', e.target.value);
+      updateModelOptions();
+    });
+
+    elements.model.addEventListener('change', (e) => {
+      updateSettingFromUI('model', e.target.value);
+    });
+
+    // Settings inputs
+    elements.apiKey.addEventListener('input', (e) => {
+      updateSettingFromUI('apiKey', e.target.value);
+    });
+
+    elements.baseUrl.addEventListener('input', (e) => {
+      updateSettingFromUI('baseUrl', e.target.value);
+    });
+
+    elements.systemPrompt.addEventListener('input', (e) => {
+      updateSettingFromUI('systemPrompt', e.target.value);
+    });
+
+    elements.imageUrl.addEventListener('input', (e) => {
+      updateSettingFromUI('imageUrl', e.target.value);
+    });
+
+    elements.streaming.addEventListener('change', (e) => {
+      updateSettingFromUI('streaming', e.target.value === 'true');
+    });
+
+    // Range inputs
+    setupRangeInput('temperature');
+    setupRangeInput('maxTokens');
+    setupRangeInput('topP');
+    setupRangeInput('frequencyPenalty');
+    setupRangeInput('presencePenalty');
+
+    // Theme
+    elements.theme.addEventListener('change', (e) => {
+      applyTheme(e.target.value);
+    });
+
+    // History
+    elements.history.addEventListener('change', (e) => {
+      if (e.target.value) {
+        switchToSession(e.target.value);
+      }
+    });
+
+    // Message input
+    elements.messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Send button
+    elements.sendButton.addEventListener('click', sendMessage);
+  }
+
+  function setupRangeInput(settingKey) {
+    const input = elements[settingKey];
+    const valueDisplay = elements[settingKey + 'Value'];
+
+    input.addEventListener('input', (e) => {
+      const value = parseFloat(e.target.value);
+      valueDisplay.textContent = value;
+      updateSettingFromUI(settingKey, value);
+    });
+  }
+
+  function updateModelOptions() {
+    const provider = state.settings.provider;
+    const modelSelect = elements.model;
+
+    // Clear current options
+    modelSelect.innerHTML = '';
+
+    const modelOptions = {
+      puter: [
+        'gpt-5-nano', 'gpt-5-mini', 'gpt-5', 'gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini',
+        'claude-sonnet-4', 'claude-opus-4', 'gpt-4.1', 'deepseek-chat', 'gemini-2.0-flash',
+        'o1-pro', 'o3', 'o3-mini', 'o4-mini', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4.5-preview',
+        'claude-3-7-sonnet', 'claude-3-5-sonnet', 'deepseek-reasoner', 'gemini-1.5-flash',
+        'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo', 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+        'meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo', 'mistral-large-latest', 'pixtral-large-latest',
+        'codestral-latest', 'google/gemma-2-27b-it', 'grok-beta'
+      ],
+      openai: [
+        'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo', 'o1-preview', 'o1-mini'
+      ],
+      anthropic: [
+        'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'
+      ],
+      google: [
+        'gemini-pro', 'gemini-pro-vision', 'gemini-1.5-pro', 'gemini-1.5-flash'
+      ]
+    };
+
+    const models = modelOptions[provider] || modelOptions.puter;
+
+    models.forEach(model => {
+      const option = document.createElement('option');
+      option.value = model;
+      option.textContent = model;
+      if (model === state.settings.model) {
+        option.selected = true;
+      }
+      modelSelect.appendChild(option);
+    });
+
+    // Update setting if current model not available for provider
+    if (!models.includes(state.settings.model)) {
+      updateSettingFromUI('model', models[0]);
+    }
+  }
+
+  async function sendMessage() {
+    const message = elements.messageInput.value.trim();
+    if (!message) {
+      showToast('Please enter a message', 'error');
+      return;
+    }
+
+    if (message.length > 20004000) {
+      showToast('Message too long (max 4000 characters)', 'error');
+      return;
+    }
+
+    // Update session title if this is the first message
+    if (state.currentMessages.length === 0) {
+      const session = state.sessions.find(s => s.id === state.currentSessionId);
+      if (session) {
+        session.title = message.slice(0, 60) || 'New Chat';
+        updateHistoryDropdown();
+      }
+    }
+
+    elements.messageInput.value = '';
+    await generateResponse(message);
+  }
+
+  // Initialize the app
+  initializeApp();
+
+</script>
+</body>
+</html>
