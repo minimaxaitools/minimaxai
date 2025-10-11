@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puter.js AI-Powered App</title>
+
+  <!-- Include Tailwind CSS for styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Include gpt-->
+  <!-- Include Puter.js -->
+  <script src="https://js.puter.com/v2/"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f9fafb;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .error {
+      color: #dc2626;
+      font-size: 0.875rem;
+    }
+    .output-container {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      min-height: 100px;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background-color: #ffffff;
+      margin-top: 1rem;
+      transition: height 0.3s ease;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+    .output-container.expanded {
+      height: auto;
+      max-height: none;
+    }
+    .output-content {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .output-controls {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .output-controls button {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      border-radius: 0.25rem;
+      transition: background-color 0.2s ease;
+    }
+
+
+    /* start of PRD to Prototype specific styles */
+    #prd-upload-area {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    #prd-upload-area.dragover {
+      border-color: #3b82f6 !important;
+      background-color: #eff6ff !important;
+    }
+
+    .prototype-preview-container {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      background-color: #f9fafb;
+    }
+
+    #prototype-modal {
+      z-index: 1000;
+    }
+
+    #prototype-preview-frame {
+      min-height: 500px;
+    }
+
+    .output-container pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 0.375rem;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+
+    .output-container code {
+      color: #333;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      #prototype-modal .bg-white {
+        width: 95%;
+        height: 90%;
+        margin: 2.5%;
+      }
+
+      .grid-cols-1.md\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .progress-indicator {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: #f0f9ff;
+      border: 1px solid #0ea5e9;
+      border-radius: 0.5rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e0e7ff;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+
+    /* end of PRD to Prototype specific styles */
+
+  </style>
+</head>
+<body class="bg-gray-100">
+
+<!-- Initial GPT-4o Mini Output Section -->
+<div class="container mx-auto p-6">
+  <h1 class="text-2xl font-bold text-gray-800 mb-4">GPT-4o Mini Response</h1>
+  <div id="initial-output" class="output-container text-gray-700">Loading...</div>
+</div>
+
+<!-- Full App UI -->
+<div class="container mx-auto p-6">
+  <!-- Header -->
+  <h1 class="text-3xl font-bold text-gray-800 mb-6">AI-Powered App with Puter.js</h1>
+
+  <!-- Authentication Section -->
+  <div id="auth-section" class="mb-6">
+    <div id="user-info" class="text-lg font-semibold text-gray-700"></div>
+    <button id="sign-in" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 mr-2">Sign In</button>
+    <button id="sign-out" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 hidden">Sign Out</button>
+  </div>
+
+  <!-- Text Generation Section -->
+  <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Generate Text</h2>
+    <textarea id="text-prompt" class="w-full p-3 border rounded-md mb-4" rows="4"
+              placeholder="Enter your prompt (e.g., Write a Python script for a simple game)"></textarea>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-gray-700 mb-2">Model</label>
+        <select id="text-model" class="border rounded-md p-2 w-full">
+          <option value="gpt-4o">GPT-4o</option>
+          <option value="gpt-4.1">GPT-4.1</option>
+          <option value="o1-mini">o1-mini</option>
+          <option value="o3-mini">o3-mini</option>
+          <option value="claude-sonnet-4">Claude Sonnet 4</option>
+          <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+          <option value="claude-opus-4-1">Claude Opus 4.1</option>
+          <option value="claude-opus-4">Claude Opus 4</option>
+          <option value="grok-3-beta">x-ai grok-3-beta</option>
+          <option value="x-ai/grok-4">x-ai grok-4-beta</option>
+          <option value="gemini-2.0-flash">Gemini gemini-2.0-flash</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-gray-700 mb-2">Max Tokens</label>
+        <input id="max-tokens" type="number" min="1" max="4096" value="512"
+               class="border rounded-md p-2 w-full" placeholder="Max tokens (e.g., 512)">
+      </div>
+      <div>
+        <label class="block text-gray-700 mb-2">Temperature (0 = precise, 1 = creative)</label>
+        <input id="temperature" type="range" min="0" max="1" step="0.1" value="0.7" class="w-full">
+        <span id="temperature-value" class="text-gray-600 text-sm">0.7</span>
+      </div>
+      <div>
+        <label class="block text-gray-700 mb-2">Stream Response</label>
+        <input id="stream-toggle" type="checkbox" class="mr-2" checked>
+        <span class="text-gray-600 text-sm">Enable streaming for real-time output</span>
+      </div>
+    </div>
+    <div class="flex gap-4">
+      <button id="generate-text" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Generate</button>
+      <button id="clear-text" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">Clear Output</button>
+    </div>
+    <div id="text-output" class="output-container">
+      <div class="output-controls">
+        <button id="toggle-expand-text" class="bg-blue-500 text-white hover:bg-blue-600">Expand</button>
+        <button id="toggle-scroll-text" class="bg-blue-500 text-white hover:bg-blue-600">Disable Auto-Scroll</button>
+      </div>
+      <div id="text-content" class="output-content"></div>
+    </div>
+    <div id="text-error" class="error mt-2"></div>
+  </div>
+
+  <!-- Image Generation Section -->
+  <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Generate Image with DALL-E 3</h2>
+    <input id="image-prompt" type="text" class="w-full p-3 border rounded-md mb-4"
+           placeholder="Enter image description (e.g., A futuristic cityscape at night)">
+    <div class="flex gap-4">
+      <button id="generate-image" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700">Generate Image</button>
+      <button id="clear-image" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">Clear Output</button>
+    </div>
+    <div id="image-output" class="output-container">
+      <div class="output-controls">
+        <button id="toggle-expand-image" class="bg-blue-500 text-white hover:bg-blue-600">Expand</button>
+      </div>
+      <div id="image-content"></div>
+    </div>
+    <div id="image-error" class="error mt-2"></div>
+  </div>
+
+  <!-- Image Analysis Section -->
+  <div class="bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">Analyze Image with GPT-4o Vision</h2>
+    <input id="image-url" type="text" class="w-full p-3 border rounded-md mb-4"
+           placeholder="Enter image URL or upload an image">
+    <input id="image-upload" type="file" accept="image/*" class="mb-4">
+    <div class="flex gap-4">
+      <button id="analyze-image" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Analyze Image</button>
+      <button id="clear-analysis" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">Clear Output</button>
+    </div>
+    <div id="image-preview" class="output-container">
+      <div class="output-controls">
+        <button id="toggle-expand-preview" class="bg-blue-500 text-white hover:bg-blue-600">Expand</button>
+      </div>
+      <div id="preview-content"></div>
+    </div>
+    <div id="analysis-output" class="output-container">
+      <div class="output-controls">
+        <button id="toggle-expand-analysis" class="bg-blue-500 text-white hover:bg-blue-600">Expand</button>
+        <button id="toggle-scroll-analysis" class="bg-blue-500 text-white hover:bg-blue-600">Disable Auto-Scroll</button>
+      </div>
+      <div id="analysis-content" class="output-content"></div>
+    </div>
+    <div id="analysis-error" class="error mt-2"></div>
+  </div>
+
+  <!-- PRD to Prototype Section -->
+  <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <h2 class="text-xl font-semibold text-gray-800 mb-4">PRD to Prototype Generator</h2>
+    <p class="text-gray-600 mb-4">Upload your Product Requirements Document and generate a working HTML prototype</p>
+
+    <div id="prd-upload-area" class="border-2 border-dashed border-gray-300 rounded-lg p-6 mb-4 text-center transition-colors hover:border-gray-400">
+      <div class="mb-4">
+        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <p class="text-gray-600 mb-2">Drop your PRD file here or click to browse</p>
+      <p class="text-sm text-gray-500">Supports PDF, TXT, and Markdown (.md) files</p>
+      <input id="prd-file-input" type="file" accept=".pdf,.txt,.md" class="hidden">
+      <button id="prd-browse-btn" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Browse Files</button>
+    </div>
+
+    <div id="prd-file-info" class="hidden bg-gray-50 p-3 rounded-md mb-4">
+      <p class="text-sm text-gray-700"><strong>Selected:</strong> <span id="prd-file-name"></span></p>
+      <p class="text-sm text-gray-500"><span id="prd-file-size"></span></p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="block text-gray-700 mb-2">AI Model for Generation</label>
+        <select id="prd-model" class="border rounded-md p-2 w-full">
+          <option value="claude-sonnet-4">Claude Sonnet 4 (Recommended)</option>
+          <option value="gpt-4o">GPT-4o</option>
+          <option value="claude-opus-4">Claude Opus 4</option>
+          <option value="claude-sonnet-4-5">Claude Sonet 4.5</option>
+          <option value="claude-opus-4-1">Claude Opus 4.1</option>
+          <option value="gpt-4.1">GPT-4.1</option>
+          <option value="o1-mini">o1-mini</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-gray-700 mb-2">Max Tokens for Prototype</label>
+        <select id="prd-max-tokens" class="border rounded-md p-2 w-full">
+          <option value="4096">4,096 tokens</option>
+          <option value="8192" selected>8,192 tokens</option>
+          <option value="16384">16,384 tokens</option>
+          <option value="32000">32,000 tokens</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-gray-700 mb-2">Prototype Style</label>
+        <select id="prd-style" class="border rounded-md p-2 w-full">
+          <option value="modern">Modern & Clean</option>
+          <option value="minimal">Minimal Design</option>
+          <option value="corporate">Corporate Style</option>
+          <option value="startup">Startup/Tech Style</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Advanced Settings Toggle -->
+    <div class="mb-4">
+      <button type="button" id="toggle-prd-advanced" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+        ⚙️ Advanced Settings
+      </button>
+      <div id="prd-advanced-settings" class="hidden mt-3 p-4 bg-gray-50 rounded-md">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-gray-700 mb-2">Temperature (0-1)</label>
+            <input id="prd-temperature" type="range" min="0" max="1" step="0.1" value="0.3" class="w-full">
+            <span id="prd-temperature-value" class="text-gray-600 text-sm">0.3</span>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Generation Mode</label>
+            <select id="prd-generation-mode" class="border rounded-md p-2 w-full">
+              <option value="single">Single Generation</option>
+              <option value="iterative">Iterative (Multiple Parts)</option>
+            </select>
+          </div>
+        </div>
+        <div class="mt-3">
+          <label class="flex items-center text-sm">
+            <input type="checkbox" id="prd-include-comments" class="mr-2" checked>
+            Include code comments and documentation
+          </label>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="flex gap-4 mb-4">
+      <button id="generate-prototype" class="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        Generate Prototype
+      </button>
+      <button id="clear-prototype" class="bg-gray-400 text-white px-4 py-2 rounded-md hover:bg-gray-500">
+        Clear
+      </button>
+    </div>
+
+    <div id="prototype-output" class="output-container hidden">
+      <div class="output-controls">
+        <button id="toggle-expand-prototype" class="bg-blue-500 text-white hover:bg-blue-600">Expand</button>
+        <button id="download-prototype-html" class="bg-green-500 text-white hover:bg-green-600">Download HTML</button>
+        <button id="preview-prototype" class="bg-purple-500 text-white hover:bg-purple-600">Live Preview</button>
+      </div>
+      <div id="prototype-content" class="output-content"></div>
+    </div>
+
+    <div id="prototype-error" class="error mt-2"></div>
+  </div>
+
+  <!-- Prototype Preview Modal -->
+  <div id="prototype-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg w-11/12 h-5/6 flex flex-col">
+      <div class="flex justify-between items-center p-4 border-b">
+        <h3 class="text-lg font-semibold">Prototype Preview</h3>
+        <button id="close-prototype-modal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="flex-1 p-4">
+        <iframe id="prototype-preview-frame" class="w-full h-full border rounded"></iframe>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Initial Script -->
+<!-- Silent Script -->
+<script>
+  puter.ai.chat("What is life?")
+          .then(response => {
+            // Response received, do nothing with it
+            console.log("AI responded (but not shown):", response);
+          })
+          .catch(error => {
+            // Error occurred, optionally log or suppress
+            console.error("AI error:", error);
+          });
+</script>
+
+
+<script>
+  // DOM Elements
+  const userInfo = document.getElementById('user-info');
+  const signInButton = document.getElementById('sign-in');
+  const signOutButton = document.getElementById('sign-out');
+  const textPrompt = document.getElementById('text-prompt');
+  const textModel = document.getElementById('text-model');
+  const maxTokens = document.getElementById('max-tokens');
+  const temperature = document.getElementById('temperature');
+  const temperatureValue = document.getElementById('temperature-value');
+  const streamToggle = document.getElementById('stream-toggle');
+  const generateTextButton = document.getElementById('generate-text');
+  const clearTextButton = document.getElementById('clear-text');
+  const textOutput = document.getElementById('text-output');
+  const textContent = document.getElementById('text-content');
+  const textError = document.getElementById('text-error');
+  const toggleExpandText = document.getElementById('toggle-expand-text');
+  const toggleScrollText = document.getElementById('toggle-scroll-text');
+  const imagePrompt = document.getElementById('image-prompt');
+  const generateImageButton = document.getElementById('generate-image');
+  const clearImageButton = document.getElementById('clear-image');
+  const imageOutput = document.getElementById('image-output');
+  const imageContent = document.getElementById('image-content');
+  const imageError = document.getElementById('image-error');
+  const toggleExpandImage = document.getElementById('toggle-expand-image');
+  const imageUrl = document.getElementById('image-url');
+  const imageUpload = document.getElementById('image-upload');
+  const analyzeImageButton = document.getElementById('analyze-image');
+  const clearAnalysisButton = document.getElementById('clear-analysis');
+  const imagePreview = document.getElementById('image-preview');
+  const previewContent = document.getElementById('preview-content');
+  const toggleExpandPreview = document.getElementById('toggle-expand-preview');
+  const analysisOutput = document.getElementById('analysis-output');
+  const analysisContent = document.getElementById('analysis-content');
+  const analysisError = document.getElementById('analysis-error');
+  const toggleExpandAnalysis = document.getElementById('toggle-expand-analysis');
+  const toggleScrollAnalysis = document.getElementById('toggle-scroll-analysis');
+
+  // State for auto-scroll and expansion
+  let autoScrollText = true;
+  let autoScrollAnalysis = true;
+
+  // Update temperature value display
+  temperature.addEventListener('input', () => {
+    temperatureValue.textContent = temperature.value;
+  });
+
+  // Toggle expansion for output containers
+  function toggleExpansion(container, button) {
+    if (container.classList.contains('expanded')) {
+      container.classList.remove('expanded');
+      container.style.height = 'auto';
+      button.textContent = 'Expand';
+    } else {
+      container.classList.add('expanded');
+      button.textContent = 'Collapse';
+    }
+  }
+
+  toggleExpandText.addEventListener('click', () => toggleExpansion(textOutput, toggleExpandText));
+  toggleExpandImage.addEventListener('click', () => toggleExpansion(imageOutput, toggleExpandImage));
+  toggleExpandPreview.addEventListener('click', () => toggleExpansion(imagePreview, toggleExpandPreview));
+  toggleExpandAnalysis.addEventListener('click', () => toggleExpansion(analysisOutput, toggleExpandAnalysis));
+
+  // Toggle auto-scroll for text and analysis
+  toggleScrollText.addEventListener('click', () => {
+    autoScrollText = !autoScrollText;
+    toggleScrollText.textContent = autoScrollText ? 'Disable Auto-Scroll' : 'Enable Auto-Scroll';
+  });
+  toggleScrollAnalysis.addEventListener('click', () => {
+    autoScrollAnalysis = !autoScrollAnalysis;
+    toggleScrollAnalysis.textContent = autoScrollAnalysis ? 'Disable Auto-Scroll' : 'Enable Auto-Scroll';
+  });
+
+  // Authentication Handling
+  async function updateAuthStatus() {
+    try {
+      const isSignedIn = puter.auth.isSignedIn();
+      if (isSignedIn) {
+        const user = await puter.auth.getUser();
+        userInfo.textContent = `Welcome, ${user.username}!`;
+        signInButton.classList.add('hidden');
+        signOutButton.classList.remove('hidden');
+      } else {
+        userInfo.textContent = 'Please sign in to use AI features.';
+        signInButton.classList.remove('hidden');
+        signOutButton.classList.add('hidden');
+      }
+    } catch (error) {
+      userInfo.textContent = 'Error checking authentication status.';
+      console.error('Auth error:', error);
+    }
+  }
+
+  signInButton.addEventListener('click', async () => {
+    try {
+      await puter.auth.signIn();
+      updateAuthStatus();
+    } catch (error) {
+      userInfo.textContent = 'Sign-in failed. Please try again.';
+      console.error('Sign-in error:', error);
+    }
+  });
+
+  signOutButton.addEventListener('click', async () => {
+    try {
+      await puter.auth.signOut();
+      updateAuthStatus();
+    } catch (error) {
+      userInfo.textContent = 'Sign-out failed. Please try again.';
+      console.error('Sign-out error:', error);
+    }
+  });
+
+  // Text Generation
+  generateTextButton.addEventListener('click', async () => {
+    textContent.textContent = '';
+    textError.textContent = '';
+    if (!puter.auth.isSignedIn()) {
+      textError.textContent = 'Please sign in to generate text.';
+      return;
+    }
+    const prompt = textPrompt.value.trim();
+    if (!prompt) {
+      textError.textContent = 'Please enter a prompt.';
+      return;
+    }
+    const options = {
+      model: textModel.value,
+      stream: streamToggle.checked,
+      max_tokens: parseInt(maxTokens.value) || 512,
+      temperature: parseFloat(temperature.value) || 0.7
+    };
+    try {
+      textContent.textContent = 'Generating...';
+      const response = await puter.ai.chat(prompt, options);
+      textContent.textContent = '';
+      if (options.stream) {
+        for await (const part of response) {
+          if (part?.text) {
+            textContent.textContent += part.text;
+            if (autoScrollText && !textOutput.classList.contains('expanded')) {
+              textOutput.scrollTop = textOutput.scrollHeight;
+            }
+          }
+        }
+      } else {
+        textContent.textContent = response.message?.content[0]?.text || response;
+        if (autoScrollText && !textOutput.classList.contains('expanded')) {
+          textOutput.scrollTop = textOutput.scrollHeight;
+        }
+      }
+    } catch (error) {
+      textError.textContent = 'Error generating text: ' + error.message;
+      console.error('Text generation error:', error);
+    }
+  });
+
+  clearTextButton.addEventListener('click', () => {
+    textContent.textContent = '';
+    textError.textContent = '';
+    textOutput.classList.remove('expanded');
+    toggleExpandText.textContent = 'Expand';
+  });
+
+  // Image Generation
+  generateImageButton.addEventListener('click', async () => {
+    imageContent.innerHTML = '';
+    imageError.textContent = '';
+    if (!puter.auth.isSignedIn()) {
+      imageError.textContent = 'Please sign in to generate images.';
+      return;
+    }
+    const prompt = imagePrompt.value.trim();
+    if (!prompt) {
+      imageError.textContent = 'Please enter an image description.';
+      return;
+    }
+    try {
+      imageContent.innerHTML = '<p>Generating image...</p>';
+      const imageElement = await puter.ai.txt2img(prompt);
+      imageContent.innerHTML = '';
+      imageElement.style.maxWidth = '100%';
+      imageContent.appendChild(imageElement);
+    } catch (error) {
+      imageError.textContent = 'Error generating image: ' + error.message;
+      console.error('Image generation error:', error);
+    }
+  });
+
+  clearImageButton.addEventListener('click', () => {
+    imageContent.innerHTML = '';
+    imageError.textContent = '';
+    imageOutput.classList.remove('expanded');
+    toggleExpandImage.textContent = 'Expand';
+  });
+
+  // Image Upload Preview
+  imageUpload.addEventListener('change', () => {
+    const file = imageUpload.files[0];
+    if (file) {
+      previewContent.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.maxWidth = '300px';
+      previewContent.appendChild(img);
+    }
+  });
+
+  // Image Analysis
+  analyzeImageButton.addEventListener('click', async () => {
+    analysisContent.textContent = '';
+    analysisError.textContent = '';
+    if (!puter.auth.isSignedIn()) {
+      analysisError.textContent = 'Please sign in to analyze images.';
+      return;
+    }
+    let imageSource = imageUrl.value.trim();
+    if (!imageSource && imageUpload.files.length === 0) {
+      analysisError.textContent = 'Please provide an image URL or upload an image.';
+      return;
+    }
+    try {
+      analysisContent.textContent = 'Analyzing image...';
+      if (imageUpload.files.length > 0) {
+        const file = imageUpload.files[0];
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+        imageSource = dataUrl;
+      }
+      const response = await puter.ai.chat('What do you see in this image?', imageSource, { model: 'gpt-4o' });
+      analysisContent.textContent = response;
+      if (autoScrollAnalysis && !analysisOutput.classList.contains('expanded')) {
+        analysisOutput.scrollTop = analysisOutput.scrollHeight;
+      }
+    } catch (error) {
+      analysisError.textContent = 'Error analyzing image: ' + error.message;
+      console.error('Image analysis error:', error);
+    }
+  });
+
+  clearAnalysisButton.addEventListener('click', () => {
+    previewContent.innerHTML = '';
+    analysisContent.textContent = '';
+    analysisError.textContent = '';
+    imagePreview.classList.remove('expanded');
+    analysisOutput.classList.remove('expanded');
+    toggleExpandPreview.textContent = 'Expand';
+    toggleExpandAnalysis.textContent = 'Expand';
+  });
+
+  // Initialize Authentication Status
+  updateAuthStatus();
+</script>
+
+<!-- Enhanced Features Script - Add before closing </body> tag -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+
+<script>
+  // Enhanced Features Module - Standalone Version
+  (function() {
+    'use strict';
+
+    // Configuration for different AI models
+    const AI_CONFIGS = {
+      'claude-sonnet-4': {
+        maxTokens: 8192,
+        temperature: 0.7,
+        systemPrompt: "You are Claude, an AI assistant. Provide detailed, well-structured responses. For code, include clear explanations and comments.",
+        continuationPrompt: "Continue from where you left off. If you were writing code, continue with the next logical part."
+      },
+      'claude-sonnet-4-5': {
+        maxTokens: 8192,
+        temperature: 0.7,
+        systemPrompt: "You are Claude, an AI assistant. Provide detailed, well-structured responses. For code, include clear explanations and comments.",
+        continuationPrompt: "Continue from where you left off. If you were writing code, continue with the next logical part."
+      },
+      'claude-opus-4-1': {
+        maxTokens: 8192,
+        temperature: 0.7,
+        systemPrompt: "You are Claude, an AI assistant. Provide detailed, well-structured responses. For code, include clear explanations and comments.",
+        continuationPrompt: "Continue from where you left off. If you were writing code, continue with the next logical part."
+      },
+      'gpt-4o': {
+        maxTokens: 4096,
+        temperature: 0.7,
+        systemPrompt: "You are a helpful AI assistant. Provide clear, concise responses.",
+        continuationPrompt: "Please continue from where you left off."
+      },
+      'o1-mini': {
+        maxTokens: 2048,
+        temperature: 0.3,
+        systemPrompt: "Provide precise, accurate responses with step-by-step reasoning.",
+        continuationPrompt: "Continue the previous response logically."
+      }
+    };
+
+    // State management
+    const state = {
+      conversationHistory: [],
+      lastOutput: '',
+      outputType: 'text',
+      fileName: 'ai-output'
+    };
+
+    // Wait for DOM to be ready, then initialize
+    function waitForElements() {
+      const checkElements = () => {
+        const textOutput = document.getElementById('text-output');
+        const analysisOutput = document.getElementById('analysis-output');
+
+        if (textOutput && analysisOutput) {
+          initializeEnhancements();
+        } else {
+          setTimeout(checkElements, 100);
+        }
+      };
+      checkElements();
+    }
+
+    // Initialize enhanced features
+    function initializeEnhancements() {
+      console.log('Initializing AI enhancements...');
+      addDownloadControls();
+      addSettingsPanel();
+      addContinuationFeature(); // Now properly defined
+      enhanceOutputDisplay();
+      addKeyboardShortcuts();
+      enhanceGenerateFunction();
+    }
+
+    // Add continuation feature - FIXED: Now properly defined
+    function addContinuationFeature() {
+      // This function adds continuation capabilities
+      // It's integrated into the download controls
+      console.log('Continuation feature added');
+    }
+
+    // Add download and copy controls to output containers
+    function addDownloadControls() {
+      const outputContainers = [
+        { element: document.getElementById('text-output'), type: 'text' },
+        { element: document.getElementById('analysis-output'), type: 'analysis' },
+        // Add this to the outputContainers array in the addDownloadControls function
+        { element: document.getElementById('prototype-output'), type: 'prototype' }
+
+      ];
+
+      outputContainers.forEach(({ element, type }) => {
+        if (!element) return;
+
+        // Find or create controls container
+        let controls = element.querySelector('.output-controls');
+        if (!controls) {
+          controls = document.createElement('div');
+          controls.className = 'output-controls';
+          element.insertBefore(controls, element.firstChild);
+        }
+
+        // Add enhanced controls
+        const enhancedControls = document.createElement('div');
+        enhancedControls.className = 'enhanced-controls flex gap-2 mt-2 p-2 bg-gray-50 rounded';
+        enhancedControls.innerHTML = `
+                    <button class="copy-btn px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors" data-type="${type}">
+                        📋 Copy
+                    </button>
+                    <button class="download-md-btn px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors" data-type="${type}">
+                        ⬇️ MD
+                    </button>
+                    <button class="download-txt-btn px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors" data-type="${type}">
+                        📄 TXT
+                    </button>
+                    <input type="text" class="filename-input px-2 py-1 text-xs border rounded w-24" placeholder="filename" value="ai-output-${type}">
+                    <button class="continue-btn px-3 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors" data-type="${type}">
+                        ▶️ Continue
+                    </button>
+                `;
+
+        controls.appendChild(enhancedControls);
+      });
+
+      // Add event listeners for enhanced controls
+      document.addEventListener('click', handleEnhancedControls);
+    }
+
+    // Handle enhanced control button clicks
+    async function handleEnhancedControls(e) {
+      const target = e.target;
+      const type = target.dataset.type;
+
+      if (!type) return;
+
+      if (target.classList.contains('copy-btn')) {
+        await copyToClipboard(type);
+      } else if (target.classList.contains('download-md-btn')) {
+        downloadFile(type, 'md');
+      } else if (target.classList.contains('download-txt-btn')) {
+        downloadFile(type, 'txt');
+      } else if (target.classList.contains('continue-btn')) {
+        continueGeneration(type);
+      }
+    }
+
+    // Copy content to clipboard
+    async function copyToClipboard(type) {
+      const content = getOutputContent(type);
+      if (!content) {
+        showNotification('No content to copy', 'warning');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(content);
+        showNotification('Content copied to clipboard!', 'success');
+      } catch (err) {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = content;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showNotification('Content copied to clipboard!', 'success');
+      }
+    }
+
+    // Download file
+    function downloadFile(type, format) {
+      const content = getOutputContent(type);
+      if (!content) {
+        showNotification('No content to download', 'warning');
+        return;
+      }
+
+      const filenameInput = document.querySelector(`[data-type="${type}"] ~ .enhanced-controls .filename-input`) ||
+              document.querySelector(`.enhanced-controls .filename-input[data-type="${type}"]`) ||
+              document.querySelector('.filename-input');
+
+      const filename = filenameInput ? filenameInput.value || `ai-output-${type}` : `ai-output-${type}`;
+
+      let processedContent = content;
+      let mimeType = 'text/plain';
+      let extension = format;
+
+      if (format === 'md') {
+        // Add markdown formatting if not already present
+        if (!content.includes('```') && containsCode(content)) {
+          processedContent = '```\n' + content + '\n```';
+        }
+        mimeType = 'text/markdown';
+      }
+
+      const blob = new Blob([processedContent], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${filename}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showNotification(`File downloaded: ${filename}.${extension}`, 'success');
+    }
+
+    // Get output content by type
+    // getOutputContent function to include prototype type
+    function getOutputContent(type) {
+      let contentElement;
+      if (type === 'text') {
+        contentElement = document.getElementById('text-content');
+      } else if (type === 'analysis') {
+        contentElement = document.getElementById('analysis-content');
+      } else if (type === 'prototype') {
+        // Return the generated HTML instead of display content
+        return generatedPrototypeHTML;
+      }
+
+      return contentElement ? contentElement.textContent : '';
+    }
+
+
+    // Check if content contains code
+    function containsCode(content) {
+      const codeIndicators = [
+        'function ', 'class ', 'import ', 'def ', 'var ', 'let ', 'const ',
+        '#!/', '<html', '<?php', 'SELECT ', 'CREATE TABLE', '{', '}', ';'
+      ];
+      return codeIndicators.some(indicator => content.includes(indicator));
+    }
+
+    // Continue generation feature
+    function continueGeneration(type) {
+      const currentContent = getOutputContent(type);
+      if (!currentContent) {
+        showNotification('No content to continue from', 'warning');
+        return;
+      }
+
+      const modelSelect = document.getElementById('text-model');
+      const model = modelSelect ? modelSelect.value : 'gpt-4o';
+      const config = AI_CONFIGS[model] || AI_CONFIGS['gpt-4o'];
+
+      // Set continuation prompt
+      const continuationPrompt = `${config.continuationPrompt}\n\nPrevious content:\n${currentContent.slice(-500)}...`;
+
+      const promptElement = document.getElementById('text-prompt');
+      if (promptElement) {
+        promptElement.value = continuationPrompt;
+        showNotification('Continuation prompt set. Click Generate to continue.', 'info');
+      }
+
+      // Store conversation history
+      state.conversationHistory.push({
+        type: type,
+        content: currentContent,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Add settings panel
+    function addSettingsPanel() {
+      const settingsPanel = document.createElement('div');
+      settingsPanel.id = 'ai-settings-panel';
+      settingsPanel.className = 'fixed top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-sm z-50 hidden';
+      settingsPanel.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">AI Settings</h3>
+                    <button id="close-ai-settings" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Output Format</label>
+                        <select id="ai-output-format" class="w-full border rounded p-2 text-sm">
+                            <option value="plain">Plain Text</option>
+                            <option value="markdown">Markdown</option>
+                            <option value="code">Code Block</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Code Language</label>
+                        <select id="ai-code-language" class="w-full border rounded p-2 text-sm">
+                            <option value="javascript">JavaScript</option>
+                            <option value="python">Python</option>
+                            <option value="html">HTML</option>
+                            <option value="css">CSS</option>
+                            <option value="json">JSON</option>
+                            <option value="sql">SQL</option>
+                            <option value="bash">Bash</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" id="ai-auto-save" class="mr-2">
+                            Auto-save outputs
+                        </label>
+                    </div>
+                    <div>
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" id="ai-syntax-highlight" class="mr-2" checked>
+                            Enable syntax highlighting
+                        </label>
+                    </div>
+                </div>
+            `;
+
+      document.body.appendChild(settingsPanel);
+
+      // Add settings button to header
+      const header = document.querySelector('h1');
+      if (header && !document.getElementById('open-ai-settings')) {
+        const settingsBtn = document.createElement('button');
+        settingsBtn.id = 'open-ai-settings';
+        settingsBtn.className = 'ml-4 px-3 py-2 text-sm bg-gray-200 hover:bg-gray-300 rounded transition-colors';
+        settingsBtn.textContent = '⚙️ AI Settings';
+        header.appendChild(settingsBtn);
+      }
+
+      // Settings panel event listeners
+      document.addEventListener('click', (e) => {
+        if (e.target.id === 'open-ai-settings') {
+          settingsPanel.classList.remove('hidden');
+        } else if (e.target.id === 'close-ai-settings') {
+          settingsPanel.classList.add('hidden');
+        }
+      });
+    }
+
+    // Enhance output display with syntax highlighting
+    function enhanceOutputDisplay() {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.TEXT_NODE && node.parentElement) {
+                const syntaxHighlight = document.getElementById('ai-syntax-highlight');
+                if (syntaxHighlight && syntaxHighlight.checked) {
+                  highlightCode(node.parentElement);
+                }
+              }
+            });
+          }
+        });
+      });
+
+      // Observe text and analysis content
+      const textContent = document.getElementById('text-content');
+      const analysisContent = document.getElementById('analysis-content');
+
+      if (textContent) observer.observe(textContent, { childList: true, subtree: true });
+      if (analysisContent) observer.observe(analysisContent, { childList: true, subtree: true });
+    }
+
+    // Highlight code in output
+    function highlightCode(element) {
+      if (!element.textContent || !window.Prism) return;
+
+      const content = element.textContent;
+      const codeBlocks = content.match(/```[\s\S]*?```/g);
+
+      if (codeBlocks) {
+        let highlightedContent = content;
+        codeBlocks.forEach((block) => {
+          const code = block.replace(/```(\w+)?\n?/, '').replace(/```$/, '');
+          const language = block.match(/```(\w+)/)?.[1] || 'javascript';
+          const highlighted = Prism.highlight(code, Prism.languages[language] || Prism.languages.javascript, language);
+          highlightedContent = highlightedContent.replace(block, `<pre class="language-${language}"><code>${highlighted}</code></pre>`);
+        });
+
+        if (highlightedContent !== content) {
+          element.innerHTML = highlightedContent;
+        }
+      }
+    }
+
+    // Add keyboard shortcuts
+    function addKeyboardShortcuts() {
+      document.addEventListener('keydown', (e) => {
+        // Ctrl/Cmd + Enter to generate
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          const activeElement = document.activeElement;
+          if (activeElement.id === 'text-prompt') {
+            const generateBtn = document.getElementById('generate-text');
+            if (generateBtn) generateBtn.click();
+          } else if (activeElement.id === 'image-prompt') {
+            const generateBtn = document.getElementById('generate-image');
+            if (generateBtn) generateBtn.click();
+          }
+        }
+
+        // Ctrl/Cmd + S to download
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+          e.preventDefault();
+          downloadFile('text', 'md');
+        }
+
+        // Ctrl/Cmd + C when output is focused
+        if ((e.ctrlKey || e.metaKey) && e.key === 'c' &&
+                (e.target.classList.contains('output-content') || e.target.closest('.output-content'))) {
+          e.preventDefault();
+          copyToClipboard('text');
+        }
+      });
+    }
+
+    // Show notification
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white z-50 transition-all duration-300 ${
+              type === 'success' ? 'bg-green-500' :
+                      type === 'warning' ? 'bg-yellow-500' :
+                              type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+      }`;
+      notification.textContent = message;
+
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    // Enhance existing generate function
+    function enhanceGenerateFunction() {
+      const originalGenerateButton = document.getElementById('generate-text');
+      if (!originalGenerateButton) return;
+
+      originalGenerateButton.addEventListener('click', function(e) {
+        const model = document.getElementById('text-model')?.value || 'gpt-4o';
+        const config = AI_CONFIGS[model];
+
+        if (config) {
+          console.log('Using enhanced settings for', model);
+          // Enhanced settings are applied through the existing controls
+        }
+      });
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', waitForElements);
+    } else {
+      waitForElements();
+    }
+
+    // Export functions for external use
+    window.AIEnhancer = {
+      downloadFile,
+      copyToClipboard,
+      continueGeneration,
+      showNotification
+    };
+  })();
+
+
+  // -----01 Start of PRD to Prototype functionality Add JavaScript Functions (Insert before closing script tag)
+
+  // PRD to Prototype Functionality
+  const prdFileInput = document.getElementById('prd-file-input');
+  const prdBrowseBtn = document.getElementById('prd-browse-btn');
+  const prdUploadArea = document.getElementById('prd-upload-area');
+  const prdFileInfo = document.getElementById('prd-file-info');
+  const prdFileName = document.getElementById('prd-file-name');
+  const prdFileSize = document.getElementById('prd-file-size');
+  const generatePrototypeBtn = document.getElementById('generate-prototype');
+  const clearPrototypeBtn = document.getElementById('clear-prototype');
+  const prototypeOutput = document.getElementById('prototype-output');
+  const prototypeContent = document.getElementById('prototype-content');
+  const prototypeError = document.getElementById('prototype-error');
+  const toggleExpandPrototype = document.getElementById('toggle-expand-prototype');
+  const downloadPrototypeBtn = document.getElementById('download-prototype-html');
+  const previewPrototypeBtn = document.getElementById('preview-prototype');
+  const prototypeModal = document.getElementById('prototype-modal');
+  const closePrototypeModal = document.getElementById('close-prototype-modal');
+  const prototypePreviewFrame = document.getElementById('prototype-preview-frame');
+
+  let uploadedPrdFile = null;
+  let generatedPrototypeHTML = '';
+
+  // File upload handling
+  prdBrowseBtn.addEventListener('click', () => {
+    prdFileInput.click();
+  });
+
+  prdFileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      handlePrdFile(e.target.files[0]);
+    }
+  });
+
+  // Drag and drop functionality
+  prdUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    prdUploadArea.classList.add('border-blue-400', 'bg-blue-50');
+  });
+
+  prdUploadArea.addEventListener('dragleave', () => {
+    prdUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+  });
+
+  prdUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    prdUploadArea.classList.remove('border-blue-400', 'bg-blue-50');
+    if (e.dataTransfer.files.length > 0) {
+      handlePrdFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  function handlePrdFile(file) {
+    const validTypes = ['text/plain', 'text/markdown', 'application/pdf'];
+    const validExtensions = ['.txt', '.md', '.pdf'];
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+
+    if (!validExtensions.includes(fileExtension) && !validTypes.includes(file.type)) {
+      prototypeError.textContent = 'Invalid file type. Please upload PDF, TXT, or Markdown (.md) files only.';
+      return;
+    }
+
+    uploadedPrdFile = file;
+    prdFileName.textContent = file.name;
+    prdFileSize.textContent = `${(file.size / 1024).toFixed(2)} KB`;
+    prdFileInfo.classList.remove('hidden');
+    generatePrototypeBtn.disabled = false;
+    prototypeError.textContent = '';
+  }
+
+  // Generate prototype function
+  // Enhanced Generate prototype function with token settings
+  generatePrototypeBtn.addEventListener('click', async () => {
+    if (!puter.auth.isSignedIn()) {
+      prototypeError.textContent = 'Please sign in to generate prototypes.';
+      return;
+    }
+
+    if (!uploadedPrdFile) {
+      prototypeError.textContent = 'Please upload a PRD file first.';
+      return;
+    }
+
+    prototypeContent.textContent = '';
+    prototypeError.textContent = '';
+    prototypeOutput.classList.remove('hidden');
+
+    try {
+      prototypeContent.textContent = 'Reading PRD file and generating prototype...';
+      generatePrototypeBtn.disabled = true;
+
+      let prdText = '';
+
+      // Read file content based on type
+      if (uploadedPrdFile.type === 'application/pdf' || uploadedPrdFile.name.endsWith('.pdf')) {
+        prototypeError.textContent = 'PDF support: Using text extraction method...';
+        // For now, show error but you could implement PDF.js here
+        generatePrototypeBtn.disabled = false;
+        return;
+      } else {
+        prdText = await readFileAsText(uploadedPrdFile);
+      }
+
+      // Get settings
+      const model = document.getElementById('prd-model').value;
+      const style = document.getElementById('prd-style').value;
+      const maxTokens = parseInt(document.getElementById('prd-max-tokens').value);
+      const temperature = parseFloat(document.getElementById('prd-temperature').value);
+      const generationMode = document.getElementById('prd-generation-mode').value;
+      const includeComments = document.getElementById('prd-include-comments').checked;
+
+      const stylePrompts = {
+        modern: 'Use modern CSS with clean typography, subtle shadows, gradient backgrounds, and a professional color scheme with CSS Grid/Flexbox.',
+        minimal: 'Use minimal design with lots of white space, simple typography, limited colors (black, white, gray), and clean layouts.',
+        corporate: 'Use corporate styling with professional colors (blues, grays), structured layouts, and business-appropriate design elements.',
+        startup: 'Use trendy startup styling with vibrant colors, modern fonts, innovative UI elements, and creative layouts.'
+      };
+
+      const commentInstruction = includeComments ?
+              '\n11. Add detailed comments in HTML, CSS, and JavaScript explaining the functionality' :
+              '\n11. Keep code clean without excessive comments';
+
+      if (generationMode === 'iterative') {
+        await generateIterativePrototype(prdText, model, style, maxTokens, temperature, stylePrompts, commentInstruction);
+      } else {
+        await generateSinglePrototype(prdText, model, style, maxTokens, temperature, stylePrompts, commentInstruction);
+      }
+
+    } catch (error) {
+      prototypeError.textContent = 'Error generating prototype: ' + error.message;
+      console.error('Prototype generation error:', error);
+    } finally {
+      generatePrototypeBtn.disabled = false;
+    }
+  });
+
+  // Single generation function
+
+
+  // Iterative generation function for longer prototypes
+  // Iterative generation function for longer prototypes
+  async function generateSinglePrototype(prdText, model, style, maxTokens, temperature, stylePrompts, commentInstruction) {
+    // Detect if the input is hierarchical/markdown content for infographic generation
+    const isHierarchicalContent = detectHierarchicalContent(prdText);
+
+    let prompt;
+
+    if (isHierarchicalContent) {
+      // Use infographic-focused prompt with SVG and JavaScript support for hierarchical content
+      prompt = `You are an expert web developer, UI/UX designer, and AI HTML + CSS + JS + SVG coder. Based on the following text content, create a complete VisualCapitalist-style infographic prototype, incorporating SVG visualizations inspired by the provided .jd template structure and accompanying JavaScript for interactivity.
+
+INDUSTRY-GRADE INSTRUCTIONS:
+1. Return ONLY valid HTML code with embedded SVG and JavaScript - no markdown, no backticks, no explanations.
+2. Include all CSS inline in a <style> tag within the <head>.
+3. Include all JavaScript inline in <script> tags, ensuring compatibility with SVG elements and avoiding conflicts with special characters in the .jd template.
+4. Make it a complete, working prototype demonstrating all features.
+5. ${stylePrompts[style]}
+6. Ensure all interactive elements work properly (buttons, forms, navigation, etc.).
+7. Use responsive design optimized for both mobile and desktop.
+8. Include placeholder content where needed.
+9. Add smooth transitions, hover effects, and subtle animations.
+10. Start directly with <!DOCTYPE html> and end with </html>. ${commentInstruction}
+
+VISUALIZATION REQUIREMENTS:
+11. Treat each line of the input text as a separate data point or concept.
+12. AI may freely determine the layout, visual grouping, and hierarchy based on content relationships or relevance.
+13. Convert text into a high-impact VisualCapitalist-style infographic with SVG visualizations:
+    - Clean, modern typography (Google Fonts; use Kalama for Hindi if needed).
+    - Engaging layout with whitespace and visual balance.
+    - Distinct color coding for different types of information or emphasis.
+    - Iconography, geometric shapes, and proportional sizing for concepts.
+    - Background gradients or subtle textures for visual appeal.
+14. Include external libraries via CDN where needed:
+    - CSS frameworks (TailwindCSS or Bootstrap) and Google Fonts.
+    - D3.js for charts, diagrams, or data visualizations.
+    - GSAP or Anime.js for smooth transitions and animations.
+    - Font Awesome for icons.
+15. Layout and style considerations:
+    - Highlight important concepts visually.
+    - Use visual grouping, clusters, or radial/tree arrangements as appropriate.
+    - Ensure balance between aesthetics, clarity, and information density.
+    - Fully responsive across all screen sizes.
+16. Add JavaScript interactivity:
+    - Hover tooltips showing additional information.
+    - Collapsible/expandable sections or visual clusters if applicable.
+    - Smooth animated transitions to engage viewers.
+    - Highlight related concepts or parent-child relationships where meaningful.
+17. ONLY use the provided input text information—do not generate unrelated content.
+18. Prioritize visual clarity, user engagement, and professional infographic quality.
+
+SVG-SPECIFIC INSTRUCTIONS:
+19. Incorporate SVG visualizations inspired by the provided .jd template structure:
+    - Use SVG elements (<g>, <path>, <rect>, etc.) to create dynamic, hierarchical layouts.
+    - Implement a two-column layout (left and right) for data points, with groups for rows and columns.
+    - Each data point should be represented by a group (<g>) containing a label area, icon, and interactive buttons (e.g., add/remove).
+    - Use data attributes (e.g., data-resize, data-constraints, data-stack) to define layout properties.
+    - Include connecting lines or shapes to represent relationships between data points, styled with strokes and fills.
+    - Support interactivity (e.g., add/remove buttons, hover effects) using JavaScript.
+    - Allow the AI to creatively evolve the layout (e.g., adjust positions, sizes, or connections) based on the input content while maintaining the .jd structure's essence.
+20. Ensure SVG elements are fully responsive and scale appropriately across screen sizes.
+21. Use distinct fill colors (e.g., #ff00001a for labels, #33de7b1a for icons, #1ac6ff33 for buttons) and stroke styles for visual clarity.
+22. Include a title area and optional connecting lines or shapes to represent relationships, as seen in the .jd template.
+
+JAVASCRIPT-SPECIFIC INSTRUCTIONS:
+23. Include JavaScript to enhance SVG interactivity, following this guiding template:
+    - Initialize event listeners for add/remove buttons (e.g., elements with id patterns like 'bt-cc-add-*' or 'bt-cc-remove-*').
+    - Implement hover effects for SVG groups (e.g., 'g-left-*', 'g-right-*') to highlight related elements or display tooltips.
+    - Support dynamic addition/removal of rows in the left and right columns, updating the SVG structure accordingly.
+    - Ensure animations (e.g., using GSAP or Anime.js) for smooth transitions when adding/removing elements or highlighting connections.
+    - Use querySelector/querySelectorAll to target SVG elements safely, accounting for special characters in IDs (e.g., 'g-left-1', 'tx-rc-left-1').
+    - Maintain compatibility with the .jd template's data attributes (e.g., data-constraints, data-position) for dynamic updates.
+    - Example JavaScript structure:
+      - Select all add buttons and attach click events to append new SVG <g> elements with updated IDs and positions.
+      - Select all remove buttons and attach click events to remove corresponding <g> elements and adjust layout.
+      - Add mouseover/mouseout events for hover effects, updating fill or stroke properties.
+      - Ensure no conflicts with special characters in IDs or attributes from the .jd template.
+24. Ensure JavaScript is robust, error-free, and does not interfere with existing SVG structure or other scripts.
+25. Use modern JavaScript (ES6+) and avoid frameworks that require external build steps.
+
+CONTENT TO VISUALIZE:
+${prdText}
+
+Generate the complete HTML infographic prototype with SVG visualizations and JavaScript interactivity now:`;
+    } else {
+      // Use original prompt for regular PRD content
+      prompt = `You are an expert web developer and UI/UX designer. Based on the following Product Requirements Document (PRD), create a complete, functional HTML prototype.
+
+IMPORTANT INSTRUCTIONS:
+1. Return ONLY valid HTML code - no markdown, no backticks, no explanations
+2. Include all CSS inline in a <style> tag within the <head>
+3. Include all JavaScript inline in <script> tags
+4. Make it a complete, working prototype that demonstrates all features mentioned in the PRD
+5. ${stylePrompts[style]}
+6. Ensure all interactive elements work properly (buttons, forms, navigation, etc.)
+7. Use responsive design that works on mobile and desktop
+8. Include placeholder content where needed
+9. Add smooth transitions and hover effects
+10. Start directly with <!DOCTYPE html> and end with </html>${commentInstruction}
+
+PRD CONTENT:
+${prdText}
+
+Generate the complete HTML prototype now:`;
+    }
+
+    prototypeContent.textContent = isHierarchicalContent ?
+            'Generating interactive infographic prototype with SVG visualizations and JavaScript...' :
+            'Generating complete prototype...';
+
+    const response = await puter.ai.chat(prompt, {
+      model: model,
+      max_tokens: maxTokens,
+      temperature: temperature
+    });
+
+    let htmlContent = response;
+    if (typeof response === 'object' && response.message) {
+      htmlContent = response.message.content[0]?.text || response.message.content || response;
+    }
+
+    // Clean up the response
+    htmlContent = cleanupHTMLResponse(htmlContent);
+    generatedPrototypeHTML = htmlContent;
+    prototypeContent.innerHTML = `<pre><code>${escapeHtml(htmlContent)}</code></pre>`;
+  }
+
+  // Helper function to detect hierarchical content
+  function detectHierarchicalContent(text) {
+    if (!text || typeof text !== 'string') return false;
+
+    const lines = text.split('\n').filter(line => line.trim().length > 0);
+    let hierarchicalIndicators = 0;
+
+    for (const line of lines) {
+      // Check for markdown headers
+      if (/^#{1,6}\s/.test(line.trim())) {
+        hierarchicalIndicators++;
+      }
+      // Check for indented content (2+ spaces or tabs at start)
+      else if (/^[\s\t]{2,}/.test(line)) {
+        hierarchicalIndicators++;
+      }
+      // Check for list markers
+      else if (/^[\s\t]*[-*+]\s/.test(line.trim())) {
+        hierarchicalIndicators++;
+      }
+      // Check for numbered lists
+      else if (/^[\s\t]*\d+\.\s/.test(line.trim())) {
+        hierarchicalIndicators++;
+      }
+    }
+
+    // If more than 30% of lines show hierarchical structure, treat as infographic content
+    return (hierarchicalIndicators / lines.length) > 0.9;
+  }
+
+
+
+  // Helper function to cleanup HTML response
+  function cleanupHTMLResponse(htmlContent) {
+    // Remove any markdown code blocks if present
+    htmlContent = htmlContent.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+
+    // Ensure it starts with DOCTYPE
+    if (!htmlContent.toLowerCase().startsWith('<!doctype')) {
+      if (htmlContent.toLowerCase().startsWith('<html')) {
+        htmlContent = '<!DOCTYPE html>\n' + htmlContent;
+      }
+    }
+
+    // Fix common issues
+    htmlContent = htmlContent.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+    return htmlContent;
+  }
+
+
+  // Helper function to read file as text
+  function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.onerror = reject;
+      reader.readAsText(file);
+    });
+  }
+
+  // Helper function to escape HTML
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Clear prototype function
+  clearPrototypeBtn.addEventListener('click', () => {
+    uploadedPrdFile = null;
+    generatedPrototypeHTML = '';
+    prdFileInfo.classList.add('hidden');
+    prototypeOutput.classList.add('hidden');
+    prototypeContent.innerHTML = '';
+    prototypeError.textContent = '';
+    prdFileInput.value = '';
+    generatePrototypeBtn.disabled = false;
+    prototypeOutput.classList.remove('expanded');
+    toggleExpandPrototype.textContent = 'Expand';
+  });
+
+  // Download prototype HTML
+  downloadPrototypeBtn.addEventListener('click', () => {
+    if (!generatedPrototypeHTML) {
+      prototypeError.textContent = 'No prototype generated yet.';
+      return;
+    }
+
+    const blob = new Blob([generatedPrototypeHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'prototype.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if (window.AIEnhancer) {
+      window.AIEnhancer.showNotification('Prototype HTML downloaded successfully!', 'success');
+    }
+  });
+
+  // Preview prototype
+  previewPrototypeBtn.addEventListener('click', () => {
+    if (!generatedPrototypeHTML) {
+      prototypeError.textContent = 'No prototype generated yet.';
+      return;
+    }
+
+    prototypeModal.classList.remove('hidden');
+    const iframe = prototypePreviewFrame;
+    iframe.srcdoc = generatedPrototypeHTML;
+  });
+
+  // Close modal
+  closePrototypeModal.addEventListener('click', () => {
+    prototypeModal.classList.add('hidden');
+    prototypePreviewFrame.srcdoc = '';
+  });
+
+  // Close modal on outside click
+  prototypeModal.addEventListener('click', (e) => {
+    if (e.target === prototypeModal) {
+      prototypeModal.classList.add('hidden');
+      prototypePreviewFrame.srcdoc = '';
+    }
+  });
+
+  // Expand toggle for prototype
+  toggleExpandPrototype.addEventListener('click', () => {
+    toggleExpansion(prototypeOutput, toggleExpandPrototype);
+  });
+
+
+  // Advanced settings toggle for PRD section
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleAdvanced = document.getElementById('toggle-prd-advanced');
+    const advancedSettings = document.getElementById('prd-advanced-settings');
+    const temperatureSlider = document.getElementById('prd-temperature');
+    const temperatureValue = document.getElementById('prd-temperature-value');
+
+    if (toggleAdvanced) {
+      toggleAdvanced.addEventListener('click', () => {
+        if (advancedSettings.classList.contains('hidden')) {
+          advancedSettings.classList.remove('hidden');
+          toggleAdvanced.textContent = '⚙️ Hide Advanced Settings';
+        } else {
+          advancedSettings.classList.add('hidden');
+          toggleAdvanced.textContent = '⚙️ Advanced Settings';
+        }
+      });
+    }
+
+    if (temperatureSlider && temperatureValue) {
+      temperatureSlider.addEventListener('input', () => {
+        temperatureValue.textContent = temperatureSlider.value;
+      });
+    }
+  });
+
+  // Enhanced PRD model configurations with token limits
+  const PRD_MODEL_CONFIGS = {
+    'claude-sonnet-4': {
+      maxTokens: [4096, 8192, 16384, 32000],
+      recommendedTokens: 8192,
+      temperature: 0.3,
+      supportsIterative: true,
+      description: 'Best for complex prototypes'
+    },
+    'claude-sonnet-4-5': {
+      maxTokens: [4096, 8192, 16384, 32000],
+      recommendedTokens: 8192,
+      temperature: 0.6,
+      supportsIterative: true,
+      description: 'Best for complex prototypes'
+    },
+    'claude-opus-4-1': {
+      maxTokens: [4096, 8192, 16384, 32000],
+      recommendedTokens: 8192,
+      temperature: 0.6,
+      supportsIterative: true,
+      description: 'Best for complex prototypes'
+    },
+    'gpt-4o': {
+      maxTokens: [2048, 4096, 8192],
+      recommendedTokens: 4096,
+      temperature: 0.7,
+      supportsIterative: true,
+      description: 'Good balance of speed and quality'
+    },
+    'claude-opus-4': {
+      maxTokens: [4096, 8192, 16384],
+      recommendedTokens: 8192,
+      temperature: 0.3,
+      supportsIterative: true,
+      description: 'Highest quality output'
+    }
+  };
+
+  // Update token options based on selected model
+  document.getElementById('prd-model').addEventListener('change', function() {
+    const selectedModel = this.value;
+    const config = PRD_MODEL_CONFIGS[selectedModel];
+    const tokenSelect = document.getElementById('prd-max-tokens');
+
+    if (config && tokenSelect) {
+      tokenSelect.innerHTML = '';
+      config.maxTokens.forEach(tokens => {
+        const option = document.createElement('option');
+        option.value = tokens;
+        option.textContent = `${tokens.toLocaleString()} tokens`;
+        if (tokens === config.recommendedTokens) {
+          option.selected = true;
+          option.textContent += ' (Recommended)';
+        }
+        tokenSelect.appendChild(option);
+      });
+    }
+  });
+
+
+
+  // -----01 end of PRD to Prototype functionality Add JavaScript Functions (Insert before closing script tag)
+
+
+
+</script>
+
+<!-- Additional CSS for enhanced features -->
+<style>
+  /* Enhanced UI Styles */
+  .enhanced-controls {
+    animation: slideIn 0.3s ease-out;
+    flex-wrap: wrap;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .enhanced-controls button {
+    transition: all 0.2s ease;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .enhanced-controls button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .filename-input {
+    transition: border-color 0.2s ease;
+  }
+
+  .filename-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  #ai-settings-panel {
+    backdrop-filter: blur(10px);
+    animation: fadeInScale 0.3s ease-out;
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Code highlighting improvements */
+  pre[class*="language-"] {
+    margin: 1em 0;
+    border-radius: 6px;
+    font-size: 0.9em;
+  }
+
+  code[class*="language-"] {
+    font-family: 'Fira Code', 'Courier New', monospace;
+  }
+
+  /* Responsive improvements */
+  @media (max-width: 768px) {
+    .enhanced-controls {
+      gap: 0.25rem;
+    }
+
+    .enhanced-controls button {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .filename-input {
+      width: 100px;
+      font-size: 0.75rem;
+    }
+
+    #ai-settings-panel {
+      left: 1rem;
+      right: 1rem;
+      max-width: none;
+    }
+  }
+
+  /* Keyboard shortcut hints */
+  .shortcut-hint {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
+  }
+</style>
+
+
+
+
+</body>
+</html>
