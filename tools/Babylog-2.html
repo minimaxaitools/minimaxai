@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby Activity Log Book</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .baby-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .baby-selector select {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f7fafc;
+            border-bottom: 2px solid #e2e8f0;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #718096;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab:hover {
+            background: #edf2f7;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .quick-log {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .quick-btn {
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .quick-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .quick-btn .emoji {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .card h3 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #4a5568;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .activity-log {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .activity-item.feeding { border-left-color: #f6ad55; }
+        .activity-item.diaper { border-left-color: #4fd1c7; }
+        .activity-item.sleep { border-left-color: #9f7aea; }
+        .activity-item.cry { border-left-color: #fc8181; }
+
+        .activity-time {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .activity-details {
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .delete-btn {
+            background: #fed7d7;
+            color: #c53030;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .feeding-tracker {
+            background: linear-gradient(135deg, #fef5e7 0%, #fdeaa6 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .feeding-progress {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 30px;
+            background: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48bb78;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .quick-log {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .content {
+                padding: 15px;
+            }
+        }
+
+        .timeline-view {
+            display: grid;
+            grid-template-columns: 60px 1fr;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .timeline-hour {
+            text-align: right;
+            padding: 10px 5px;
+            font-size: 12px;
+            color: #718096;
+            font-weight: 600;
+        }
+
+        .timeline-slot {
+            min-height: 40px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            padding: 5px;
+            font-size: 11px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .timeline-slot:hover {
+            background: #f7fafc;
+        }
+
+        .timeline-event {
+            background: #667eea;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            margin: 2px 0;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>👶 Baby Activity Log Book</h1>
+        <div class="baby-selector">
+            <select id="babySelect">
+                <option value="">Select Baby</option>
+            </select>
+            <button class="btn btn-primary" onclick="app.showAddBabyModal()">+ Add Baby</button>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" onclick="app.exportData()">📤 Export</button>
+            <button class="btn btn-primary" onclick="app.showImportModal()">📥 Import</button>
+            <button class="btn btn-danger" onclick="app.clearAllData()">🗑️ Clear Data</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="app.switchTab('log')">📝 Quick Log</button>
+        <button class="tab" onclick="app.switchTab('feed')">🍼 Feeding Tracker</button>
+        <button class="tab" onclick="app.switchTab('timeline')">📅 Timeline</button>
+        <button class="tab" onclick="app.switchTab('stats')">📊 Statistics</button>
+        <button class="tab" onclick="app.switchTab('history')">📖 History</button>
+        <button class="tab" onclick="app.switchTab('settings')">⚙️ Settings</button>
+    </div>
+
+    <div class="content">
+        <!-- Quick Log Tab -->
+        <div id="tab-log" class="tab-content active">
+            <div class="card">
+                <h3>⚡ Quick Log Activity</h3>
+                <div class="quick-log">
+                    <div class="quick-btn" onclick="app.quickLog('feeding')">
+                        <span class="emoji">🍼</span>
+                        Feeding
+                    </div>
+                    <div class="quick-btn" onclick="app.quickLog('diaper-wet')">
+                        <span class="emoji">💧</span>
+                        Wet Diaper
+                    </div>
+                    <div class="quick-btn" onclick="app.quickLog('diaper-poop')">
+                        <span class="emoji">💩</span>
+                        Poop
+                    </div>
+                    <div class="quick-btn" onclick="app.quickLog('sleep')">
+                        <span class="emoji">😴</span>
+                        Sleep
+                    </div>
+                    <div class="quick-btn" onclick="app.quickLog('awake')">
+                        <span class="emoji">👁️</span>
+                        Awake
+                    </div>
+                    <div class="quick-btn" onclick="app.quickLog('cry')">
+                        <span class="emoji">😢</span>
+                        Crying
+                    </div>
+                    <div class="quick-btn" onclick="app.quickLog('smile')">
+                        <span class="emoji">😊</span>
+                        Smiling
+                    </div>
+                    <div class="quick-btn" onclick="app.quickLog('stretching')">
+                        <span class="emoji">🤚</span>
+                        stretchinging
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>✏️ Detailed Entry</h3>
+                <form onsubmit="app.addDetailedActivity(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date & Time</label>
+                            <input type="datetime-local" id="detailDateTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Activity Type</label>
+                            <select id="detailType" onchange="app.updateDetailForm()" required>
+                                <option value="">Select Type</option>
+                                <option value="feeding">Feeding</option>
+                                <option value="diaper">Diaper</option>
+                                <option value="sleep">Sleep</option>
+                                <option value="cry">Crying</option>
+                                <option value="smile">Smiling</option>
+                                <option value="stretching">stretchinging</option>
+                                <option value="abnormal">Abnormal Behavior</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="feedingDetails" style="display:none;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Amount (ml)</label>
+                                <input type="number" id="feedingAmount" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Duration (min)</label>
+                                <input type="number" id="feedingDuration" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="diaperDetails" style="display:none;">
+                        <div class="form-group">
+                            <label>Diaper Type</label>
+                            <select id="diaperType">
+                                <option value="wet">Wet (Urine)</option>
+                                <option value="poop">Poop</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="detailNotes" rows="3" placeholder="Any additional details..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-success">Add Entry</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>📋 Today's Activities</h3>
+                <div id="todayLog" class="activity-log"></div>
+            </div>
+
+            <!-- ADD THIS NEW CARD after the "Today's Activities" card in Quick Log tab -->
+            <div class="card">
+                <h3>📊 Today's Activity Insights</h3>
+                <div id="todayInsights"></div>
+            </div>
+
+        </div>
+
+        <!-- Feeding Tracker Tab -->
+        <div id="tab-feed" class="tab-content">
+            <div class="card">
+                <h3>🍼 Feeding Target Settings</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Target Amount per Feed (ml)</label>
+                        <input type="number" id="targetAmount" value="120" onchange="app.saveFeedingTarget()">
+                    </div>
+                    <div class="form-group">
+                        <label>Feeding Interval (minutes)</label>
+                        <input type="number" id="targetInterval" value="180" onchange="app.saveFeedingTarget()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="feeding-tracker">
+                <h3>📊 Today's Feeding Progress</h3>
+                <div id="feedingProgress"></div>
+            </div>
+
+            <div class="card">
+                <h3>📈 Feeding Chart (Last 7 Days)</h3>
+                <div class="chart-container">
+                    <canvas id="feedingChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🕐 Recent Feedings</h3>
+                <div id="feedingLog" class="activity-log"></div>
+            </div>
+        </div>
+
+        <!-- Timeline Tab -->
+        <div id="tab-timeline" class="tab-content">
+            <div class="card">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Select Date</label>
+                        <input type="date" id="timelineDate" onchange="app.renderTimeline()">
+                    </div>
+                </div>
+                <div id="timelineView"></div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="tab-stats" class="tab-content">
+            <div class="card">
+                <h3>📊 Daily Statistics</h3>
+                <div id="dailyStats" class="stats-grid"></div>
+            </div>
+
+            <div class="card">
+                <h3>📈 Weekly Overview</h3>
+                <div class="chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🔢 Activity Breakdown</h3>
+                <div class="chart-container">
+                    <canvas id="activityPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div id="tab-history" class="tab-content">
+            <div class="card">
+                <h3>📖 Activity History</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Filter by Type</label>
+                        <select id="historyFilter" onchange="app.renderHistory()">
+                            <option value="all">All Activities</option>
+                            <option value="feeding">Feeding</option>
+                            <option value="diaper">Diaper</option>
+                            <option value="sleep">Sleep</option>
+                            <option value="cry">Crying</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Date Range</label>
+                        <select id="historyRange" onchange="app.renderHistory()">
+                            <option value="7">Last 7 Days</option>
+                            <option value="14">Last 14 Days</option>
+                            <option value="30">Last 30 Days</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="historyLog" class="activity-log"></div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="tab-settings" class="tab-content">
+            <div class="card">
+                <h3>⚙️ Application Settings</h3>
+                <div class="form-group">
+                    <label>Daily Target - Total Feeding (ml)</label>
+                    <input type="number" id="dailyTarget" value="960" onchange="app.saveSettings()">
+                </div>
+                <div class="form-group">
+                    <label>Minimum Feedings per Day</label>
+                    <input type="number" id="minFeedings" value="8" onchange="app.saveSettings()">
+                </div>
+                <div class="form-group">
+                    <label>Alert for Low Feeding</label>
+                    <input type="checkbox" id="lowFeedingAlert" onchange="app.saveSettings()">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>👶 Manage Babies</h3>
+                <div id="babyList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Baby Modal -->
+<div id="addBabyModal" class="modal">
+    <div class="modal-content">
+        <h3>Add New Baby</h3>
+        <form onsubmit="app.addBaby(event)">
+            <div class="form-group">
+                <label>Baby's Name</label>
+                <input type="text" id="newBabyName" required>
+            </div>
+            <div class="form-group">
+                <label>Birth Date</label>
+                <input type="date" id="newBabyBirth" required>
+            </div>
+            <div class="form-group">
+                <label>Baby ID (optional)</label>
+                <input type="text" id="newBabyId" placeholder="Auto-generated if left empty">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-success">Add Baby</button>
+                <button type="button" class="btn btn-secondary" onclick="app.closeModal('addBabyModal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="importModal" class="modal">
+    <div class="modal-content">
+        <h3>Import Data</h3>
+        <div class="form-group">
+            <label>Select JSON File</label>
+            <input type="file" id="importFile" accept=".json">
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-success" onclick="app.importData()">Import</button>
+            <button class="btn btn-secondary" onclick="app.closeModal('importModal')">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    class BabyActivityApp {
+        constructor() {
+            this.currentBaby = null;
+            this.babies = {};
+            this.activities = {};
+            this.settings = {};
+            this.charts = {};
+            this.loadData();
+            this.init();
+        }
+
+        init() {
+            this.loadBabies();
+            this.setDefaultDateTime();
+            this.setDefaultTimelineDate();
+
+            if (this.currentBaby) {
+                this.renderAll();
+            }
+        }
+
+        loadData() {
+            try {
+                this.babies = JSON.parse(localStorage.getItem('babies') || '{}');
+                this.activities = JSON.parse(localStorage.getItem('activities') || '{}');
+                this.settings = JSON.parse(localStorage.getItem('settings') || '{}');
+                this.currentBaby = localStorage.getItem('currentBaby') || null;
+            } catch (e) {
+                console.error('Error loading data:', e);
+            }
+        }
+
+        saveData() {
+            localStorage.setItem('babies', JSON.stringify(this.babies));
+            localStorage.setItem('activities', JSON.stringify(this.activities));
+            localStorage.setItem('settings', JSON.stringify(this.settings));
+            if (this.currentBaby) {
+                localStorage.setItem('currentBaby', this.currentBaby);
+            }
+        }
+
+        loadBabies() {
+            const select = document.getElementById('babySelect');
+            select.innerHTML = '<option value="">Select Baby</option>';
+
+            Object.entries(this.babies).forEach(([id, baby]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = baby.name;
+                if (id === this.currentBaby) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            select.onchange = (e) => {
+                this.currentBaby = e.target.value;
+                this.saveData();
+                this.renderAll();
+            };
+
+            this.renderBabyList();
+        }
+
+        showAddBabyModal() {
+            document.getElementById('addBabyModal').classList.add('active');
+        }
+
+        closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        addBaby(e) {
+            e.preventDefault();
+            const name = document.getElementById('newBabyName').value;
+            const birth = document.getElementById('newBabyBirth').value;
+            const customId = document.getElementById('newBabyId').value;
+
+            const id = customId || 'baby_' + Date.now();
+
+            this.babies[id] = { name, birth };
+            this.activities[id] = [];
+            this.currentBaby = id;
+
+            this.saveData();
+            this.loadBabies();
+            this.closeModal('addBabyModal');
+            this.showNotification(`Baby ${name} added successfully!`);
+
+            e.target.reset();
+        }
+
+        renderBabyList() {
+            const list = document.getElementById('babyList');
+            if (!list) return;
+
+            list.innerHTML = '';
+            Object.entries(this.babies).forEach(([id, baby]) => {
+                const div = document.createElement('div');
+                div.className = 'activity-item';
+                div.innerHTML = `
+                        <div>
+                            <strong>${baby.name}</strong><br>
+                            <small>Born: ${baby.birth}</small>
+                        </div>
+                        <button class="delete-btn" onclick="app.deleteBaby('${id}')">Delete</button>
+                    `;
+                list.appendChild(div);
+            });
+        }
+
+        deleteBaby(id) {
+            if (!confirm('Are you sure you want to delete this baby and all their data?')) return;
+
+            delete this.babies[id];
+            delete this.activities[id];
+
+            if (this.currentBaby === id) {
+                this.currentBaby = Object.keys(this.babies)[0] || null;
+            }
+
+            this.saveData();
+            this.loadBabies();
+            this.renderAll();
+            this.showNotification('Baby deleted');
+        }
+
+        quickLog(type) {
+            if (!this.currentBaby) {
+                alert('Please select or add a baby first!');
+                return;
+            }
+
+            const now = new Date();
+            const activity = {
+                id: 'act_' + Date.now(),
+                type: type,
+                datetime: now.toISOString(),
+                notes: 'Quick logged'
+            };
+
+            // Add default values for feeding
+            if (type === 'feeding') {
+                activity.amount = 120;
+                activity.duration = 15;
+            }
+
+            this.addActivity(activity);
+            this.showNotification(`${type} logged!`);
+        }
+
+
+        addActivity(activity) {
+            if (!this.activities[this.currentBaby]) {
+                this.activities[this.currentBaby] = [];
+            }
+            this.activities[this.currentBaby].push(activity);
+            this.activities[this.currentBaby].sort((a, b) =>
+                new Date(b.datetime) - new Date(a.datetime)
+            );
+            this.saveData();
+            this.renderAll();
+        }
+
+        deleteActivity(id) {
+            if (!this.currentBaby) return;
+            this.activities[this.currentBaby] = this.activities[this.currentBaby].filter(a => a.id !== id);
+            this.saveData();
+            this.renderAll();
+            this.showNotification('Activity deleted');
+        }
+
+        updateDetailForm() {
+            const type = document.getElementById('detailType').value;
+            document.getElementById('feedingDetails').style.display = type === 'feeding' ? 'block' : 'none';
+            document.getElementById('diaperDetails').style.display = type === 'diaper' ? 'block' : 'none';
+        }
+
+        setDefaultDateTime() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('detailDateTime').value = now.toISOString().slice(0, 16);
+        }
+
+        setDefaultTimelineDate() {
+            const today = new Date().toISOString().split('T')[0];
+            if (document.getElementById('timelineDate')) {
+                document.getElementById('timelineDate').value = today;
+            }
+        }
+
+
+        addDetailedActivity(e) {
+            e.preventDefault();
+            if (!this.currentBaby) {
+                alert('Please select or add a baby first!');
+                return;
+            }
+
+            const datetime = document.getElementById('detailDateTime').value;
+            const type = document.getElementById('detailType').value;
+            const notes = document.getElementById('detailNotes').value;
+
+            const activity = {
+                id: 'act_' + Date.now(),
+                type: type,
+                datetime: datetime,
+                notes: notes
+            };
+
+            // Add feeding-specific data
+            if (type === 'feeding') {
+                activity.amount = parseInt(document.getElementById('feedingAmount').value) || 0;
+                activity.duration = parseInt(document.getElementById('feedingDuration').value) || 0;
+            }
+            // Add diaper-specific data
+            else if (type === 'diaper') {
+                activity.diaperType = document.getElementById('diaperType').value;
+            }
+
+            this.addActivity(activity);
+            this.showNotification('Activity added successfully!');
+            e.target.reset();
+            this.setDefaultDateTime();
+        }
+
+
+        renderAll() {
+            if (!this.currentBaby) return;
+            this.renderTodayLog();
+            this.renderTodayInsights();  // NEW - Add this line
+            this.renderFeedingProgress();
+            this.renderFeedingLog();
+            this.renderDailyStats();
+            this.renderTimeline();
+            this.renderHistory();
+            this.renderCharts();
+        }
+
+        // REPLACE the entire renderTodayLog() function
+        renderTodayLog() {
+            const container = document.getElementById('todayLog');
+            if (!container) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const todayActivities = this.getActivitiesByDate(today);
+
+            if (todayActivities.length === 0) {
+                container.innerHTML = '<p style="color: #718096; text-align: center;">No activities logged today</p>';
+                return;
+            }
+
+            // Render with time differences
+            container.innerHTML = todayActivities.map((a, index) => {
+                const previousActivity = index < todayActivities.length - 1 ? todayActivities[index + 1] : null;
+                return this.renderActivityItem(a, previousActivity);
+            }).join('');
+        }
+
+        // REPLACE the entire renderActivityItem() function with this updated version
+        renderActivityItem(activity, previousActivity = null) {
+            const time = new Date(activity.datetime).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const emoji = this.getActivityEmoji(activity.type);
+
+            let details = '';
+            if (activity.type === 'feeding') {
+                details = `${activity.amount || 0}ml in ${activity.duration || 0}min`;
+            } else if (activity.type === 'diaper') {
+                details = activity.diaperType || '';
+            }
+
+            // Calculate time difference if previous activity exists
+            let timeDiffHTML = '';
+            if (previousActivity) {
+                const timeDiff = this.calculateTimeDifference(activity.datetime, previousActivity.datetime);
+                timeDiffHTML = `<span style="background: #e6f3ff; color: #0066cc; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 8px;">⏱ ${timeDiff}</span>`;
+            }
+
+            return `
+        <div class="activity-item ${activity.type}">
+            <div style="flex: 1;">
+                <div class="activity-time">${emoji} ${time} - ${activity.type.toUpperCase()} ${timeDiffHTML}</div>
+                <div class="activity-details">
+                    ${details}
+                    ${activity.notes ? '<br>' + activity.notes : ''}
+                </div>
+            </div>
+            <button class="delete-btn" onclick="app.deleteActivity('${activity.id}')">Delete</button>
+        </div>
+    `;
+        }
+
+
+        getActivityEmoji(type) {
+            const emojis = {
+                'feeding': '🍼',
+                'diaper-wet': '💧',
+                'diaper-poop': '💩',
+                'diaper': '👶',
+                'sleep': '😴',
+                'awake': '👁️',
+                'cry': '😢',
+                'smile': '😊',
+                'stretching': '🤚',
+                'abnormal': '⚠️',
+                'other': '📝'
+            };
+            return emojis[type] || '📝';
+        }
+
+        // ADD THIS NEW FUNCTION AFTER getActivityEmoji() function
+        calculateTimeDifference(datetime1, datetime2) {
+            const date1 = new Date(datetime1);
+            const date2 = new Date(datetime2);
+            const diffMs = Math.abs(date2 - date1);
+            const diffMins = Math.floor(diffMs / 60000);
+
+            if (diffMins < 60) {
+                return `${diffMins}m`;
+            } else {
+                const hours = Math.floor(diffMins / 60);
+                const mins = diffMins % 60;
+                return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+            }
+        }
+
+        formatTimeDifference(minutes) {
+            if (minutes < 60) {
+                return `${minutes}m`;
+            }
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        }
+
+
+        renderFeedingProgress() {
+            const container = document.getElementById('feedingProgress');
+            if (!container) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const feedings = this.getActivitiesByDate(today).filter(a =>
+                a.type === 'feeding' && a.amount
+            );
+
+            const totalFed = feedings.reduce((sum, f) => sum + (f.amount || 0), 0);
+            const targetAmount = parseInt(document.getElementById('targetAmount')?.value || 120);
+            const targetInterval = parseInt(document.getElementById('targetInterval')?.value || 180);
+            const dailyTarget = parseInt(document.getElementById('dailyTarget')?.value || 960);
+
+            const percentage = Math.min((totalFed / dailyTarget) * 100, 100);
+
+            let nextFeedInfo = '';
+            if (feedings.length > 0) {
+                const lastFeed = feedings[0];
+                const lastFeedTime = new Date(lastFeed.datetime);
+                const nextFeedTime = new Date(lastFeedTime.getTime() + targetInterval * 60000);
+                const now = new Date();
+
+                if (nextFeedTime > now) {
+                    const minutesLeft = Math.round((nextFeedTime - now) / 60000);
+                    nextFeedInfo = `<p>⏰ Next feeding in ${minutesLeft} minutes</p>`;
+                } else {
+                    nextFeedInfo = `<p style="color: #f56565; font-weight: bold;">⚠️ Feeding overdue!</p>`;
+                }
+
+                const lastFeedAmount = lastFeed.amount || 0;
+                if (lastFeedAmount < targetAmount) {
+                    const shortage = targetAmount - lastFeedAmount;
+                    nextFeedInfo += `<p>Last feeding was ${lastFeedAmount}ml (${shortage}ml short of target)</p>`;
+                }
+            }
+
+            container.innerHTML = `
+                    <p><strong>Daily Target:</strong> ${totalFed}ml / ${dailyTarget}ml (${feedings.length} feedings)</p>
+                    <div class="feeding-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%">
+                                ${percentage.toFixed(0)}%
+                            </div>
+                        </div>
+                    </div>
+                    ${nextFeedInfo}
+                `;
+        }
+
+        // REPLACE the entire renderFeedingLog() function
+        renderFeedingLog() {
+            const container = document.getElementById('feedingLog');
+            if (!container) return;
+
+            const feedings = this.getAllActivities()
+                .filter(a => a.type === 'feeding')
+                .slice(0, 20);
+
+            if (feedings.length === 0) {
+                container.innerHTML = '<p style="color: #718096; text-align: center;">No feedings logged</p>';
+                return;
+            }
+
+            // Render with time differences
+            container.innerHTML = feedings.map((a, index) => {
+                const previousActivity = index < feedings.length - 1 ? feedings[index + 1] : null;
+                return this.renderActivityItem(a, previousActivity);
+            }).join('');
+        }
+
+        renderDailyStats() {
+            const container = document.getElementById('dailyStats');
+            if (!container) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const activities = this.getActivitiesByDate(today);
+
+            const stats = {
+                'Feedings': activities.filter(a => a.type === 'feeding').length,
+                'Diapers': activities.filter(a => a.type.includes('diaper')).length,
+                'Sleep': activities.filter(a => a.type === 'sleep').length,
+                'Total': activities.length
+            };
+
+            container.innerHTML = Object.entries(stats).map(([label, value]) => `
+                    <div class="stat-card">
+                        <div class="stat-value">${value}</div>
+                        <div class="stat-label">${label}</div>
+                    </div>
+                `).join('');
+        }
+
+        // ADD THIS NEW FUNCTION after renderDailyStats()
+        renderTodayInsights() {
+            const container = document.getElementById('todayInsights');
+            if (!container) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const activities = this.getActivitiesByDate(today);
+
+            if (activities.length === 0) {
+                container.innerHTML = '<p style="color: #718096; text-align: center;">No data for today</p>';
+                return;
+            }
+
+            // Calculate insights
+            const feedings = activities.filter(a => a.type === 'feeding');
+            const diapers = activities.filter(a => a.type.includes('diaper'));
+            const sleeps = activities.filter(a => a.type === 'sleep');
+
+            // Calculate average feeding interval
+            let avgFeedingInterval = 0;
+            if (feedings.length > 1) {
+                let totalInterval = 0;
+                for (let i = 0; i < feedings.length - 1; i++) {
+                    const diff = new Date(feedings[i].datetime) - new Date(feedings[i + 1].datetime);
+                    totalInterval += diff / 60000; // Convert to minutes
+                }
+                avgFeedingInterval = Math.round(totalInterval / (feedings.length - 1));
+            }
+
+            // Calculate longest gap between activities
+            let longestGap = 0;
+            let longestGapType = '';
+            for (let i = 0; i < activities.length - 1; i++) {
+                const diff = new Date(activities[i].datetime) - new Date(activities[i + 1].datetime);
+                const diffMins = diff / 60000;
+                if (diffMins > longestGap) {
+                    longestGap = diffMins;
+                    longestGapType = `between ${activities[i].type} and ${activities[i + 1].type}`;
+                }
+            }
+
+            // Activity distribution by hour
+            const hourDistribution = {};
+            activities.forEach(a => {
+                const hour = new Date(a.datetime).getHours();
+                hourDistribution[hour] = (hourDistribution[hour] || 0) + 1;
+            });
+
+            const busiestHour = Object.entries(hourDistribution).sort((a, b) => b[1] - a[1])[0];
+
+            // Total feeding amount
+            const totalFeedingAmount = feedings.reduce((sum, f) => sum + (f.amount || 0), 0);
+
+            let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 10px;">
+                <div style="font-size: 24px; font-weight: bold;">${activities.length}</div>
+                <div style="font-size: 13px; opacity: 0.9;">Total Activities</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #f6ad55 0%, #f56565 100%); color: white; padding: 15px; border-radius: 10px;">
+                <div style="font-size: 24px; font-weight: bold;">${totalFeedingAmount}ml</div>
+                <div style="font-size: 13px; opacity: 0.9;">Total Fed</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #4fd1c7 0%, #38b2ac 100%); color: white; padding: 15px; border-radius: 10px;">
+                <div style="font-size: 24px; font-weight: bold;">${this.formatTimeDifference(avgFeedingInterval)}</div>
+                <div style="font-size: 13px; opacity: 0.9;">Avg Feed Interval</div>
+            </div>
+            <div style="background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); color: white; padding: 15px; border-radius: 10px;">
+                <div style="font-size: 24px; font-weight: bold;">${this.formatTimeDifference(Math.round(longestGap))}</div>
+                <div style="font-size: 13px; opacity: 0.9;">Longest Gap</div>
+            </div>
+        </div>
+
+        <div style="background: #f7fafc; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+            <h4 style="margin-bottom: 10px; color: #2d3748;">⏰ Activity Timeline</h4>
+            <div id="activityTimelineChart" style="height: 120px;"></div>
+        </div>
+
+        <div style="background: #f7fafc; padding: 15px; border-radius: 10px;">
+            <h4 style="margin-bottom: 10px; color: #2d3748;">📈 Quick Stats</h4>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                    🍼 <strong>${feedings.length}</strong> feedings today
+                    ${feedings.length > 0 ? `(Last: ${this.calculateTimeDifference(feedings[0].datetime, new Date().toISOString())} ago)` : ''}
+                </li>
+                <li style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                    👶 <strong>${diapers.length}</strong> diaper changes
+                </li>
+                <li style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
+                    😴 <strong>${sleeps.length}</strong> sleep sessions
+                </li>
+                ${busiestHour ? `<li style="padding: 8px 0;">
+                    ⏰ Busiest hour: <strong>${busiestHour[0]}:00</strong> (${busiestHour[1]} activities)
+                </li>` : ''}
+            </ul>
+        </div>
+    `;
+
+            container.innerHTML = html;
+
+            // Render mini timeline chart
+            this.renderActivityTimelineChart(activities);
+        }
+
+// ADD THIS SUPPORTING FUNCTION right after renderTodayInsights()
+        renderActivityTimelineChart(activities) {
+            const container = document.getElementById('activityTimelineChart');
+            if (!container) return;
+
+            const hours = Array.from({length: 24}, (_, i) => i);
+            const activityCounts = hours.map(hour => {
+                return activities.filter(a => new Date(a.datetime).getHours() === hour).length;
+            });
+
+            const maxCount = Math.max(...activityCounts, 1);
+
+            let barsHTML = hours.map((hour, index) => {
+                const count = activityCounts[index];
+                const heightPercent = (count / maxCount) * 100;
+                const isCurrentHour = new Date().getHours() === hour;
+
+                return `
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%;">
+                <div style="width: 100%; background: ${isCurrentHour ? '#667eea' : '#cbd5e0'}; height: ${heightPercent}%; min-height: ${count > 0 ? '3px' : '0'}; border-radius: 2px 2px 0 0; transition: all 0.3s;" title="${hour}:00 - ${count} activities"></div>
+                ${hour % 3 === 0 ? `<div style="font-size: 9px; color: #718096; margin-top: 3px;">${hour}</div>` : ''}
+            </div>
+        `;
+            }).join('');
+
+            container.innerHTML = `<div style="display: flex; gap: 1px; height: 100%; align-items: flex-end;">${barsHTML}</div>`;
+        }
+
+
+        // REPLACE the entire renderTimeline() function
+        renderTimeline() {
+            const container = document.getElementById('timelineView');
+            if (!container) return;
+
+            const dateInput = document.getElementById('timelineDate');
+            const selectedDate = dateInput ? dateInput.value : new Date().toISOString().split('T')[0];
+            const activities = this.getActivitiesByDate(selectedDate);
+
+            let html = '<div class="timeline-view">';
+
+            for (let hour = 0; hour < 24; hour++) {
+                const hourStr = hour.toString().padStart(2, '0') + ':00';
+                const hourActivities = activities.filter(a => {
+                    const actHour = new Date(a.datetime).getHours();
+                    return actHour === hour;
+                });
+
+                html += `<div class="timeline-hour">${hourStr}</div>`;
+                html += `<div class="timeline-slot">`;
+
+                hourActivities.forEach((a, index) => {
+                    const time = new Date(a.datetime).toLocaleTimeString('en-US', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    const emoji = this.getActivityEmoji(a.type);
+
+                    // Calculate time from previous activity in this hour
+                    let timeDiffHTML = '';
+                    if (index > 0) {
+                        const prevActivity = hourActivities[index - 1];
+                        const timeDiff = this.calculateTimeDifference(prevActivity.datetime, a.datetime);
+                        timeDiffHTML = ` <span style="color: #0066cc; font-size: 9px;">(+${timeDiff})</span>`;
+                    }
+
+                    html += `<div class="timeline-event">${emoji} ${time} ${a.type}${timeDiffHTML}</div>`;
+                });
+
+                html += `</div>`;
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+
+        renderHistory() {
+            const container = document.getElementById('historyLog');
+            if (!container) return;
+
+            const filterType = document.getElementById('historyFilter')?.value || 'all';
+            const range = document.getElementById('historyRange')?.value || '7';
+
+            let activities = this.getAllActivities();
+
+            if (filterType !== 'all') {
+                activities = activities.filter(a => a.type === filterType || a.type.includes(filterType));
+            }
+
+            if (range !== 'all') {
+                const days = parseInt(range);
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - days);
+                activities = activities.filter(a => new Date(a.datetime) >= cutoff);
+            }
+
+            activities = activities.slice(0, 100);
+
+            if (activities.length === 0) {
+                container.innerHTML = '<p style="color: #718096; text-align: center;">No activities found</p>';
+                return;
+            }
+
+            // Render with time differences
+            container.innerHTML = activities.map((a, index) => {
+                const previousActivity = index < activities.length - 1 ? activities[index + 1] : null;
+                return this.renderActivityItem(a, previousActivity);
+            }).join('');
+        }
+
+        renderCharts() {
+            this.renderFeedingChart();
+            this.renderWeeklyChart();
+            this.renderActivityPieChart();
+        }
+
+        renderFeedingChart() {
+            const canvas = document.getElementById('feedingChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+
+            if (this.charts.feeding) {
+                this.charts.feeding.destroy();
+            }
+
+            const last7Days = this.getLast7Days();
+            const data = last7Days.map(date => {
+                const feedings = this.getActivitiesByDate(date).filter(a => a.type === 'feeding');
+                return feedings.reduce((sum, f) => sum + (f.amount || 0), 0);
+            });
+
+            this.charts.feeding = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: last7Days.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                    datasets: [{
+                        label: 'Total Feeding (ml)',
+                        data: data,
+                        backgroundColor: '#667eea',
+                        borderColor: '#764ba2',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        renderWeeklyChart() {
+            const canvas = document.getElementById('weeklyChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+
+            if (this.charts.weekly) {
+                this.charts.weekly.destroy();
+            }
+
+            const last7Days = this.getLast7Days();
+            const feedingData = [];
+            const diaperData = [];
+            const sleepData = [];
+
+            last7Days.forEach(date => {
+                const activities = this.getActivitiesByDate(date);
+                feedingData.push(activities.filter(a => a.type === 'feeding').length);
+                diaperData.push(activities.filter(a => a.type.includes('diaper')).length);
+                sleepData.push(activities.filter(a => a.type === 'sleep').length);
+            });
+
+            this.charts.weekly = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last7Days.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                    datasets: [
+                        {
+                            label: 'Feedings',
+                            data: feedingData,
+                            borderColor: '#f6ad55',
+                            backgroundColor: 'rgba(246, 173, 85, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Diapers',
+                            data: diaperData,
+                            borderColor: '#4fd1c7',
+                            backgroundColor: 'rgba(79, 209, 199, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Sleep',
+                            data: sleepData,
+                            borderColor: '#9f7aea',
+                            backgroundColor: 'rgba(159, 122, 234, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        renderActivityPieChart() {
+            const canvas = document.getElementById('activityPieChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+
+            if (this.charts.pie) {
+                this.charts.pie.destroy();
+            }
+
+            const activities = this.getAllActivities();
+            const counts = {};
+
+            activities.forEach(a => {
+                const type = a.type.replace('diaper-', '');
+                counts[type] = (counts[type] || 0) + 1;
+            });
+
+            this.charts.pie = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(counts),
+                    datasets: [{
+                        data: Object.values(counts),
+                        backgroundColor: [
+                            '#667eea', '#f6ad55', '#4fd1c7',
+                            '#9f7aea', '#fc8181', '#48bb78'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        getActivitiesByDate(date) {
+            if (!this.currentBaby) return [];
+            const activities = this.activities[this.currentBaby] || [];
+            return activities.filter(a => a.datetime.startsWith(date));
+        }
+
+        getAllActivities() {
+            if (!this.currentBaby) return [];
+            return this.activities[this.currentBaby] || [];
+        }
+
+        getLast7Days() {
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                dates.push(date.toISOString().split('T')[0]);
+            }
+            return dates;
+        }
+
+        saveFeedingTarget() {
+            this.renderFeedingProgress();
+        }
+
+        saveSettings() {
+            this.settings.dailyTarget = document.getElementById('dailyTarget')?.value;
+            this.settings.minFeedings = document.getElementById('minFeedings')?.value;
+            this.settings.lowFeedingAlert = document.getElementById('lowFeedingAlert')?.checked;
+            this.saveData();
+            this.showNotification('Settings saved');
+        }
+
+        switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+
+            if (tabName === 'stats') {
+                setTimeout(() => this.renderCharts(), 100);
+            } else if (tabName === 'timeline') {
+                this.renderTimeline();
+            }
+        }
+
+        exportData() {
+            const data = {
+                babies: this.babies,
+                activities: this.activities,
+                settings: this.settings,
+                exportDate: new Date().toISOString()
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `baby-log-export-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            this.showNotification('Data exported successfully!');
+        }
+
+        showImportModal() {
+            document.getElementById('importModal').classList.add('active');
+        }
+
+        importData() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (data.babies) this.babies = data.babies;
+                    if (data.activities) this.activities = data.activities;
+                    if (data.settings) this.settings = data.settings;
+
+                    this.saveData();
+                    this.loadBabies();
+                    this.renderAll();
+
+                    this.closeModal('importModal');
+                    this.showNotification('Data imported successfully!');
+                } catch (err) {
+                    alert('Error importing data: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        clearAllData() {
+            if (!confirm('Are you sure you want to clear ALL data? This cannot be undone!')) {
+                return;
+            }
+
+            if (!confirm('FINAL WARNING: This will delete all babies and activities permanently!')) {
+                return;
+            }
+
+            localStorage.clear();
+            this.babies = {};
+            this.activities = {};
+            this.settings = {};
+            this.currentBaby = null;
+
+            this.loadBabies();
+            this.renderAll();
+            this.showNotification('All data cleared');
+        }
+
+        showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    }
+
+    const app = new BabyActivityApp();
+</script>
+</body>
+</html>
