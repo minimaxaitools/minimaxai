@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #1da1f2;
+            --dark-bg: #15202b;
+            --darker-bg: #192734;
+            --border-color: #38444d;
+            --text-color: #e7e9ea;
+            --hover-bg: #1c2938;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: var(--darker-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .tabs-container {
+            background: var(--darker-bg);
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 0 10px;
+        }
+
+        .tabs-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .tabs-container::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+        }
+
+        .tabs-container::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .nav-tabs {
+            border: none;
+            flex-wrap: nowrap;
+        }
+
+        .nav-tabs .nav-link {
+            color: #8899a6;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 15px 20px;
+            font-weight: 500;
+            transition: all 0.3s;
+            background: transparent;
+        }
+
+        .nav-tabs .nav-link:hover {
+            color: var(--text-color);
+            background: var(--hover-bg);
+        }
+
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            background: var(--dark-bg);
+        }
+
+        .controls-panel {
+            background: var(--darker-bg);
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: none;
+        }
+
+        .controls-panel.active {
+            display: block;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-item input {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #1a8cd8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--border-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .content-area {
+            padding: 20px;
+            height: calc(100vh - 200px);
+        }
+
+        .iframe-container {
+            width: 100%;
+            height: 100%;
+            background: var(--dark-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .action-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 999;
+        }
+
+        .action-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(29, 161, 242, 0.4);
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(29, 161, 242, 0.6);
+        }
+
+        .url-display {
+            background: var(--dark-bg);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 12px;
+            word-break: break-all;
+            border: 1px solid var(--border-color);
+        }
+
+        .toggle-controls {
+            background: var(--hover-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-controls:hover {
+            background: var(--border-color);
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 18px;
+            color: #8899a6;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 18px;
+            }
+
+            .nav-tabs .nav-link {
+                padding: 12px 15px;
+                font-size: 13px;
+            }
+
+            .content-area {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="d-flex justify-content-between align-items-center">
+        <h1><i class="fab fa-x-twitter"></i> Viral Search Dashboard</h1>
+        <button class="toggle-controls" onclick="toggleControls()">
+            <i class="fas fa-sliders-h"></i> Controls
+        </button>
+    </div>
+</div>
+
+<div class="tabs-container">
+    <ul class="nav nav-tabs" id="searchTabs" role="tablist"></ul>
+</div>
+
+<div class="controls-panel" id="controlsPanel"></div>
+
+<div class="content-area">
+    <div class="tab-content" id="tabContent"></div>
+</div>
+
+<div class="action-buttons">
+    <button class="action-btn" onclick="refreshCurrentTab()" title="Refresh">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+    <button class="action-btn" onclick="openInNewWindow()" title="Open in New Window">
+        <i class="fas fa-external-link-alt"></i>
+    </button>
+    <button class="action-btn" onclick="copyCurrentUrl()" title="Copy URL">
+        <i class="fas fa-copy"></i>
+    </button>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<!-- Clipboard.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.11/clipboard.min.js"></script>
+
+<script>
+    const searchConfigs = [
+        {
+            id: 'verified-viral',
+            name: 'Verified Viral',
+            icon: 'fa-badge-check',
+            params: {
+                minFaves: 200,
+                minRetweets: 0,
+                minReplies: 0,
+                filters: ['blue_verified'],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: ''
+            }
+        },
+        {
+            id: 'following-viral',
+            name: 'Following Viral',
+            icon: 'fa-users',
+            params: {
+                minFaves: 100,
+                minRetweets: 0,
+                minReplies: 0,
+                filters: ['follows'],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: ''
+            }
+        },
+        {
+            id: 'trending-now',
+            name: 'Trending Now',
+            icon: 'fa-fire',
+            params: {
+                minFaves: 50,
+                minRetweets: 10,
+                minReplies: 0,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: 'trending OR viral OR "must watch"'
+            }
+        },
+        {
+            id: 'media-viral',
+            name: 'Media Viral',
+            icon: 'fa-photo-film',
+            params: {
+                minFaves: 200,
+                minRetweets: 20,
+                minReplies: 0,
+                filters: ['media'],
+                excludeFilters: ['quote', 'replies', 'retweets'],
+                languages: ['en', 'hi'],
+                keywords: ''
+            }
+        },
+        {
+            id: 'breaking-news',
+            name: 'Breaking News',
+            icon: 'fa-newspaper',
+            params: {
+                minFaves: 100,
+                minRetweets: 5,
+                minReplies: 0,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: 'breaking'
+            }
+        },
+        {
+            id: 'blowing-up',
+            name: 'Blowing Up',
+            icon: 'fa-rocket',
+            params: {
+                minFaves: 0,
+                minRetweets: 0,
+                minReplies: 0,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: '"Going viral" OR "this blew up"'
+            }
+        },
+        {
+            id: 'high-engagement',
+            name: 'High Engagement',
+            icon: 'fa-comments',
+            params: {
+                minFaves: 150,
+                minRetweets: 0,
+                minReplies: 50,
+                filters: [],
+                excludeFilters: ['retweets', 'quote'],
+                languages: ['en', 'hi'],
+                keywords: '',
+                dateRange: { since: '2025-10-29', until: '2025-11-01' }
+            }
+        },
+        {
+            id: 'new-content',
+            name: 'New Content',
+            icon: 'fa-sparkles',
+            params: {
+                minFaves: 50,
+                minRetweets: 0,
+                minReplies: 0,
+                filters: ['media', 'links'],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: 'rising OR trending OR "new post"'
+            }
+        },
+        {
+            id: 'just-launched',
+            name: 'Just Launched',
+            icon: 'fa-bullhorn',
+            params: {
+                minFaves: 0,
+                minRetweets: 0,
+                minReplies: 0,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: '"just dropped" OR "just launched"'
+            }
+        },
+        {
+            id: 'tech-buzz',
+            name: 'Tech Buzz',
+            icon: 'fa-microchip',
+            params: {
+                minFaves: 50,
+                minRetweets: 0,
+                minReplies: 20,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: 'AI OR crypto OR finance OR entrepreneurship OR startup'
+            }
+        },
+        {
+            id: 'super-early',
+            name: 'Super Early',
+            icon: 'fa-bolt',
+            params: {
+                minFaves: 5,
+                minRetweets: 0,
+                minReplies: 3,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: ['en', 'hi'],
+                keywords: '',
+                dateRange: { since: '2025-10-31' }
+            }
+        },
+        {
+            id: 'crypto-zone',
+            name: 'Crypto Zone',
+            icon: 'fa-bitcoin-sign',
+            params: {
+                minFaves: 20,
+                minRetweets: 0,
+                minReplies: 0,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: [],
+                keywords: 'airdrop OR "bull run" OR defi OR memecoin'
+            }
+        },
+        {
+            id: 'ai-discussions',
+            name: 'AI Discussions',
+            icon: 'fa-brain',
+            params: {
+                minFaves: 0,
+                minRetweets: 0,
+                minReplies: 10,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: [],
+                keywords: 'AI OR GPT OR Autogen OR AGI'
+            }
+        },
+        {
+            id: 'startup-grind',
+            name: 'Startup Grind',
+            icon: 'fa-lightbulb',
+            params: {
+                minFaves: 0,
+                minRetweets: 0,
+                minReplies: 5,
+                filters: [],
+                excludeFilters: ['retweets', 'quote', 'replies'],
+                languages: [],
+                keywords: 'founder OR startup OR bootstrap OR SaaS'
+            }
+        }
+    ];
+
+    let currentTab = 'verified-viral';
+    let controlsVisible = false;
+
+    function buildSearchUrl(params) {
+        let query = [];
+
+        // Add filters
+        params.filters.forEach(f => {
+            if (f === 'media' || f === 'links') {
+                query.push(`(filter:${f})`);
+            } else {
+                query.push(`filter:${f}`);
+            }
+        });
+
+        // Add min values
+        if (params.minFaves > 0) query.push(`min_faves:${params.minFaves}`);
+        if (params.minRetweets > 0) query.push(`min_retweets:${params.minRetweets}`);
+        if (params.minReplies > 0) query.push(`min_replies:${params.minReplies}`);
+
+        // Add exclude filters
+        params.excludeFilters.forEach(f => {
+            query.push(`-filter:${f}`);
+        });
+
+        // Add keywords
+        if (params.keywords) {
+            query.push(`(${params.keywords})`);
+        }
+
+        // Add languages
+        if (params.languages.length > 0) {
+            const langQuery = params.languages.map(l => `lang:${l}`).join(' OR ');
+            query.push(`(${langQuery})`);
+        }
+
+        // Add date range
+        if (params.dateRange) {
+            if (params.dateRange.since) query.push(`since:${params.dateRange.since}`);
+            if (params.dateRange.until) query.push(`until:${params.dateRange.until}`);
+        }
+
+        const searchQuery = query.join(' ');
+        return `https://x.com/search?q=${encodeURIComponent(searchQuery)}&src=typed_query&f=live`;
+    }
+
+    function createTabs() {
+        const tabsHtml = searchConfigs.map((config, index) => `
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link ${index === 0 ? 'active' : ''}"
+                            id="${config.id}-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#${config.id}-content"
+                            type="button"
+                            role="tab"
+                            onclick="switchTab('${config.id}')">
+                        <i class="fas ${config.icon}"></i> ${config.name}
+                    </button>
+                </li>
+            `).join('');
+
+        document.getElementById('searchTabs').innerHTML = tabsHtml;
+
+        const contentHtml = searchConfigs.map((config, index) => `
+                <div class="tab-pane fade ${index === 0 ? 'show active' : ''}"
+                     id="${config.id}-content"
+                     role="tabpanel">
+                    <div class="iframe-container">
+                        <iframe src="${buildSearchUrl(config.params)}"
+                                id="${config.id}-iframe"
+                                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                                loading="lazy"></iframe>
+                    </div>
+                </div>
+            `).join('');
+
+        document.getElementById('tabContent').innerHTML = contentHtml;
+    }
+
+    function createControls(configId) {
+        const config = searchConfigs.find(c => c.id === configId);
+        if (!config) return;
+
+        const controlsHtml = `
+                <h5 class="mb-3"><i class="fas fa-sliders-h"></i> Customize: ${config.name}</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="control-group">
+                            <label>Min Likes</label>
+                            <input type="number" id="minFaves" value="${config.params.minFaves}" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="control-group">
+                            <label>Min Retweets</label>
+                            <input type="number" id="minRetweets" value="${config.params.minRetweets}" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="control-group">
+                            <label>Min Replies</label>
+                            <input type="number" id="minReplies" value="${config.params.minReplies}" min="0">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="control-group">
+                            <label>Keywords</label>
+                            <input type="text" id="keywords" value="${config.params.keywords}" placeholder="Enter keywords">
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="control-group">
+                            <label>Include Filters</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="filter-verified" ${config.params.filters.includes('blue_verified') ? 'checked' : ''}>
+                                    <label for="filter-verified">Verified</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="filter-follows" ${config.params.filters.includes('follows') ? 'checked' : ''}>
+                                    <label for="filter-follows">Following</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="filter-media" ${config.params.filters.includes('media') ? 'checked' : ''}>
+                                    <label for="filter-media">Media</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="filter-links" ${config.params.filters.includes('links') ? 'checked' : ''}>
+                                    <label for="filter-links">Links</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="control-group">
+                            <label>Exclude</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="exclude-retweets" ${config.params.excludeFilters.includes('retweets') ? 'checked' : ''}>
+                                    <label for="exclude-retweets">Retweets</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="exclude-quote" ${config.params.excludeFilters.includes('quote') ? 'checked' : ''}>
+                                    <label for="exclude-quote">Quotes</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="exclude-replies" ${config.params.excludeFilters.includes('replies') ? 'checked' : ''}>
+                                    <label for="exclude-replies">Replies</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <div class="control-group">
+                            <label>Languages</label>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="lang-en" ${config.params.languages.includes('en') ? 'checked' : ''}>
+                                    <label for="lang-en">English</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="lang-hi" ${config.params.languages.includes('hi') ? 'checked' : ''}>
+                                    <label for="lang-hi">Hindi</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button class="btn btn-primary me-2" onclick="applyFilters('${configId}')">
+                        <i class="fas fa-check"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetFilters('${configId}')">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+                <div class="url-display" id="urlDisplay">
+                    <strong>Current URL:</strong><br>
+                    ${buildSearchUrl(config.params)}
+                </div>
+            `;
+
+        document.getElementById('controlsPanel').innerHTML = controlsHtml;
+    }
+
+    function toggleControls() {
+        controlsVisible = !controlsVisible;
+        const panel = document.getElementById('controlsPanel');
+        if (controlsVisible) {
+            createControls(currentTab);
+            panel.classList.add('active');
+        } else {
+            panel.classList.remove('active');
+        }
+    }
+
+    function switchTab(tabId) {
+        currentTab = tabId;
+        if (controlsVisible) {
+            createControls(tabId);
+        }
+    }
+
+    function applyFilters(configId) {
+        const config = searchConfigs.find(c => c.id === configId);
+        if (!config) return;
+
+        // Update params from controls
+        config.params.minFaves = parseInt(document.getElementById('minFaves').value) || 0;
+        config.params.minRetweets = parseInt(document.getElementById('minRetweets').value) || 0;
+        config.params.minReplies = parseInt(document.getElementById('minReplies').value) || 0;
+        config.params.keywords = document.getElementById('keywords').value;
+
+        // Update filters
+        config.params.filters = [];
+        if (document.getElementById('filter-verified').checked) config.params.filters.push('blue_verified');
+        if (document.getElementById('filter-follows').checked) config.params.filters.push('follows');
+        if (document.getElementById('filter-media').checked) config.params.filters.push('media');
+        if (document.getElementById('filter-links').checked) config.params.filters.push('links');
+
+        // Update exclude filters
+        config.params.excludeFilters = [];
+        if (document.getElementById('exclude-retweets').checked) config.params.excludeFilters.push('retweets');
+        if (document.getElementById('exclude-quote').checked) config.params.excludeFilters.push('quote');
+        if (document.getElementById('exclude-replies').checked) config.params.excludeFilters.push('replies');
+
+        // Update languages
+        config.params.languages = [];
+        if (document.getElementById('lang-en').checked) config.params.languages.push('en');
+        if (document.getElementById('lang-hi').checked) config.params.languages.push('hi');
+
+        // Update iframe and URL display
+        const newUrl = buildSearchUrl(config.params);
+        document.getElementById(`${configId}-iframe`).src = newUrl;
+        document.getElementById('urlDisplay').innerHTML = `<strong>Current URL:</strong><br>${newUrl}`;
+    }
+
+    function resetFilters(configId) {
+        location.reload();
+    }
+
+    function refreshCurrentTab() {
+        const iframe = document.getElementById(`${currentTab}-iframe`);
+        iframe.src = iframe.src;
+    }
+
+    function openInNewWindow() {
+        const iframe = document.getElementById(`${currentTab}-iframe`);
+        window.open(iframe.src, '_blank');
+    }
+
+    function copyCurrentUrl() {
+        const iframe = document.getElementById(`${currentTab}-iframe`);
+        const url = iframe.src;
+
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URL copied to clipboard!');
+            });
+        } else {
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert('URL copied to clipboard!');
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        createTabs();
+    });
+</script>
+</body>
+</html>
