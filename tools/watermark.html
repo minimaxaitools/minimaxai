@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stock Image Watermark Web App</title>
+  <!-- Bootstrap for clean UI -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    body { background: #f8f9fa; }
+    .image-preview { position: relative; display: inline-block; margin: 1em; }
+    .image-canvas { max-width: 350px; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 1px 5px #ccc; background: white; }
+    .settings-group { margin-bottom: 1em; }
+    .form-label { font-weight: 500; }
+    .opacity-50 { opacity: .5; }
+    #drop-area { border: 2px dashed #aaa; padding: 2em; border-radius: 8px; background: #fff; text-align: center; margin-bottom: 2em;}
+    #drop-area.dragover { border-color: #007bff; background: #e7f1ff; }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <h2 class="mb-3">Stock Image Watermark App</h2>
+    <p class="opacity-50 mb-4">Upload, preview, customize, and download watermarked images. <b>Industry-grade, non-intrusive, robust watermarking.</b></p>
+
+    <!-- Drop area and file input -->
+    <div id="drop-area">
+      <p>Drag &amp; drop images here, or <label class="btn btn-primary btn-sm mb-0">Browse<input type="file" id="image-input" accept="image/*" multiple hidden></label></p>
+      <small>Supports JPEG, PNG. Up to 10 images at once.</small>
+    </div>
+
+    <!-- Watermark settings -->
+    <div class="row settings-group">
+      <div class="col-md-2">
+        <label class="form-label">Watermark Text</label>
+        <input type="text" id="wm-text" class="form-control" value="©IncognitoPrince" maxlength="40">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Font Size</label>
+        <input type="number" id="wm-size" class="form-control" min="16" max="72" value="32">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Color</label>
+        <input type="color" id="wm-color" class="form-control" value="#5b8582">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Opacity</label>
+        <input type="range" id="wm-opacity" class="form-range" min="0.01" max="1" step="0.05" value="0.21">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Spread</label>
+        <input type="number" id="wm-spread" class="form-control" min="100" max="800" value="520">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Rotation (deg)</label>
+        <input type="number" id="wm-rotation" class="form-control" min="0" max="60" value="30">
+      </div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label me-2">Style:</label>
+      <select id="wm-style" class="form-select d-inline w-auto">
+        <option value="normal">Normal</option>
+        <option value="overlay" selected>Overlay</option>
+        <option value="multiply">Multiply</option>
+        <option value="lighten">Lighten</option>
+        <option value="darken">Darken</option>
+      </select>
+      <button id="download-all" class="btn btn-success btn-sm ms-4" disabled>Download All as ZIP</button>
+    </div>
+
+    <!-- Image previews -->
+    <div id="preview-area" class="d-flex flex-wrap"></div>
+  </div>
+
+  <!-- JSZip CDN for zipping files -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <!-- FileSaver.js for downloading zip -->
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+
+  <script>
+    // --- Utility to load an image as HTMLImageElement ---
+    function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("Image load error"));
+        };
+        img.src = url;
+      });
+    }
+
+    // --- Watermark rendering function ---
+    function applyWatermark(img, settings) {
+      // Create canvas same size as image
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
+      const ctx = canvas.getContext('2d');
+      // Draw original image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Watermark pattern: create offscreen tile
+      const tileSize = settings.spread;
+      const tileCanvas = document.createElement('canvas');
+      tileCanvas.width = tileCanvas.height = tileSize;
+      const tctx = tileCanvas.getContext('2d');
+      tctx.clearRect(0,0,tileSize,tileSize);
+
+      // Draw rotated watermark text in tile
+      tctx.save();
+      tctx.translate(tileSize/2, tileSize/2);
+      tctx.rotate(settings.rotation * Math.PI/180);
+      tctx.font = `bold ${settings.size}px sans-serif`;
+      tctx.textAlign = 'center';
+      tctx.textBaseline = 'middle';
+      tctx.globalAlpha = settings.opacity;
+      tctx.fillStyle = settings.color;
+      tctx.globalCompositeOperation = settings.style;
+      tctx.strokeStyle = "#00000033";
+      tctx.lineWidth = 2;
+      // Draw slightly stroked for better visibility
+      tctx.strokeText(settings.text, 0, 0);
+      tctx.fillText(settings.text, 0, 0);
+      tctx.restore();
+
+      // Apply the tile as a pattern over the image
+      ctx.save();
+      ctx.globalAlpha = 1; // Handled in tile
+      ctx.globalCompositeOperation = settings.style;
+      const pattern = ctx.createPattern(tileCanvas, 'repeat');
+      ctx.fillStyle = pattern;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      return canvas;
+    }
+
+    // --- App state ---
+    let images = [];
+    let settings = {
+      text: '©IncognitoPrince',
+      size: 42,
+      color: '#5b8582',
+      opacity: 0.23,
+      spread: 520,
+      rotation: 30,
+      style: 'multiply'
+    };
+
+    // --- DOM Elements ---
+    const imageInput = document.getElementById('image-input');
+    const dropArea = document.getElementById('drop-area');
+    const previewArea = document.getElementById('preview-area');
+    const downloadAllBtn = document.getElementById('download-all');
+
+    // --- Image Upload Handling ---
+    imageInput.addEventListener('change', handleFiles);
+    dropArea.addEventListener('dragover', e => {
+      e.preventDefault(); dropArea.classList.add('dragover');
+    });
+    dropArea.addEventListener('dragleave', e => {
+      e.preventDefault(); dropArea.classList.remove('dragover');
+    });
+    dropArea.addEventListener('drop', e => {
+      e.preventDefault(); dropArea.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      handleFiles({ target: { files } });
+    });
+
+    function handleFiles(e) {
+      const files = Array.from(e.target.files).slice(0, 10); // Limit for performance
+      if (files.length === 0) return;
+      images = [];
+      previewArea.innerHTML = '';
+      downloadAllBtn.disabled = true;
+      // Load all images
+      Promise.all(files.map(file => loadImage(file).then(img => ({ img, file }))))
+        .then(arrs => {
+          images = arrs;
+          renderAllPreviews();
+        });
+    }
+
+    // --- Render all previews ---
+    function renderAllPreviews() {
+      previewArea.innerHTML = '';
+      images.forEach((obj, idx) => {
+        const canvas = applyWatermark(obj.img, settings);
+        // Compose preview UI
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-preview';
+        wrapper.innerHTML = `
+          <canvas class="image-canvas" width="${canvas.width}" height="${canvas.height}"></canvas>
+          <div class="mt-2 text-center">
+            <button class="btn btn-outline-secondary btn-sm" data-idx="${idx}">Download</button>
+          </div>
+        `;
+        // Copy canvas data
+        wrapper.querySelector('canvas').getContext('2d')
+          .drawImage(canvas, 0, 0, canvas.width, canvas.height);
+        previewArea.appendChild(wrapper);
+
+        // Download button
+        wrapper.querySelector("button").onclick = () => {
+          canvas.toBlob(blob => {
+            saveAs(blob, `watermarked_${obj.file.name}`);
+          }, "image/jpeg", 0.99);
+        };
+      });
+      if (images.length > 1) downloadAllBtn.disabled = false;
+    }
+
+    // --- Watermark settings change handlers ---
+    document.getElementById('wm-text').addEventListener('input', e => {
+      settings.text = e.target.value.trim() || '© MyStock';
+      renderAllPreviews();
+    });
+    document.getElementById('wm-size').addEventListener('input', e => {
+      settings.size = Math.max(16, Math.min(72, +e.target.value || 32));
+      renderAllPreviews();
+    });
+    document.getElementById('wm-color').addEventListener('input', e => {
+      settings.color = e.target.value;
+      renderAllPreviews();
+    });
+    document.getElementById('wm-opacity').addEventListener('input', e => {
+      settings.opacity = parseFloat(e.target.value);
+      renderAllPreviews();
+    });
+    document.getElementById('wm-spread').addEventListener('input', e => {
+      settings.spread = Math.max(100, Math.min(800, +e.target.value || 220));
+      renderAllPreviews();
+    });
+    document.getElementById('wm-rotation').addEventListener('input', e => {
+      settings.rotation = Math.max(0, Math.min(60, +e.target.value || 30));
+      renderAllPreviews();
+    });
+    document.getElementById('wm-style').addEventListener('change', e => {
+      settings.style = e.target.value;
+      renderAllPreviews();
+    });
+
+    // --- Bulk download as ZIP ---
+    downloadAllBtn.addEventListener('click', async () => {
+      if (!images.length) return;
+      downloadAllBtn.disabled = true;
+      const zip = new JSZip();
+      for (let i = 0; i < images.length; ++i) {
+        const { img, file } = images[i];
+        const canvas = applyWatermark(img, settings);
+        // Canvas to Blob
+        await new Promise(resolve => {
+          canvas.toBlob(blob => {
+            zip.file(`watermarked_${file.name.replace(/\s+/g, '_')}`, blob);
+            resolve();
+          }, "image/jpeg", 0.99);
+        });
+      }
+      zip.generateAsync({ type: "blob" }).then(blob => {
+        saveAs(blob, "watermarked_images.zip");
+        downloadAllBtn.disabled = false;
+      });
+    });
+  </script>
+</body>
+</html>
