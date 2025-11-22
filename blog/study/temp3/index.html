@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Infinite Canvas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:200|Montserrat:300|Work+Sans:400&display=swap"
+        rel="stylesheet">
+
+    <!-- Commented out old CSS to prevent conflicts -->
+    <!-- <link rel="stylesheet" href="css/main.css"> -->
+    <!-- <link rel="stylesheet" href="css/modern-overlay.css"> -->
+
+    <meta name="description" content="Draw on a canvas with very deep Zoom.">
+    <meta name="title" content="app">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        /* Custom scrollbar for sidebar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+
+        /* Range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+
+        /* Color input styling */
+        input[type=color] {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            overflow: hidden;
+            padding: 0;
+            cursor: pointer;
+        }
+
+        input[type=color]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type=color]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Tool active state (handled by JS adding styles, but we can add a class if JS supports it, 
+           otherwise we rely on the JS setting background color. 
+           The JS sets .style.backgroundColor. We'll let it do that, 
+           but we can add a hover effect via Tailwind) */
+
+        .tool-btn {
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .tool-btn img {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        /* Panel transitions */
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        /* Dynamic Element Styles (for elements created by JS) */
+        .svg-preview {
+            width: 40px;
+            height: 40px;
+            padding: 4px;
+            margin: 2px;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .svg-preview:hover {
+            border-color: #3b82f6;
+            transform: scale(1.05);
+        }
+
+        .bookmark-item {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        .bookmark-item:hover {
+            background: #f1f5f9;
+        }
+
+        /* Loading Dialog (created by JS) */
+        .loading-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        /* Bookmark Styles */
+        .bookmark-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.25rem;
+        }
+
+        .bookmark-controls {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .bookmark-info {
+            font-size: 0.875rem;
+        }
+
+        .bookmark-details {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .bookmark-description {
+            border: 1px solid transparent;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            margin-top: 0.25rem;
+        }
+
+        .bookmark-description:hover,
+        .bookmark-description:focus {
+            background: white;
+            border-color: #cbd5e1;
+            outline: none;
+        }
+
+        .bookmark-index {
+            font-weight: 600;
+            color: #94a3b8;
+            margin-right: 0.5rem;
+        }
+
+        .drag-handle {
+            cursor: move;
+            color: #94a3b8;
+            padding-right: 0.5rem;
+        }
+
+        .bookmark-ghost {
+            opacity: 0.5;
+            background: #e2e8f0;
+        }
+
+        /* SVG Item Styles */
+        .svg-item {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.25rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+            overflow: hidden;
+        }
+
+        .svg-item:hover {
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .svg-item.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        .svg-name {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 0.125rem;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: 100%;
+            max-width: 50px;
+        }
+
+        .svg-index {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            font-size: 0.625rem;
+            color: #94a3b8;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+            transition: opacity 0.3s;
+            font-size: 0.875rem;
+        }
+
+        .notification.fade-out {
+            opacity: 0;
+        }
+
+        /* Expanded Panel */
+        .expanded-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: white;
+            z-index: 1200;
+            border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+        }
+
+        .expanded-panel .svg-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 1rem;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 text-gray-800">
+
+    <main class="relative h-screen w-screen overflow-hidden">
+        <canvas></canvas>
+
+        <!-- Sidebar / Toolbar -->
+        <!-- We keep the class 'toolbar' because JS selects it -->
+        <div class="toolbar fixed right-0 top-0 h-full w-80 bg-white/95 backdrop-blur-sm shadow-2xl z-50 flex flex-col border-l border-gray-200 sidebar-transition transform translate-x-0"
+            id="main-sidebar">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-white/50">
+                <h1 class="text-lg font-bold text-gray-800 tracking-tight">Infinite Canvas</h1>
+                <button id="minimize" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
+                    title="Minimize">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-6">
+
+                <!-- Tools Grid -->
+                <div class="grid grid-cols-4 gap-3">
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="0" title="Circle"><img src="images/ellipse.png" alt="circle"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="1" title="Rectangle"><img src="images/rectangle.png" alt="rectangle"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="2" title="Polygon"><img src="images/polygon.png" alt="polygon"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="3" title="Text"><img src="images/text.png" alt="text"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="4" title="Image"><img src="images/image.png" alt="image"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="5" title="Gradient"><img src="images/gradient.png" alt="gradient"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="6" title="Eraser"><img src="images/eraser.png" alt="eraser"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="7" title="Select"><img src="images/select.png" alt="select"></button>
+                    <button
+                        class="tool tool-btn flex items-center justify-center p-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50"
+                        data-tool="8" title="SVG"><img src="images/svg.png" alt="svg"></button>
+                </div>
+
+                <!-- Tool Specific Settings (These are toggled by JS) -->
+                <!-- Circle -->
+                <div data-toolview="0" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Circle Settings</h3>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Radius</span>
+                        <input type="number" data-prop="circle.radius" value="0.1" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2 border">
+                    </label>
+                </div>
+
+                <!-- Rectangle -->
+                <div data-toolview="1" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Rectangle Settings
+                    </h3>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Width</span>
+                        <input type="number" data-prop="rectangle.w" value="0.1" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Height</span>
+                        <input type="number" data-prop="rectangle.h" value="0.1" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2 border">
+                    </label>
+                </div>
+
+                <!-- Polygon -->
+                <div data-toolview="2" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Polygon Settings</h3>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" data-prop="polygon.isClosed"
+                            class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                        <span class="text-sm text-gray-700">Close Polygons</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" data-prop="polygon.isSmooth"
+                            class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                        <span class="text-sm text-gray-700">Smooth</span>
+                    </label>
+                </div>
+
+                <!-- Text -->
+                <div data-toolview="3" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Text Settings</h3>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Size</span>
+                        <input type="number" data-prop="text.size" value="0.05" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Font</span>
+                        <input type="text" id="setting_font" data-prop="text.font" value="Montserrat"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2 border">
+                    </label>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="lt">Left<br>Top</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="ct">Center<br>Top</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="rt">Right<br>Top</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="lm">Left<br>Mid</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="cm">Center<br>Mid</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="rm">Right<br>Mid</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="lb">Left<br>Bot</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="cb">Center<br>Bot</button>
+                        <button class="align p-2 text-xs bg-white border rounded hover:bg-gray-50"
+                            data-textalign="rb">Right<br>Bot</button>
+                    </div>
+                </div>
+
+                <!-- Image -->
+                <div data-toolview="4" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Image Settings</h3>
+                    <div class="image-select grid grid-cols-4 gap-2 mb-2"></div>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Width</span>
+                        <input type="number" data-prop="image.w" value="0.2" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Height</span>
+                        <input type="number" data-prop="image.h" value="0.2" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Rotation</span>
+                        <input type="range" data-prop="image.rotation" value="0" step="any" min="0" max="6.28318530718"
+                            class="w-full mt-1">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Blur</span>
+                        <input type="range" data-prop="image.blur" value="0" step="any" min="0" max="1"
+                            class="w-full mt-1">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Hue</span>
+                        <input type="range" data-prop="image.hue" value="0" step="any" min="0" max="360"
+                            class="w-full mt-1">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Brightness</span>
+                        <input type="number" data-prop="image.brightness" value="100" step="10" min="0" max="400"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Contrast</span>
+                        <input type="number" data-prop="image.contrast" value="100" step="10" min="0" max="400"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Saturation</span>
+                        <input type="number" data-prop="image.saturation" value="100" step="10" min="0" max="400"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </label>
+                </div>
+
+                <!-- Gradient -->
+                <div data-toolview="5" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Gradient Settings</h3>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Type</span>
+                        <input type="range" min="0" max="1" step="1" value="0" data-prop="gradient.type"
+                            class="w-full mt-1">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Rotation</span>
+                        <input type="range" data-prop="gradient.rotation" value="0" step="any" min="0"
+                            max="6.28318530718" class="w-full mt-1">
+                    </label>
+                    <h4 class="text-xs font-medium text-gray-500 mt-4">Templates</h4>
+                    <div id="gradient_templates" class="grid grid-cols-4 gap-2"></div>
+                    <button id="random_gradient"
+                        class="w-full py-2 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">Randomize</button>
+                    <h4 class="text-xs font-medium text-gray-500 mt-4">Edit</h4>
+                    <div id="gradient_div" class="flex flex-wrap gap-2"></div>
+                    <button id="add_gradient_color"
+                        class="w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">Add Color</button>
+                </div>
+
+                <!-- Eraser (Empty) -->
+                <div data-toolview="6" class="hidden"></div>
+
+                <!-- Select -->
+                <div data-toolview="7" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" data-prop="select.multiSelect"
+                            class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                        <span class="text-sm text-gray-700">Multi Select</span>
+                    </label>
+                </div>
+
+                <!-- SVG -->
+                <div data-toolview="8" class="hidden bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-3">
+                    <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">SVG Settings</h3>
+                    <input type="file" id="svg-upload" accept=".svg" multiple
+                        class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    <div class="svg-select grid grid-cols-5 gap-1 max-h-40 overflow-y-auto border rounded p-2 bg-white">
+                    </div>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Width</span>
+                        <input type="number" data-prop="svg.w" value="0.2" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Height</span>
+                        <input type="number" data-prop="svg.h" value="0.2" step="0.05" min="0.01" max="0.5"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                    </label>
+                    <label class="block text-sm">
+                        <span class="text-gray-700">Rotation</span>
+                        <input type="range" data-prop="svg.rotation" value="0" step="any" min="0" max="6.28318530718"
+                            class="w-full mt-1">
+                    </label>
+                </div>
+
+                <!-- Common Controls (Colors & Options) -->
+                <!-- We wrap these in a div.scroll to match original structure just in case, 
+                 but we can also just leave them as direct children if we want. 
+                 However, to be safe with the JS loop, we should ensure they DON'T have data-toolview.
+            -->
+
+                <!-- Colors Section -->
+                <div class="scroll space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Colors</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between">
+                                <span class="text-sm text-gray-700">Fill</span>
+                                <input type="color" data-prop="color" value="#000000">
+                            </label>
+                            <label class="flex items-center justify-between">
+                                <span class="text-sm text-gray-700">Outline</span>
+                                <input type="color" data-prop="strokeColor" value="#000000">
+                            </label>
+                            <label class="flex items-center justify-between">
+                                <span class="text-sm text-gray-700">Background</span>
+                                <input type="color" data-prop="bgColor" value="#ffffff">
+                            </label>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-8 gap-1">
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#ff0000" style="background-color: #ff0000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#ff8000" style="background-color: #ff8000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#ffff00" style="background-color: #ffff00"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#80ff00" style="background-color: #80ff00"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#00ff00" style="background-color: #00ff00"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#00ff80" style="background-color: #00ff80"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#00ffff" style="background-color: #00ffff"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#0080ff" style="background-color: #0080ff"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#0000ff" style="background-color: #0000ff"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#8000ff" style="background-color: #8000ff"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#ff00ff" style="background-color: #ff00ff"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#909090" style="background-color: #909090"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#c0c0c0" style="background-color: #c0c0c0"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#ffffff" style="background-color: #ffffff"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#800000" style="background-color: #800000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#804000" style="background-color: #804000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#808000" style="background-color: #808000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#408000" style="background-color: #408000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#008000" style="background-color: #008000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#008040" style="background-color: #008040"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#008080" style="background-color: #008080"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#004080" style="background-color: #004080"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#000080" style="background-color: #000080"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#400080" style="background-color: #400080"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#800080" style="background-color: #800080"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#000000" style="background-color: #000000"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#303030" style="background-color: #303030"></button>
+                            <button
+                                class="palette w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform"
+                                data-palettecolor="#606060" style="background-color: #606060"></button>
+                        </div>
+                    </div>
+
+                    <!-- Options Section -->
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Options</h3>
+                        <label class="block text-sm">
+                            <span class="text-gray-700">Zoom Factor</span>
+                            <input type="number" min="1" max="100" step="0.1" value="1.05" data-prop="zoomFactor"
+                                checked class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </label>
+                        <label class="block text-sm">
+                            <span class="text-gray-700">Pan Speed</span>
+                            <input type="number" data-prop="panSpeed" value="1.0" step="0.1" min="0.1" max="5.0"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </label>
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-prop="fill" checked
+                                    class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                                <span class="text-sm text-gray-700">Fill</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" data-prop="stroke"
+                                    class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                                <span class="text-sm text-gray-700">Outline</span>
+                            </label>
+                        </div>
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" data-prop="autoSave" checked
+                                class="rounded text-blue-600 focus:ring-blue-500 h-4 w-4">
+                            <span class="text-sm text-gray-700">Auto Save</span>
+                        </label>
+                        <label class="block text-sm">
+                            <span class="text-gray-700">Outline Thickness</span>
+                            <input type="number" data-prop="strokeSize" value="0.005" step="0.005" min="0.001" max="0.1"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </label>
+                        <label class="block text-sm">
+                            <span class="text-gray-700">Alpha</span>
+                            <input type="number" data-prop="alpha" value="1" step="0.1" min="0" max="1"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </label>
+
+                        <!-- Shape Scaling -->
+                        <div class="shape-scaling mt-4 pt-4 border-t border-gray-100">
+                            <h4 class="text-xs font-medium text-gray-500 mb-2">Scale Object</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="number" id="scale-factor" value="2" step="0.1" min="0.1" max="80"
+                                    class="w-20 rounded-md border-gray-300 shadow-sm p-1 border text-sm">
+                                <input type="number" id="scale-step" value="0.1" min="0.01" max="1" step="0.01"
+                                    class="w-20 rounded-md border-gray-300 shadow-sm p-1 border text-sm"
+                                    placeholder="Step">
+                            </div>
+                            <input type="range" id="scale-slider" value="1" min="0.1" max="95" step="0.1"
+                                class="w-full">
+                        </div>
+
+                        <!-- Shape Ordering -->
+                        <div class="grid grid-cols-2 gap-2 mt-4">
+                            <button id="move_shape_top"
+                                class="px-2 py-1 bg-gray-100 text-xs rounded hover:bg-gray-200">Front</button>
+                            <button id="move_shape_forward"
+                                class="px-2 py-1 bg-gray-100 text-xs rounded hover:bg-gray-200">Forward</button>
+                            <button id="move_shape_backward"
+                                class="px-2 py-1 bg-gray-100 text-xs rounded hover:bg-gray-200">Backward</button>
+                            <button id="move_shape_bottom"
+                                class="px-2 py-1 bg-gray-100 text-xs rounded hover:bg-gray-200">Back</button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <button id="clear_canvas"
+                                class="px-2 py-1 bg-red-50 text-red-600 text-xs rounded hover:bg-red-100 border border-red-200">Clear
+                                All</button>
+                            <button id="reset_cam" class="px-2 py-1 bg-gray-100 text-xs rounded hover:bg-gray-200">Reset
+                                Cam</button>
+                            <button id="move_center"
+                                class="col-span-2 px-2 py-1 bg-gray-100 text-xs rounded hover:bg-gray-200">Move to
+                                Center</button>
+                        </div>
+
+                        <!-- Import/Export -->
+                        <div class="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                            <button id="download"
+                                class="w-full px-3 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 shadow-sm">Download
+                                Canvas</button>
+                            <input type="file" id="import_file" accept=".json"
+                                class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <textarea id="import_text" rows="3" class="w-full text-xs p-2 border rounded"
+                                placeholder="Paste canvas data..."></textarea>
+                            <button id="import"
+                                class="w-full px-3 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 shadow-sm">Import
+                                Canvas</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Side Panels (SVG, Bookmarks) - Keeping original IDs but styling them -->
+        <div class="side-panels absolute top-4 left-4 z-40 space-y-4 pointer-events-none">
+            <!-- SVG Panel -->
+            <div id="enhanced-svg-panel"
+                class="side-panel pointer-events-auto bg-white rounded-xl shadow-lg border border-gray-200 w-72 overflow-hidden">
+                <div class="panel-header flex justify-between items-center p-3 bg-gray-50 border-b border-gray-100">
+                    <h3 class="font-semibold text-sm text-gray-700">SVG Library</h3>
+                    <div class="flex items-center gap-2">
+                        <button class="panel-toggle text-gray-500 hover:text-gray-700">▼</button>
+                    </div>
+                </div>
+                <div class="panel-content p-3">
+                    <div class="panel-controls flex gap-2 mb-3">
+                        <input type="text" id="svg-search" placeholder="Search..."
+                            class="flex-1 text-sm p-1 border rounded">
+                        <label class="text-xs flex items-center gap-1">
+                            <input type="checkbox" id="hover-preview"> Preview
+                        </label>
+                    </div>
+                    <div class="svg-controls space-y-2 mb-3 text-xs">
+                        <div class="control-group grid grid-cols-2 gap-2">
+                            <label>W: <input type="number" data-prop="svg.w" value="0.2" step="0.05"
+                                    class="w-12 border rounded"></label>
+                            <label>H: <input type="number" data-prop="svg.h" value="0.2" step="0.05"
+                                    class="w-12 border rounded"></label>
+                            <label class="col-span-2">Rot: <input type="range" data-prop="svg.rotation"
+                                    class="w-20 align-middle"></label>
+                        </div>
+                    </div>
+                    <div class="svg-grid scroll grid grid-cols-5 gap-1 max-h-60 overflow-y-auto">
+                        <!-- SVG items -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookmarks Panel -->
+        <div id="bookmarks-panel"
+            class="ui-panel fixed top-20 left-4 bg-white rounded-xl shadow-lg border border-gray-200 w-64 z-40">
+            <div
+                class="panel-header flex justify-between items-center p-3 bg-gray-50 border-b border-gray-100 rounded-t-xl">
+                <span class="font-semibold text-sm text-gray-700">Bookmarks</span>
+                <span class="panel-toggle cursor-pointer text-gray-500">≡</span>
+            </div>
+            <!-- Added search input for EnhancedBookmarkManager -->
+            <div class="p-2 border-b border-gray-100">
+                <input type="text" id="bookmark-search" placeholder="Search bookmarks..."
+                    class="w-full text-xs p-1 border rounded">
+            </div>
+            <!-- Added enhanced-bookmarks-list ID alias -->
+            <div id="bookmarks-list" class="max-h-60 overflow-y-auto p-2">
+                <div id="enhanced-bookmarks-list"></div>
+            </div>
+            <div class="panel-controls p-2 border-t border-gray-100 grid grid-cols-3 gap-1">
+                <button onclick="BookmarkManager.addBookmark()"
+                    class="text-xs bg-blue-50 text-blue-600 p-1 rounded hover:bg-blue-100">Add</button>
+                <button onclick="BookmarkManager.playTour()"
+                    class="text-xs bg-green-50 text-green-600 p-1 rounded hover:bg-green-100">Play</button>
+                <button id="clear-bookmarks" onclick="BookmarkManager.clearBookmarks()"
+                    class="text-xs bg-red-50 text-red-600 p-1 rounded hover:bg-red-100">Clear</button>
+            </div>
+        </div>
+
+        <!-- Tour Controls -->
+        <div id="tour-controls" style="display: none;"
+            class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-xl border border-gray-200 flex items-center gap-4 z-50">
+            <button class="tour-button prev-btn text-xl hover:text-blue-500"
+                onclick="BookmarkManager.previousBookmark()">⏮</button>
+            <button class="tour-button play-pause-btn text-xl hover:text-blue-500"
+                onclick="BookmarkManager.togglePlayPause()">⏸</button>
+            <button class="tour-button next-btn text-xl hover:text-blue-500"
+                onclick="BookmarkManager.nextBookmark()">⏭</button>
+            <button class="tour-button stop-btn text-xl hover:text-red-500"
+                onclick="BookmarkManager.stopTour()">⏹</button>
+            <div class="tour-progress text-sm font-mono text-gray-500">
+                <span class="current-slide">0</span>/<span class="total-slides">0</span>
+            </div>
+        </div>
+
+        <!-- Video Export Controls -->
+        <div id="video-export-controls"
+            class="video-export-controls fixed left-4 bottom-20 bg-white p-4 rounded-xl shadow-lg border border-gray-200 z-40 w-64 scale-90 origin-bottom-left">
+            <h3 class="font-semibold text-sm mb-3">Video Export</h3>
+            <div class="video-settings space-y-3 text-sm">
+                <div>
+                    <label for="video-quality" class="block text-gray-600 mb-1">Quality</label>
+                    <select id="video-quality" class="w-full border rounded p-1">
+                        <option value="highm">Mobile High (1080p)</option>
+                        <option value="high">High (1080p)</option>
+                        <option value="medium">Medium (720p)</option>
+                        <option value="low">Low (480p)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="video-format" class="block text-gray-600 mb-1">Format</label>
+                    <select id="video-format" class="w-full border rounded p-1">
+                        <option value="webm">WebM</option>
+                        <option value="mp4">MP4</option>
+                    </select>
+                </div>
+                <div class="watermark-controls pt-2 border-t border-gray-100">
+                    <label class="flex items-center gap-2 mb-2">
+                        <input type="checkbox" id="show-watermark" checked class="rounded">
+                        Show Watermark
+                    </label>
+                    <button id="select-watermark"
+                        class="small-button w-full bg-gray-50 border rounded p-1 hover:bg-gray-100">Select Watermark
+                        SVG</button>
+                    <input type="file" id="watermark-upload" accept=".svg" style="display: none;">
+                </div>
+            </div>
+            <button id="export-video-btn"
+                class="export-button w-full mt-3 bg-green-500 text-white py-2 rounded hover:bg-green-600">Export Tour as
+                Video</button>
+            <div class="video-progress mt-2 h-1 bg-gray-100 rounded overflow-hidden">
+                <div class="video-progress-bar h-full bg-green-500 w-0 transition-all duration-300"></div>
+            </div>
+        </div>
+
+        <div id="recording-indicator"
+            class="recording-indicator fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-1 rounded-full shadow-lg z-50 hidden items-center gap-2 animate-pulse">
+            <span class="w-2 h-2 bg-white rounded-full"></span>
+            Recording <span class="recording-timer font-mono">00:00</span>
+        </div>
+
+    </main>
+
+    <script>
+        // Toggle Sidebar Logic
+        // Toggle Sidebar Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const minimizeBtn = document.getElementById('minimize');
+            const sidebar = document.getElementById('main-sidebar');
+
+            function createFloater() {
+                let floater = document.getElementById('sidebar-floater');
+                if (!floater) {
+                    floater = document.createElement('button');
+                    floater.id = 'sidebar-floater';
+                    floater.className = 'fixed right-4 top-4 bg-white p-3 rounded-full shadow-lg z-50 hover:bg-gray-50 transition-all border border-gray-200';
+                    floater.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>';
+                    floater.onclick = () => {
+                        sidebar.classList.remove('translate-x-full');
+                        sidebar.classList.add('translate-x-0');
+                        floater.remove();
+                    };
+                    document.body.appendChild(floater);
+                }
+            }
+
+            if (minimizeBtn && sidebar) {
+                minimizeBtn.addEventListener('click', () => {
+                    sidebar.classList.remove('translate-x-0');
+                    sidebar.classList.add('translate-x-full');
+                    createFloater();
+                });
+            }
+        });
+    </script>
+
+    <script src="js/modern-overlay.js"></script>
+    <!-- Load Decimal.js from CDN first -->
+    <script src="js/decimal.min.js"></script>
+
+    <!-- Then load our decimal.js configuration -->
+    <script src="js/decimal.js"></script>
+
+    <!-- Core dependencies that use Decimal -->
+    <script src="js/vec2.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/camera.js"></script>
+
+    <!-- External dependencies -->
+    <script src="js/RecordRTC.min.js"></script>
+    <script src="js/Sortable.min.js"></script>
+    <script src="js/pako.min.js"></script>
+    <script src="js/Sortable.min_1.js"></script>
+
+    <!-- Application scripts -->
+    <script src="js/paneltoggle.js"></script>
+    <script src="js/chunkManager.js"></script>
+    <script src="js/vue.js"></script>
+    <script src="js/preload.js"></script>
+    <script src="js/shape.js"></script>
+    <script src="js/gradientmanager.js"></script>
+    <script src="js/bookmarkManager.js"></script>
+    <script src="js/enhancedBookmarkManager.js"></script>
+    <script src="js/enhancedSVGPanel.js"></script>
+    <script src="js/videoExporter.js"></script>
+    <script src="js/shortcutManager.js"></script>
+
+    <!-- Add before main.js -->
+    <script src="js/touchGestureManager.js"></script>
+    <script src="js/panelManager.js"></script>
+    <!-- Main application script must come last -->
+    <script src="js/main.js"></script>
+
+</body>
+
+</html>
