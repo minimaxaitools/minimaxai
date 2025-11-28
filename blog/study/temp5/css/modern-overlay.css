@@ -1,0 +1,427 @@
+/* Modern UI Overlay Styles */
+.modern-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 1000;
+
+}
+
+/* Modern Tab System */
+.modern-tabs {
+    position: fixed;
+    top: -10px;
+    left: -40px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    pointer-events: auto;
+    display: flex;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+    z-index: 1001;
+    transform: scale(0.8);  /* Scale down to 80% of the original size */
+}
+
+.modern-tab {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: #666;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+}
+
+.modern-tab:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.modern-tab.active {
+    background: #0066ff;
+    color: white;
+}
+
+/* Modern Panels */
+.modern-panel {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    width: 320px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    pointer-events: auto;
+    backdrop-filter: blur(10px);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    z-index: 1001;
+
+
+}
+
+.modern-panel.visible {
+    transform: translateX(0);
+}
+
+/* Panel Sections */
+.modern-panel > div {
+    margin-bottom: 20px;
+}
+
+.modern-panel h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 16px;
+}
+
+.modern-panel h4 {
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    margin: 12px 0;
+}
+
+/* Modern Controls */
+.modern-control-group {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.modern-control-label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+/* Input Styles */
+.modern-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.modern-input:hover {
+    border-color: #999;
+}
+
+.modern-input:focus {
+    border-color: #0066ff;
+    box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+    outline: none;
+}
+
+/* Checkbox and Radio Styles */
+.modern-input[type="checkbox"],
+.modern-input[type="radio"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+/* Range Input Styles */
+.modern-input[type="range"] {
+    -webkit-appearance: none;
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    padding: 0;
+}
+
+.modern-input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #0066ff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modern-input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+/* Color Input Styles */
+.modern-input[type="color"] {
+    padding: 2px;
+    width: 50px;
+    height: 30px;
+}
+
+/* Number Input Styles */
+.modern-input[type="number"] {
+    width: 80px;
+}
+
+/* Preserve palette button styles */
+.modern-panel .palette {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    margin: 2px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.modern-panel .palette:hover {
+    transform: scale(1.1);
+    border-color: #0066ff !important;
+}
+
+/* Tool buttons */
+.modern-panel .tool {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    margin: 4px;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid #ddd;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.modern-panel .tool:hover {
+    background: #f5f5f5;
+    transform: translateY(-1px);
+}
+
+.modern-panel .tool.active {
+    background: #e6f0ff;
+    border-color: #0066ff;
+}
+
+.modern-panel .tool img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Modern Buttons */
+.modern-button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #333;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+}
+
+.modern-button:hover {
+    background: #f5f5f5;
+    transform: translateY(-1px);
+}
+
+.modern-button.primary {
+    background: #0066ff;
+    color: white;
+    border-color: #0052cc;
+}
+
+.modern-button.primary:hover {
+    background: #0052cc;
+}
+
+.modern-button.danger {
+    background: #ff4444;
+    color: white;
+    border-color: #cc0000;
+}
+
+.modern-button.danger:hover {
+    background: #cc0000;
+}
+
+/* Text Alignment Buttons */
+.modern-panel .align {
+    width: calc(33.33% - 8px);
+    height: 40px;
+    padding: 4px;
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: pre-line;
+    text-align: center;
+}
+
+/* SVG Preview Styles */
+.modern-panel .svg-preview {
+    width: 48px;
+    height: 48px;
+    padding: 4px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modern-panel .svg-preview:hover {
+    transform: scale(1.1);
+    border-color: #0066ff;
+}
+
+.modern-panel .svg-preview.active {
+    border-color: #0066ff;
+    box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.2);
+}
+
+/* Modern Tooltips */
+.modern-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1100;
+    opacity: 0;
+    transition: opacity 0.2s;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+
+.modern-tooltip.visible {
+    opacity: 1;
+}
+
+/* Shape Scaling Controls */
+.shape-scaling {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 12px 0;
+}
+
+.shape-scaling input[type="range"] {
+    width: 100%;
+    margin: 8px 0;
+}
+
+/* Panel Scroll Area */
+.modern-panel .scroll {
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    padding-right: 8px;
+    margin-right: -8px;
+}
+
+.modern-panel .scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modern-panel .scroll::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modern-panel .scroll::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modern-panel .scroll::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Image Selection Grid */
+.modern-panel .image-select {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+}
+
+/* Gradient Controls */
+#gradient_templates {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+}
+
+#gradient_div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modern-tabs {
+        bottom: 20px;
+        top: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        flex-wrap: wrap;
+        justify-content: center;
+        width: calc(100% - 40px);
+        max-width: 500px;
+    }
+
+    .modern-panel {
+        width: calc(100% - 40px);
+        max-width: 400px;
+        right: 50%;
+        transform: translate(50%, 100%);
+    }
+
+    .modern-panel.visible {
+        transform: translate(50%, 0);
+    }
+
+    .modern-button {
+        padding: 12px 16px; /* Larger touch targets on mobile */
+    }
+
+    .modern-input {
+        padding: 12px; /* Larger touch targets on mobile */
+    }
+}
+
+
+/*Toggle shoruct cut key and pannel mouse*/
+
+.canvas-interaction-toggle {
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    padding: 8px 16px !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.canvas-interaction-toggle:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
