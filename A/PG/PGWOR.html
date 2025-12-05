@@ -188,6 +188,7 @@
 <!-- DB Logic & App Logic -->
 <script>
     // --- IndexedDB Wrapper ---
+    // --- IndexedDB Wrapper ---
     class PGWORDB {
         constructor(dbName = 'DB_v3', storeName = 'PGWORs') {
             this.dbName = dbName;
@@ -197,7 +198,10 @@
 
         async open() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(this.dbName, 1);
+                // FIX: Changed version from 1 to 2.
+                // This forces 'onupgradeneeded' to fire if the DB exists but lacks the store.
+                const request = indexedDB.open(this.dbName, 2);
+
                 request.onupgradeneeded = (e) => {
                     this.db = e.target.result;
                     if (!this.db.objectStoreNames.contains(this.storeName)) {
@@ -209,7 +213,7 @@
                     this.db = e.target.result;
                     resolve(this.db);
                 };
-                request.onerror = (e) => reject("DB Open Error");
+                request.onerror = (e) => reject("DB Open Error: " + e.target.error);
             });
         }
 
@@ -220,11 +224,16 @@
         async getAll() {
             return new Promise((resolve, reject) => {
                 if (!this.db) return reject("DB Closed");
-                const tx = this.db.transaction(this.storeName, 'readonly');
-                const store = tx.objectStore(this.storeName);
-                const request = store.getAll();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
+                try {
+                    const tx = this.db.transaction(this.storeName, 'readonly');
+                    const store = tx.objectStore(this.storeName);
+                    const request = store.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                } catch (err) {
+                    // Catch errors if store is still missing for some reason
+                    reject(err);
+                }
             });
         }
 
@@ -253,11 +262,15 @@
         transaction(type, callback) {
             return new Promise((resolve, reject) => {
                 if (!this.db) return reject("DB not init");
-                const tx = this.db.transaction(this.storeName, type);
-                const store = tx.objectStore(this.storeName);
-                const request = callback(store);
-                tx.oncomplete = () => resolve(request ? request.result : 'ok');
-                tx.onerror = () => reject(tx.error);
+                try {
+                    const tx = this.db.transaction(this.storeName, type);
+                    const store = tx.objectStore(this.storeName);
+                    const request = callback(store);
+                    tx.oncomplete = () => resolve(request ? request.result : 'ok');
+                    tx.onerror = () => reject(tx.error);
+                } catch (err) {
+                    reject(err);
+                }
             });
         }
     }
