@@ -187,8 +187,7 @@
 
 <!-- DB Logic & App Logic -->
 <script>
-    // --- IndexedDB Wrapper ---
-    // --- IndexedDB Wrapper ---
+
     // --- IndexedDB Wrapper ---
     class PGWORDB {
         constructor(dbName = 'DB_v3', storeName = 'PGWORDs') {
@@ -199,15 +198,17 @@
 
         async open() {
             return new Promise((resolve, reject) => {
-                // FIX: Changed version from 1 to 2.
-                // This forces 'onupgradeneeded' to fire if the DB exists but lacks the store.
-                const request = indexedDB.open(this.dbName, 2);
+                // FIX APPLIED HERE:
+                // Changed version to 3 to force 'onupgradeneeded' to fire again
+                const request = indexedDB.open(this.dbName, 3);
 
                 request.onupgradeneeded = (e) => {
                     this.db = e.target.result;
+                    // This code now runs because version 3 > version 2
                     if (!this.db.objectStoreNames.contains(this.storeName)) {
                         const store = this.db.createObjectStore(this.storeName, { keyPath: 'id' });
                         store.createIndex('timestamp', 'timestamp', { unique: false });
+                        console.log("Object Store created successfully");
                     }
                 };
                 request.onsuccess = (e) => {
@@ -225,6 +226,13 @@
         async getAll() {
             return new Promise((resolve, reject) => {
                 if (!this.db) return reject("DB Closed");
+
+                // Safety Check: If store is missing, return empty array instead of crashing
+                if (!this.db.objectStoreNames.contains(this.storeName)) {
+                    console.warn("Store not found, returning empty list.");
+                    return resolve([]);
+                }
+
                 try {
                     const tx = this.db.transaction(this.storeName, 'readonly');
                     const store = tx.objectStore(this.storeName);
@@ -232,7 +240,6 @@
                     request.onsuccess = () => resolve(request.result);
                     request.onerror = () => reject(request.error);
                 } catch (err) {
-                    // Catch errors if store is still missing for some reason
                     reject(err);
                 }
             });
