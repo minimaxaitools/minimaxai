@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Automator v3 (Stable)</title>
+    <title>Automator v3 (Stable)</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -55,7 +55,7 @@
 <header class="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6 shrink-0 z-20">
     <div class="flex items-center gap-3">
         <i class="fa-solid fa-layer-group text-accent-500 text-xl"></i>
-        <h1 class="font-bold text-lg tracking-wide text-gray-100">PGWOR<span class="text-accent-500">Flow</span> <span class="text-xs text-gray-500 font-normal ml-2">v3.0</span></h1>
+        <h1 class="font-bold text-lg tracking-wide text-gray-100">Prompt<span class="text-accent-500">Flow</span> <span class="text-xs text-gray-500 font-normal ml-2">v3.0</span></h1>
     </div>
     <div class="flex items-center gap-3">
         <button onclick="window.app.exportData()" class="text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-300 py-1.5 px-3 rounded transition flex items-center gap-2 border border-gray-700">
@@ -111,7 +111,7 @@
                 </div>
                 <textarea id="templateInput"
                           class="flex-1 bg-gray-950 text-gray-300 p-6 focus:outline-none resize-none font-mono text-sm leading-relaxed"
-                          placeholder="Type your PGWOR here using [variable] placeholders..."
+                          placeholder="Type your prompt here using [variable] placeholders..."
                           spellcheck="false"></textarea>
             </div>
 
@@ -128,11 +128,11 @@
                 <div class="flex-1 relative group overflow-hidden">
                         <textarea id="previewOutput" readonly
                                   class="w-full h-full bg-gray-900/30 text-gray-100 p-6 focus:outline-none resize-none font-mono text-sm leading-relaxed"
-                                  placeholder="Your compiled PGWOR will appear here..."></textarea>
+                                  placeholder="Your compiled prompt will appear here..."></textarea>
 
                     <!-- Floating Save Button -->
                     <div class="absolute bottom-6 right-6 z-20">
-                        <button onclick="window.app.saveCurrentPGWOR()" title="Save to History" class="bg-accent-600 hover:bg-accent-500 text-white shadow-lg shadow-accent-600/30 rounded-full h-14 w-14 flex items-center justify-center transition transform hover:scale-105 active:scale-95 group-hover:flex">
+                        <button onclick="window.app.saveCurrentPrompt()" title="Save to History" class="bg-accent-600 hover:bg-accent-500 text-white shadow-lg shadow-accent-600/30 rounded-full h-14 w-14 flex items-center justify-center transition transform hover:scale-105 active:scale-95 group-hover:flex">
                             <i class="fa-solid fa-floppy-disk text-xl"></i>
                         </button>
                     </div>
@@ -160,7 +160,7 @@
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-gray-500 text-xs"></i>
                 <input type="text" id="searchInput" oninput="window.app.filterHistory()"
                        class="w-full bg-gray-800 text-gray-200 text-xs rounded pl-8 pr-3 py-2 border border-gray-700 focus:border-accent-500 focus:outline-none transition"
-                       placeholder="Search stored PGWORs...">
+                       placeholder="Search stored prompts...">
             </div>
         </div>
 
@@ -187,10 +187,9 @@
 
 <!-- DB Logic & App Logic -->
 <script>
-
     // --- IndexedDB Wrapper ---
-    class PGWORDB {
-        constructor(dbName = 'DB_v3', storeName = 'PGWORDs') {
+    class PromptDB {
+        constructor(dbName = 'PromptFlowDB_v3', storeName = 'prompts') {
             this.dbName = dbName;
             this.storeName = storeName;
             this.db = null;
@@ -198,24 +197,19 @@
 
         async open() {
             return new Promise((resolve, reject) => {
-                // FIX APPLIED HERE:
-                // Changed version to 3 to force 'onupgradeneeded' to fire again
-                const request = indexedDB.open(this.dbName, 3);
-
+                const request = indexedDB.open(this.dbName, 1);
                 request.onupgradeneeded = (e) => {
                     this.db = e.target.result;
-                    // This code now runs because version 3 > version 2
                     if (!this.db.objectStoreNames.contains(this.storeName)) {
                         const store = this.db.createObjectStore(this.storeName, { keyPath: 'id' });
                         store.createIndex('timestamp', 'timestamp', { unique: false });
-                        console.log("Object Store created successfully");
                     }
                 };
                 request.onsuccess = (e) => {
                     this.db = e.target.result;
                     resolve(this.db);
                 };
-                request.onerror = (e) => reject("DB Open Error: " + e.target.error);
+                request.onerror = (e) => reject("DB Open Error");
             });
         }
 
@@ -226,22 +220,11 @@
         async getAll() {
             return new Promise((resolve, reject) => {
                 if (!this.db) return reject("DB Closed");
-
-                // Safety Check: If store is missing, return empty array instead of crashing
-                if (!this.db.objectStoreNames.contains(this.storeName)) {
-                    console.warn("Store not found, returning empty list.");
-                    return resolve([]);
-                }
-
-                try {
-                    const tx = this.db.transaction(this.storeName, 'readonly');
-                    const store = tx.objectStore(this.storeName);
-                    const request = store.getAll();
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                } catch (err) {
-                    reject(err);
-                }
+                const tx = this.db.transaction(this.storeName, 'readonly');
+                const store = tx.objectStore(this.storeName);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
             });
         }
 
@@ -270,15 +253,11 @@
         transaction(type, callback) {
             return new Promise((resolve, reject) => {
                 if (!this.db) return reject("DB not init");
-                try {
-                    const tx = this.db.transaction(this.storeName, type);
-                    const store = tx.objectStore(this.storeName);
-                    const request = callback(store);
-                    tx.oncomplete = () => resolve(request ? request.result : 'ok');
-                    tx.onerror = () => reject(tx.error);
-                } catch (err) {
-                    reject(err);
-                }
+                const tx = this.db.transaction(this.storeName, type);
+                const store = tx.objectStore(this.storeName);
+                const request = callback(store);
+                tx.oncomplete = () => resolve(request ? request.result : 'ok');
+                tx.onerror = () => reject(tx.error);
             });
         }
     }
@@ -286,7 +265,7 @@
     // --- Main App Logic ---
     class App {
         constructor() {
-            this.db = new PGWORDB();
+            this.db = new PromptDB();
             this.currentVariables = {};
             this.currentTab = 'all';
             this.historyCache = []; // Local cache for filtering
@@ -407,7 +386,7 @@ All original features, compositions, dominant colors, textures, proportions, and
 
 * **Aspect Ratio:** Use 1:1 or 9:16 based on the closest matching dimension of the uploaded image.
 
-HOW TO USE THIS UNIVERSAL PGWOR:
+HOW TO USE THIS UNIVERSAL PROMPT:
 
 1. **Analyze the Image:** Identify primary subjects, objects, and visual focus areas.
 
@@ -549,7 +528,7 @@ HOW TO USE THIS UNIVERSAL PGWOR:
 
         // --- History Actions ---
 
-        async saveCurrentPGWOR() {
+        async saveCurrentPrompt() {
             const template = this.templateInput.value;
             if (!template.trim()) {
                 this.showToast("Template is empty!", true);
@@ -593,7 +572,7 @@ HOW TO USE THIS UNIVERSAL PGWOR:
             list.innerHTML = '';
 
             if(items.length === 0) {
-                list.innerHTML = `<div class="text-center text-gray-600 mt-10"><i class="fa-regular fa-folder-open text-3xl mb-2"></i><p class="text-xs">No matching PGWORs.</p></div>`;
+                list.innerHTML = `<div class="text-center text-gray-600 mt-10"><i class="fa-regular fa-folder-open text-3xl mb-2"></i><p class="text-xs">No matching prompts.</p></div>`;
                 return;
             }
 
@@ -645,7 +624,7 @@ HOW TO USE THIS UNIVERSAL PGWOR:
                 this.renderVariablesPanel();
                 this.updatePreview();
                 this.autoSave();
-                this.showToast("PGWOR loaded");
+                this.showToast("Prompt loaded");
                 // Scroll up
                 this.templateInput.scrollIntoView({behavior: "smooth"});
             }
@@ -661,7 +640,7 @@ HOW TO USE THIS UNIVERSAL PGWOR:
         }
 
         async deleteItem(id) {
-            if(!confirm("Are you sure you want to delete this PGWOR?")) return;
+            if(!confirm("Are you sure you want to delete this prompt?")) return;
             await this.db.delete(id);
             this.refreshHistory();
             this.showToast("Item deleted");
@@ -699,7 +678,7 @@ HOW TO USE THIS UNIVERSAL PGWOR:
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.download = `PromptFlow_Backup_${new Date().toISOString().slice(0,10)}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
