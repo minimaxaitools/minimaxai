@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Zoom Architect - Infinite Zoom Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            750: '#2d3748',
+                            850: '#1a202c',
+                            950: '#0d1117',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            background-color: #0d1117; 
+            color: #e2e8f0; 
+            overflow: hidden; 
+            font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1a202c; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        
+        .canvas-container {
+            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+            background-repeat: repeat;
+        }
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom": "https://esm.sh/react-dom@18.2.0/client",
+            "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+            "jszip": "https://esm.sh/jszip@3.10.1",
+            "file-saver": "https://esm.sh/file-saver@2.0.5"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+        import ReactDOM from 'react-dom';
+        import { 
+            Download, Upload, Image as ImageIcon, Plus, Minus, 
+            FileJson, Trash2, Copy, Lock, Unlock, Eye, EyeOff, 
+            ArrowUp, ArrowDown, Maximize, Minimize, Move, Square,
+            Search, Layers, Settings, X, Crosshair
+        } from 'lucide-react';
+        import JSZip from 'jszip';
+        import saveAs from 'file-saver';
+
+        const FitMode = {
+            CONTAIN: 'CONTAIN',
+            COVER: 'COVER',
+            STRETCH: 'STRETCH',
+            CENTER: 'CENTER'
+        };
+
+        const DEFAULT_CONFIG = {
+            width: 1024,
+            height: 768,
+            backgroundColor: '#000000',
+            totalLevels: 88
+        };
+
+        const HANDLE_SIZE = 8;
+        const HANDLE_OFFSET = 15;
+
+        const getScaleForLevel = (targetLevel, objectAnchorLevel) => Math.pow(2, targetLevel - objectAnchorLevel);
+
+        // --- Components: Canvas Engine ---
+        const CanvasEngine = ({ objects, config, currentLevel, selectedId, onSelect, onUpdateObject, imageCache }) => {
+            const canvasRef = useRef(null);
+            const [dragState, setDragState] = useState({
+                isDragging: false,
+                isResizing: false,
+                isRotating: false,
+                startX: 0,
+                startY: 0,
+                initialObjectState: null,
+                handle: null
+            });
+
+            const render = useCallback(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (config.backgroundColor !== 'transparent') {
+                    ctx.fillStyle = config.backgroundColor;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+
+                objects.forEach(obj => {
+                    if (obj.hidden) return;
+                    const img = imageCache.current.get(obj.src);
+                    if (!img) return;
+
+                    const scale = getScaleForLevel(currentLevel, obj.anchorLevel);
+                    if (obj.width * scale < 0.1) return; 
+
+                    ctx.save();
+                    const screenX = centerX + (obj.x * scale);
+                    const screenY = centerY + (obj.y * scale);
+                    
+                    ctx.translate(screenX, screenY);
+                    ctx.rotate(obj.rotation);
+                    ctx.scale(obj.flipX ? -1 : 1, obj.flipY ? -1 : 1);
+                    ctx.globalAlpha = obj.opacity;
+
+                    const drawW = obj.width * scale;
+                    const drawH = obj.height * scale;
+                    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+                    ctx.restore();
+
+                    if (obj.id === selectedId) {
+                        ctx.save();
+                        ctx.translate(screenX, screenY);
+                        ctx.rotate(obj.rotation);
+                        const w = obj.width * scale;
+                        const h = obj.height * scale;
+
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(-w/2, -h/2, w, h);
+
+                        ctx.fillStyle = '#fff';
+                        ctx.strokeStyle = '#3b82f6';
+                        ctx.lineWidth = 1;
+
+                        const handles = [
+                            { x: -w/2, y: -h/2, name: 'tl' },
+                            { x: w/2, y: -h/2, name: 'tr' },
+                            { x: w/2, y: h/2, name: 'br' },
+                            { x: -w/2, y: h/2, name: 'bl' },
+                        ];
+
+                        handles.forEach(hPos => {
+                            ctx.beginPath();
+                            ctx.rect(hPos.x - HANDLE_SIZE/2, hPos.y - HANDLE_SIZE/2, HANDLE_SIZE, HANDLE_SIZE);
+                            ctx.fill();
+                            ctx.stroke();
+                        });
+
+                        ctx.beginPath();
+                        ctx.moveTo(0, -h/2);
+                        ctx.lineTo(0, -h/2 - HANDLE_OFFSET);
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.arc(0, -h/2 - HANDLE_OFFSET, HANDLE_SIZE/2, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.restore();
+                    }
+                });
+            }, [objects, config, currentLevel, selectedId, imageCache]);
+
+            useEffect(() => {
+                objects.forEach(obj => {
+                    if (!imageCache.current.has(obj.src)) {
+                        const img = new Image();
+                        img.src = obj.src;
+                        img.onload = () => {
+                            imageCache.current.set(obj.src, img);
+                            render();
+                        };
+                    }
+                });
+                render();
+            }, [objects, render, imageCache]);
+
+            const getMousePos = (e) => {
+                const rect = canvasRef.current.getBoundingClientRect();
+                return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            };
+
+            const isOverHandle = (mx, my, obj) => {
+                const scale = getScaleForLevel(currentLevel, obj.anchorLevel);
+                const screenX = (config.width / 2) + (obj.x * scale);
+                const screenY = (config.height / 2) + (obj.y * scale);
+                const cos = Math.cos(-obj.rotation), sin = Math.sin(-obj.rotation);
+                const lx = (mx - screenX) * cos - (my - screenY) * sin;
+                const ly = (mx - screenX) * sin + (my - screenY) * cos;
+                const w = obj.width * scale, h = obj.height * scale;
+                const hs = HANDLE_SIZE + 4;
+
+                if (Math.abs(lx - (-w/2)) < hs && Math.abs(ly - (-h/2)) < hs) return 'tl';
+                if (Math.abs(lx - (w/2)) < hs && Math.abs(ly - (-h/2)) < hs) return 'tr';
+                if (Math.abs(lx - (w/2)) < hs && Math.abs(ly - (h/2)) < hs) return 'br';
+                if (Math.abs(lx - (-w/2)) < hs && Math.abs(ly - (h/2)) < hs) return 'bl';
+                if (Math.abs(lx) < hs && Math.abs(ly - (-h/2 - HANDLE_OFFSET)) < hs) return 'rot';
+                return null;
+            };
+
+            const handleMouseDown = (e) => {
+                const { x: mx, y: my } = getMousePos(e);
+                if (selectedId) {
+                    const sel = objects.find(o => o.id === selectedId);
+                    if (sel && !sel.locked) {
+                        const h = isOverHandle(mx, my, sel);
+                        if (h) {
+                            setDragState({ isDragging: false, isResizing: h !== 'rot', isRotating: h === 'rot', startX: mx, startY: my, handle: h, initialObjectState: { ...sel } });
+                            return;
+                        }
+                    }
+                }
+
+                let hitId = null;
+                for (let i = objects.length - 1; i >= 0; i--) {
+                    const obj = objects[i];
+                    if (obj.hidden || obj.locked) continue;
+                    const scale = getScaleForLevel(currentLevel, obj.anchorLevel);
+                    const sx = (config.width / 2) + (obj.x * scale), sy = (config.height / 2) + (obj.y * scale);
+                    const cos = Math.cos(-obj.rotation), sin = Math.sin(-obj.rotation);
+                    const lx = (mx - sx) * cos - (my - sy) * sin, ly = (mx - sx) * sin + (my - sy) * cos;
+                    if (lx >= -obj.width*scale/2 && lx <= obj.width*scale/2 && ly >= -obj.height*scale/2 && ly <= obj.height*scale/2) {
+                        hitId = obj.id; break;
+                    }
+                }
+                onSelect(hitId);
+                if (hitId) {
+                    const obj = objects.find(o => o.id === hitId);
+                    setDragState({ isDragging: true, isResizing: false, isRotating: false, startX: mx, startY: my, handle: null, initialObjectState: { ...obj } });
+                }
+            };
+
+            const handleMouseMove = (e) => {
+                const { x: mx, y: my } = getMousePos(e);
+                if (selectedId) {
+                    const sel = objects.find(o => o.id === selectedId);
+                    if (sel && canvasRef.current) {
+                        const h = isOverHandle(mx, my, sel);
+                        canvasRef.current.style.cursor = h === 'rot' ? 'alias' : (h ? 'nwse-resize' : 'default');
+                    }
+                }
+                if (!dragState.initialObjectState || !selectedId) return;
+
+                const dx = mx - dragState.startX, dy = my - dragState.startY;
+                const currentScaleFactor = Math.pow(2, currentLevel);
+
+                if (dragState.isDragging) {
+                    onUpdateObject(selectedId, {
+                        x: dragState.initialObjectState.x + (dx / currentScaleFactor),
+                        y: dragState.initialObjectState.y + (dy / currentScaleFactor)
+                    });
+                } else if (dragState.isRotating) {
+                    const sel = objects.find(o => o.id === selectedId);
+                    const scale = getScaleForLevel(currentLevel, sel.anchorLevel);
+                    const sx = (config.width / 2) + (sel.x * scale), sy = (config.height / 2) + (sel.y * scale);
+                    onUpdateObject(selectedId, { rotation: Math.atan2(my - sy, mx - sx) + Math.PI / 2 });
+                } else if (dragState.isResizing) {
+                    let sf = 1;
+                    if (dragState.handle.includes('t')) sf = 1 - (dy * 0.005);
+                    if (dragState.handle.includes('b')) sf = 1 + (dy * 0.005);
+                    onUpdateObject(selectedId, {
+                        width: Math.max(10, dragState.initialObjectState.width * sf),
+                        height: Math.max(10, dragState.initialObjectState.height * sf)
+                    });
+                }
+            };
+
+            const handleMouseUp = () => setDragState(p => ({ ...p, isDragging: false, isResizing: false, isRotating: false, initialObjectState: null }));
+
+            return (
+                <canvas
+                    ref={canvasRef}
+                    width={config.width}
+                    height={config.height}
+                    className="border border-gray-700 shadow-2xl bg-black"
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                />
+            );
+        };
+
+        // --- Components: Sidebar ---
+        const Sidebar = ({ 
+            objects, selectedId, config, onSelect, onUpdateObject, 
+            onDelete, onDuplicate, onLayerOrder, onFit, onUpdateConfig, 
+            currentLevel, onVisit 
+        }) => {
+            const [activeTab, setActiveTab] = useState('layers');
+            const [searchQuery, setSearchQuery] = useState('');
+
+            const selectedObject = objects.find(o => o.id === selectedId);
+            
+            const filteredObjects = useMemo(() => {
+                return objects.filter(o => o.name.toLowerCase().includes(searchQuery.toLowerCase())).reverse();
+            }, [objects, searchQuery]);
+
+            return (
+                <div className="w-85 bg-gray-900 border-l border-gray-700 flex flex-col h-full overflow-hidden shrink-0">
+                    {/* Persistent Canvas Settings Block */}
+                    <div className="p-4 border-b border-gray-800 bg-gray-850/50">
+                        <div className="flex items-center gap-2 mb-3 text-blue-400">
+                            <Settings size={14} />
+                            <h2 className="text-[10px] font-bold uppercase tracking-widest">Canvas Global</h2>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] text-gray-500 uppercase">Max Levels</label>
+                                <input type="number" value={config.totalLevels} onChange={(e) => onUpdateConfig({ totalLevels: Math.max(1, parseInt(e.target.value)) })} className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white" />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] text-gray-500 uppercase">Background</label>
+                                <div className="flex gap-1">
+                                    <input type="color" value={config.backgroundColor === 'transparent' ? '#000000' : config.backgroundColor} onChange={(e) => onUpdateConfig({ backgroundColor: e.target.value })} className="h-6 w-6 cursor-pointer bg-transparent border-0" />
+                                    <button onClick={() => onUpdateConfig({ backgroundColor: 'transparent' })} className={`text-[9px] px-1.5 py-1 rounded border ${config.backgroundColor === 'transparent' ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-700 text-gray-400'}`}>Trans</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tab Navigation */}
+                    <div className="flex border-b border-gray-800 bg-gray-900 px-2 shrink-0">
+                        <button onClick={() => setActiveTab('layers')} className={`flex-1 py-3 text-xs font-bold uppercase tracking-tight flex items-center justify-center gap-2 ${activeTab === 'layers' ? 'tab-active' : 'text-gray-500'}`}>
+                            <Layers size={14}/> Layers ({objects.length})
+                        </button>
+                        <button onClick={() => setActiveTab('props')} className={`flex-1 py-3 text-xs font-bold uppercase tracking-tight flex items-center justify-center gap-2 ${activeTab === 'props' ? 'tab-active' : 'text-gray-500'}`}>
+                            <Square size={14}/> Properties {selectedId && <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse ml-1"></span>}
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {activeTab === 'layers' ? (
+                            <div className="flex flex-col h-full">
+                                <div className="p-3 sticky top-0 bg-gray-900 z-10 border-b border-gray-800">
+                                    <div className="relative">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                                        <input 
+                                            placeholder="Search objects..." 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full bg-gray-850 border border-gray-700 rounded-full pl-9 pr-4 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col">
+                                    {filteredObjects.length === 0 ? (
+                                        <div className="p-10 text-center text-gray-600 text-xs italic">No objects found</div>
+                                    ) : (
+                                        filteredObjects.map(obj => (
+                                            <div 
+                                                key={obj.id} 
+                                                onClick={() => onSelect(obj.id)}
+                                                className={`group flex items-center gap-3 p-3 border-b border-gray-800/50 cursor-pointer transition ${selectedId === obj.id ? 'bg-blue-900/20 border-l-2 border-l-blue-500' : 'hover:bg-gray-850'}`}
+                                            >
+                                                <div className="w-10 h-10 bg-black rounded border border-gray-700 overflow-hidden flex items-center justify-center shrink-0">
+                                                    <img src={obj.src} className="max-w-full max-h-full object-contain" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-xs font-semibold text-gray-200 truncate">{obj.name}</div>
+                                                    <div className="text-[10px] text-gray-500 font-mono mt-0.5">Lv: {obj.anchorLevel} | X:{Math.round(obj.x)}</div>
+                                                </div>
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                                                    <button onClick={(e) => { e.stopPropagation(); onVisit(obj); }} title="Visit" className="p-1.5 bg-gray-800 hover:bg-blue-600 rounded text-gray-400 hover:text-white"><Crosshair size={12}/></button>
+                                                    <button onClick={(e) => { e.stopPropagation(); onUpdateObject(obj.id, { hidden: !obj.hidden }); }} className={`p-1.5 rounded ${obj.hidden ? 'text-red-400 bg-red-900/20' : 'text-gray-400 bg-gray-800 hover:bg-gray-700'}`}>{obj.hidden ? <EyeOff size={12}/> : <Eye size={12}/>}</button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="p-4 flex flex-col gap-6">
+                                {!selectedObject ? (
+                                    <div className="text-center p-10">
+                                        <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-600">
+                                            <Square size={24} />
+                                        </div>
+                                        <p className="text-gray-500 text-xs italic">Select an object from the canvas or layers list to edit properties.</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-between items-center pb-4 border-b border-gray-800">
+                                            <h2 className="font-bold text-gray-200 truncate pr-2 uppercase text-[10px] tracking-widest">Selected Component</h2>
+                                            <button onClick={() => onSelect(null)} className="p-1.5 bg-gray-800 hover:bg-red-900/50 rounded text-gray-400 transition" title="Deselect"><X size={12}/></button>
+                                        </div>
+
+                                        <div className="flex gap-2">
+                                            <button onClick={() => onUpdateObject(selectedObject.id, { locked: !selectedObject.locked })} className={`flex-1 flex flex-col items-center gap-1 p-2 rounded border text-[10px] font-bold uppercase transition ${selectedObject.locked ? 'bg-red-900/20 border-red-800 text-red-400' : 'bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750'}`}>
+                                                {selectedObject.locked ? <Lock size={14}/> : <Unlock size={14}/>} {selectedObject.locked ? 'Locked' : 'Unlocked'}
+                                            </button>
+                                            <button onClick={() => onDuplicate(selectedObject.id)} className="flex-1 flex flex-col items-center gap-1 p-2 rounded border bg-gray-800 border-gray-700 text-gray-400 hover:bg-gray-750 text-[10px] font-bold uppercase">
+                                                <Copy size={14}/> Duplicate
+                                            </button>
+                                            <button onClick={() => onDelete(selectedObject.id)} className="flex-1 flex flex-col items-center gap-1 p-2 rounded border bg-gray-800 border-gray-700 text-gray-400 hover:bg-red-900/50 hover:text-red-400 text-[10px] font-bold uppercase">
+                                                <Trash2 size={14}/> Delete
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <section>
+                                                <h3 className="text-blue-500 font-bold text-[9px] uppercase tracking-wider mb-2">Depth Control</h3>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className="flex-1">
+                                                        <label className="text-[9px] text-gray-600 block mb-1">Anchor Level</label>
+                                                        <input type="number" value={selectedObject.anchorLevel} onChange={(e) => onUpdateObject(selectedObject.id, { anchorLevel: parseFloat(e.target.value) })} className="w-full bg-gray-850 border border-gray-700 rounded px-2 py-1 text-sm text-gray-200" />
+                                                    </div>
+                                                    <button onClick={() => onUpdateObject(selectedObject.id, { anchorLevel: currentLevel })} className="mt-4 px-2 py-1.5 bg-blue-700 text-white text-[9px] font-bold rounded uppercase hover:bg-blue-600 transition shadow-lg shadow-blue-900/20">Sync Level</button>
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-1">
+                                                    {['front', 'forward', 'backward', 'back'].map(dir => (
+                                                        <button key={dir} onClick={() => onLayerOrder(selectedObject.id, dir)} className="bg-gray-850 hover:bg-gray-800 p-1.5 rounded text-[8px] text-gray-400 uppercase font-black border border-gray-800">{dir === 'forward' ? 'Up' : dir === 'backward' ? 'Down' : dir}</button>
+                                                    ))}
+                                                </div>
+                                            </section>
+
+                                            <section>
+                                                <h3 className="text-blue-500 font-bold text-[9px] uppercase tracking-wider mb-2">Spatial Transform</h3>
+                                                <div className="grid grid-cols-2 gap-3 mb-3">
+                                                    {['x', 'y', 'width', 'height'].map(k => (
+                                                        <div key={k}>
+                                                            <label className="text-[9px] text-gray-600 uppercase block mb-1">{k}</label>
+                                                            <input type="number" value={Math.round(selectedObject[k])} onChange={(e) => onUpdateObject(selectedObject.id, { [k]: parseFloat(e.target.value) })} className="w-full bg-gray-850 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center justify-between"><label className="text-[9px] text-gray-600 uppercase">Rotation</label><span className="text-[10px] font-mono">{Math.round((selectedObject.rotation * 180 / Math.PI) % 360)}°</span></div>
+                                                    <input type="range" min="0" max="360" value={(selectedObject.rotation * 180 / Math.PI) % 360} onChange={(e) => onUpdateObject(selectedObject.id, { rotation: e.target.value * Math.PI / 180 })} className="w-full accent-blue-500 h-1 bg-gray-800 rounded-lg appearance-none" />
+                                                </div>
+                                            </section>
+
+                                            <section>
+                                                <h3 className="text-blue-500 font-bold text-[9px] uppercase tracking-wider mb-2">Visual Effects</h3>
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between"><label className="text-[9px] text-gray-600 uppercase">Opacity</label><span className="text-[10px] font-mono">{Math.round(selectedObject.opacity * 100)}%</span></div>
+                                                    <input type="range" min="0" max="1" step="0.01" value={selectedObject.opacity} onChange={(e) => onUpdateObject(selectedObject.id, { opacity: parseFloat(e.target.value) })} className="w-full accent-blue-500 h-1 bg-gray-800 rounded-lg appearance-none" />
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => onUpdateObject(selectedObject.id, { flipX: !selectedObject.flipX })} className={`flex-1 py-1.5 text-[9px] font-bold uppercase rounded border transition ${selectedObject.flipX ? 'bg-blue-900/30 border-blue-500 text-blue-400' : 'bg-gray-850 border-gray-700 text-gray-500'}`}>Flip Horiz</button>
+                                                        <button onClick={() => onUpdateObject(selectedObject.id, { flipY: !selectedObject.flipY })} className={`flex-1 py-1.5 text-[9px] font-bold uppercase rounded border transition ${selectedObject.flipY ? 'bg-blue-900/30 border-blue-500 text-blue-400' : 'bg-gray-850 border-gray-700 text-gray-500'}`}>Flip Vert</button>
+                                                    </div>
+                                                </div>
+                                            </section>
+
+                                            <section>
+                                                <h3 className="text-blue-500 font-bold text-[9px] uppercase tracking-wider mb-2">Quick Alignment</h3>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    {Object.values(FitMode).map(m => (
+                                                        <button key={m} onClick={() => onFit(selectedObject.id, m)} className="bg-gray-850 hover:bg-gray-800 border border-gray-800 text-[8px] font-black py-2 rounded uppercase tracking-tighter text-gray-400">{m}</button>
+                                                    ))}
+                                                </div>
+                                            </section>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        function App() {
+            const [config, setConfig] = useState(DEFAULT_CONFIG);
+            const [objects, setObjects] = useState([]);
+            const [selectedId, setSelectedId] = useState(null);
+            const [currentLevel, setCurrentLevel] = useState(0);
+            const [isExporting, setIsExporting] = useState(false);
+            const imageCache = useRef(new Map());
+
+            const handleAddImage = (e) => {
+                const files = e.target.files;
+                if (!files) return;
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const src = event.target.result;
+                        const img = new Image();
+                        img.src = src;
+                        img.onload = () => {
+                            imageCache.current.set(src, img);
+                            const newObj = {
+                                id: crypto.randomUUID(),
+                                type: file.type.includes('svg') ? 'svg' : 'image',
+                                name: file.name,
+                                src,
+                                x: 0, y: 0,
+                                width: 400, height: 400 * (img.height / img.width),
+                                rotation: 0, opacity: 1, flipX: false, flipY: false,
+                                anchorLevel: currentLevel, locked: false, hidden: false
+                            };
+                            setObjects(prev => [...prev, newObj]);
+                            setSelectedId(newObj.id);
+                        };
+                    };
+                    reader.readAsDataURL(file);
+                });
+                e.target.value = '';
+            };
+
+            const updateObject = (id, updates) => setObjects(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
+            const deleteObject = (id) => { setObjects(prev => prev.filter(o => o.id !== id)); if (selectedId === id) setSelectedId(null); };
+            const duplicateObject = (id) => {
+                const obj = objects.find(o => o.id === id);
+                if (!obj) return;
+                const newObj = { ...obj, id: crypto.randomUUID(), name: `${obj.name} (Copy)`, x: obj.x + (50 / Math.pow(2, currentLevel)), y: obj.y + (50 / Math.pow(2, currentLevel)) };
+                setObjects(prev => [...prev, newObj]);
+                setSelectedId(newObj.id);
+            };
+
+            const changeLayerOrder = (id, direction) => {
+                setObjects(prev => {
+                    const idx = prev.findIndex(o => o.id === id);
+                    if (idx === -1) return prev;
+                    const list = [...prev], [item] = list.splice(idx, 1);
+                    if (direction === 'back') list.unshift(item);
+                    else if (direction === 'front') list.push(item);
+                    else if (direction === 'backward') list.splice(Math.max(0, idx - 1), 0, item);
+                    else if (direction === 'forward') list.splice(Math.min(list.length, idx + 1), 0, item);
+                    return list;
+                });
+            };
+
+            const fitObjectToCanvas = (id, mode) => {
+                const obj = objects.find(o => o.id === id);
+                const img = imageCache.current.get(obj?.src);
+                if (!obj || !img) return;
+                const scale = getScaleForLevel(currentLevel, obj.anchorLevel);
+                let newW = obj.width, newH = obj.height;
+                const canvasRatio = config.width / config.height, imgRatio = img.width / img.height;
+                if (mode === FitMode.COVER) {
+                    if (canvasRatio > imgRatio) { newW = config.width / scale; newH = (config.width / imgRatio) / scale; }
+                    else { newH = config.height / scale; newW = (config.height * imgRatio) / scale; }
+                } else if (mode === FitMode.CONTAIN) {
+                    if (canvasRatio > imgRatio) { newH = config.height / scale; newW = (config.height * imgRatio) / scale; }
+                    else { newW = config.width / scale; newH = (config.width / imgRatio) / scale; }
+                } else if (mode === FitMode.STRETCH) {
+                    newW = config.width / scale; newH = config.height / scale;
+                }
+                updateObject(id, { x: 0, y: 0, width: newW, height: newH });
+            };
+
+            const exportJSON = () => {
+                const blob = new Blob([JSON.stringify({ version: 3, config, objects }, null, 2)], { type: 'application/json' });
+                saveAs(blob, 'infinite_zoom_project.json');
+            };
+
+            const importJSON = (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const data = JSON.parse(evt.target.result);
+                        if (data.config) setConfig(data.config);
+                        if (data.objects) setObjects(data.objects);
+                        setCurrentLevel(0);
+                    } catch (err) { alert('Invalid Project File'); }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            };
+
+            const exportImages = async () => {
+                setIsExporting(true);
+                const zip = new JSZip();
+                const canvas = document.createElement('canvas');
+                canvas.width = config.width; canvas.height = config.height;
+                const ctx = canvas.getContext('2d');
+                try {
+                    for (let i = 0; i < config.totalLevels; i++) {
+                        ctx.clearRect(0, 0, config.width, config.height);
+                        if (config.backgroundColor !== 'transparent') { ctx.fillStyle = config.backgroundColor; ctx.fillRect(0, 0, config.width, config.height); }
+                        const cx = config.width / 2, cy = config.height / 2;
+                        objects.forEach(obj => {
+                            if (obj.hidden) return;
+                            const img = imageCache.current.get(obj.src);
+                            const scale = Math.pow(2, i - obj.anchorLevel);
+                            if (obj.width * scale < 0.1) return;
+                            ctx.save();
+                            ctx.translate(cx + (obj.x * scale), cy + (obj.y * scale));
+                            ctx.rotate(obj.rotation);
+                            ctx.scale(obj.flipX ? -1 : 1, obj.flipY ? -1 : 1);
+                            ctx.globalAlpha = obj.opacity;
+                            ctx.drawImage(img, -obj.width*scale/2, -obj.height*scale/2, obj.width*scale, obj.height*scale);
+                            ctx.restore();
+                        });
+                        const blob = await new Promise(res => canvas.toBlob(res, config.backgroundColor === 'transparent' ? 'image/png' : 'image/jpeg', 0.9));
+                        zip.file(`z_${i}.${config.backgroundColor === 'transparent' ? 'png' : 'jpg'}`, blob);
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                    const content = await zip.generateAsync({ type: 'blob' });
+                    saveAs(content, 'zoom_sequence.zip');
+                } catch (e) { alert('Export failed'); }
+                finally { setIsExporting(false); }
+            };
+
+            const handleVisit = (obj) => {
+                setCurrentLevel(obj.anchorLevel);
+                setSelectedId(obj.id);
+            };
+
+            return (
+                <div className="flex flex-col h-screen overflow-hidden text-sm bg-gray-950 font-sans">
+                    {/* Header */}
+                    <header className="h-14 bg-gray-900 border-b border-gray-700 flex items-center px-6 justify-between shrink-0 z-20 shadow-lg">
+                        <div className="flex items-center gap-6">
+                            <h1 className="text-xl font-black bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent flex items-center gap-2 tracking-tighter">
+                                <Maximize className="text-indigo-500" size={24}/> ZOOM ARCHITECT
+                            </h1>
+                            <div className="h-6 w-[1px] bg-gray-700 mx-2"></div>
+                            <div className="flex gap-2">
+                                <label className="flex items-center gap-2 bg-gray-800 hover:bg-gray-750 px-3 py-1.5 rounded-lg cursor-pointer border border-gray-700 transition group shadow-inner">
+                                    <Upload size={14} className="text-blue-400 group-hover:scale-110 transition" />
+                                    <span className="text-[11px] font-bold text-gray-300">IMPORT</span>
+                                    <input type="file" accept=".json" onChange={importJSON} className="hidden" />
+                                </label>
+                                <button onClick={exportJSON} className="flex items-center gap-2 bg-gray-800 hover:bg-gray-750 px-3 py-1.5 rounded-lg border border-gray-700 transition group shadow-inner">
+                                    <FileJson size={14} className="text-yellow-400 group-hover:scale-110 transition" />
+                                    <span className="text-[11px] font-bold text-gray-300">SAVE</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 px-5 py-2 rounded-xl cursor-pointer font-black text-[11px] tracking-widest text-white shadow-lg shadow-blue-900/40 transition-all active:scale-95">
+                                <Plus size={16} strokeWidth={3} />
+                                <span>ADD ASSET</span>
+                                <input type="file" accept="image/*,.svg" multiple onChange={handleAddImage} className="hidden" />
+                            </label>
+                            <button onClick={exportImages} disabled={isExporting} className={`flex items-center gap-2 px-5 py-2 rounded-xl font-black text-[11px] tracking-widest transition-all shadow-lg active:scale-95
+                                ${isExporting ? 'bg-gray-700 cursor-not-allowed text-gray-500' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-900/40'}`}>
+                                {isExporting ? "RENDERING..." : <><Download size={16} strokeWidth={3}/><span>EXPORT ZIP</span></>}
+                            </button>
+                        </div>
+                    </header>
+
+                    <main className="flex flex-1 overflow-hidden relative bg-gray-950">
+                        {/* Workspace */}
+                        <div className="flex-1 flex items-center justify-center overflow-hidden canvas-container relative" onClick={() => setSelectedId(null)}>
+                            <div onClick={(e) => e.stopPropagation()}>
+                                <CanvasEngine 
+                                    objects={objects} config={config} currentLevel={currentLevel} 
+                                    selectedId={selectedId} onSelect={setSelectedId} 
+                                    onUpdateObject={updateObject} imageCache={imageCache} 
+                                />
+                            </div>
+
+                            {/* Viewport HUD */}
+                            <div className="absolute top-6 left-6 flex flex-col gap-2 pointer-events-none">
+                                <div className="bg-gray-900/90 backdrop-blur-md border border-gray-700 p-4 rounded-2xl shadow-2xl">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                        <span className="text-[10px] font-black text-gray-400 tracking-widest uppercase">System Engine Active</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <div className="text-[9px] text-gray-600 uppercase font-black">Viewport Scale</div>
+                                            <div className="text-xl font-mono font-black text-blue-400">{Math.pow(2, currentLevel).toFixed(2)}x</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[9px] text-gray-600 uppercase font-black">Memory Stack</div>
+                                            <div className="text-xl font-mono font-black text-white">{objects.length} <span className="text-xs text-gray-500">Objs</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Navigation Bar */}
+                            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-gray-900/95 backdrop-blur-xl border border-gray-700 rounded-3xl px-10 py-4 flex items-center gap-10 shadow-2xl ring-1 ring-white/10" onClick={(e) => e.stopPropagation()}>
+                                <button onClick={() => setCurrentLevel(l => Math.max(0, l - 1))} className="text-gray-400 hover:text-blue-400 transition-all transform hover:scale-125 hover:rotate-[-10deg] active:scale-95"><Minus size={32} strokeWidth={3} /></button>
+                                <div className="flex flex-col items-center w-48">
+                                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-[0.3em] mb-2">Depth Coordinate</span>
+                                    <div className="flex items-center gap-3">
+                                        <input 
+                                            type="number" value={currentLevel} 
+                                            onChange={(e) => setCurrentLevel(Math.max(0, parseInt(e.target.value) || 0))} 
+                                            className="bg-gray-800 text-center font-mono text-3xl w-24 py-1.5 rounded-xl border border-gray-700 focus:border-blue-500 outline-none shadow-inner text-blue-100" 
+                                        />
+                                        <span className="text-gray-600 text-xl font-black">/ {config.totalLevels - 1}</span>
+                                    </div>
+                                </div>
+                                <button onClick={() => setCurrentLevel(l => Math.min(config.totalLevels - 1, l + 1))} className="text-gray-400 hover:text-blue-400 transition-all transform hover:scale-125 hover:rotate-[10deg] active:scale-95"><Plus size={32} strokeWidth={3} /></button>
+                            </div>
+                        </div>
+
+                        {/* Sidebar */}
+                        <Sidebar 
+                            objects={objects}
+                            selectedId={selectedId}
+                            config={config}
+                            onSelect={setSelectedId}
+                            onUpdateObject={updateObject}
+                            onDelete={deleteObject}
+                            onDuplicate={duplicateObject}
+                            onLayerOrder={changeLayerOrder}
+                            onFit={fitObjectToCanvas}
+                            onUpdateConfig={u => setConfig(p => ({ ...p, ...u }))}
+                            currentLevel={currentLevel}
+                            onVisit={handleVisit}
+                        />
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
