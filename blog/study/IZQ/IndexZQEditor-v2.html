@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Zoom Architect - Infinite Zoom Creator</title>
+    <title>App Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script>
@@ -488,7 +489,7 @@
 
             const exportJSON = () => {
                 const blob = new Blob([JSON.stringify({ version: 2, config, objects }, null, 2)], { type: 'application/json' });
-                saveAs(blob, 'infinite_zoom_project.json');
+                saveAs(blob, 'project.json');
             };
 
             const importJSON = (e) => {
