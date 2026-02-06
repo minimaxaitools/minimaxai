@@ -1,0 +1,2921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>app</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/9.1.2/bignumber.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- ADD THIS LINE - RecordRTC for video recording -->
+    <script src="https://cdn.jsdelivr.net/npm/recordrtc@5.6.2/RecordRTC.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: rgba(30, 30, 30, 0.85);
+            --panel-border: #444;
+            --accent-color: #4CAF50;
+            --accent-hover: #45a049;
+            --text-color: #ffffff;
+            --text-secondary: #aaaaaa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            background: var(--bg-color);
+            color: var(--text-color);
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            z-index: 0;
+        }
+
+        #canvas-container.panning {
+            cursor: grabbing;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI Panels */
+
+        .panel {
+            position: absolute;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            touch-action: pan-y; /* ADD THIS LINE - allows vertical scroll but prevents other gestures */
+        }
+
+        .panel h3 {
+            margin-bottom: 12px;
+            color: var(--accent-color);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 8px;
+        }
+
+        /* Panel Positioning */
+        #toolbar { top: 20px; left: 20px; width: 220px; }
+        #objects-panel { top: 20px; right: 20px; width: 260px; max-height: 40vh; overflow-y: auto; }
+        #bookmarks-panel { bottom: 20px; right: 20px; width: 260px; max-height: 30vh; overflow-y: auto; }
+        #properties-panel { bottom: 20px; left: 20px; width: 260px; max-height: 40vh; overflow-y: auto; }
+
+        /*  NEW STYLE */
+        #settings-panel { top: 20px; left: 260px; width: 260px; max-height: 60vh; overflow-y: auto; }
+
+
+        #camera-info { 
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            font-family: monospace;
+            white-space: nowrap;
+        }
+
+        /* Buttons */
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            width: 100%;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        
+        .btn-secondary { background: #555; }
+        .btn-secondary:hover { background: #666; }
+        
+        .btn-danger { background: #d32f2f; }
+        .btn-danger:hover { background: #b71c1c; }
+
+        .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+        .btn-row .btn { margin-bottom: 0; }
+        .btn-small { padding: 4px 8px; font-size: 12px; width: auto; }
+
+        /* Lists */
+        .list-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .list-item:hover { background: rgba(255,255,255,0.1); }
+        .list-item.selected { border-color: var(--accent-color); background: rgba(76, 175, 80, 0.1); }
+        
+        .item-info { overflow: hidden; }
+        .item-name { font-weight: 600; font-size: 13px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-meta { font-size: 10px; color: var(--text-secondary); }
+
+        /* Form Elements */
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; margin-bottom: 4px; font-size: 11px; color: var(--text-secondary); }
+        
+        input[type="text"], input[type="number"], textarea, select {
+            width: 100%;
+            background: #222;
+            border: 1px solid #555;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #777; }
+
+        /* Zoom Indicator */
+        .zoom-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 300;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+        .zoom-indicator.show { opacity: 1; }
+
+        /* ADD THESE STYLES - Video Recording Animations */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .btn.recording {
+            background: #dc2626 !important;
+            animation: pulse 1.5s infinite;
+        }
+
+        #recording-indicator {
+            font-weight: 500;
+        }
+
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .panel { width: auto; }
+            #toolbar { top: auto; bottom: 20px; left: 20px; right: 20px; width: auto; display: flex; overflow-x: auto; gap: 10px; padding: 10px; }
+            #objects-panel, #bookmarks-panel, #properties-panel { display: none; } /* Simplified mobile view */
+            #camera-info { width: 90%; justify-content: space-between; top: 10px; }
+        }
+
+        /* --- ADD THIS TO YOUR <style> SECTION --- */
+
+        /* Modern Mobile UI Overrides */
+        @media (max-width: 768px) {
+            /* 1. Top Info Bar - Slimmer */
+            #camera-info {
+                top: 10px;
+                width: 90%;
+                padding: 6px 12px;
+                background: rgba(30, 30, 30, 0.9);
+                backdrop-filter: blur(8px);
+                font-size: 10px;
+                border: 1px solid rgba(255,255,255,0.1);
+                justify-content: space-between;
+            }
+
+            /* 2. Toolbar - Bottom Horizontal Scroll */
+            #toolbar {
+                top: auto;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: auto;
+                border-radius: 20px 20px 0 0; /* Rounded top corners */
+                border-bottom: none;
+                border-left: none;
+                border-right: none;
+                display: flex;
+                flex-direction: row; /* Horizontal layout */
+                overflow-x: auto;    /* Scrollable */
+                padding: 15px;
+                gap: 12px;
+                align-items: center;
+                background: rgba(18, 18, 18, 0.95);
+                z-index: 100;
+                /* Hide scrollbar for clean look */
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            #toolbar::-webkit-scrollbar { display: none; }
+
+            /* Adjust buttons in toolbar for horizontal layout */
+            #toolbar .btn {
+                margin-bottom: 0;
+                width: auto; /* Auto width */
+                min-width: 44px; /* Touch target size */
+                height: 44px;
+                padding: 0 16px;
+                white-space: nowrap;
+                flex-shrink: 0; /* Don't shrink buttons */
+                display: flex;
+                flex-direction: column; /* Icon top, text bottom */
+                font-size: 10px;
+                gap: 4px;
+                border-radius: 8px;
+            }
+
+            #toolbar .btn span { font-size: 16px; display: block; }
+            #toolbar h3 { display: none; } /* Hide "Tools" title on mobile */
+
+            /* Hide the complex inputs in toolbar initially to save space */
+            /* We keep the export buttons accessible though */
+            #toolbar .input-group { display: none; }
+            #toolbar #export-video-btn { display: flex; background: #E91E63; }
+
+            /* 3. Settings/Export Panels - Full Screen Overlays */
+            #settings-panel,
+            #objects-panel,
+            #bookmarks-panel,
+            #properties-panel {
+                top: auto;
+                bottom: 80px; /* Above toolbar */
+                left: 5%;
+                width: 90%;
+                max-height: 60vh;
+                border-radius: 12px;
+                transform: translateY(10px);
+                opacity: 0;
+                pointer-events: none;
+                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            /* Helper class to show active panel */
+            .panel.mobile-active {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: all;
+            }
+
+            /* Make the Video Export section visible if we want it */
+            #toolbar .video-export-container {
+                display: flex;
+                align-items: center;
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <canvas id="main-canvas"></canvas>
+    </div>
+
+    <div class="zoom-indicator" id="zoom-indicator">Zoom: 1.00x</div>
+
+    <!-- Top Info Bar -->
+    <div class="panel" id="camera-info">
+        <span>Z: <span id="zoom-display">1.00</span></span>
+        <span>X: <span id="pos-x">0</span></span>
+        <span>Y: <span id="pos-y">0</span></span>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="panel" id="toolbar">
+        <h3>Tools</h3>
+        <button class="btn" id="add-text-btn">
+            <span>T</span> Add Text
+        </button>
+        <button class="btn" id="add-image-btn">
+            <span>🖼</span> Add Image/SVG
+        </button>
+        <div class="btn-row">
+            <button class="btn btn-secondary" id="reset-view-btn" title="Reset View">Reset</button>
+            <button class="btn btn-secondary" id="fit-all-btn" title="Fit All">Fit</button>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-secondary" id="export-json-btn">Save</button>
+            <button class="btn btn-secondary" id="import-json-btn">Load</button>
+        </div>
+
+        <input type="file" id="file-input" accept=".svg,image/*" multiple style="display: none">
+        <input type="file" id="import-input" accept=".json,.zip" style="display: none">
+
+        <!-- ADD VIDEO EXPORT SECTION -->
+        <div class="video-controls" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--panel-border);">
+            <h3 style="margin-bottom: 10px; font-size: 11px;">Video Export</h3>
+
+            <div class="input-group">
+                <label>Dimensions</label>
+                <select id="video-quality" style="margin-bottom: 8px;">
+                    <optgroup label="Landscape (16:9)">
+                        <option value="high">1080p (High)</option>
+                        <option value="medium" selected>720p (Medium)</option>
+                        <option value="low">480p (Low)</option>
+                    </optgroup>
+                    <optgroup label="Mobile / Shorts (9:16)">
+                        <option value="vertical-high">Vertical 1080p (1080x1920)</option>
+                        <option value="vertical-medium">Vertical 720p (720x1280)</option>
+                    </optgroup>
+                    <optgroup label="Device">
+                        <option value="screen">Current Screen Size</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Format</label>
+                <select id="video-format" style="margin-bottom: 8px;">
+                    <option value="mp4">MP4</option>
+                    <option value="webm">WebM</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="show-watermark"> Add Watermark
+                </label>
+            </div>
+
+            <button class="btn btn-secondary" id="export-video-btn">
+                🎥 Record Tour
+            </button>
+
+            <div id="recording-indicator" style="display: none; margin-top: 8px; padding: 8px; background: rgba(220, 38, 38, 0.2); border-radius: 4px; text-align: center;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: #dc2626; border-radius: 50%; margin-right: 6px; animation: pulse 1s infinite;"></span>
+                <span class="recording-timer" style="font-family: monospace; font-size: 12px;">00:00</span>
+            </div>
+
+            <input type="file" id="watermark-upload" accept=".svg" style="display: none">
+        </div>
+
+    </div>
+
+    <!-- Objects Panel -->
+    <div class="panel" id="objects-panel">
+        <h3>Objects (<span id="object-count">0</span>)</h3>
+        <div class="input-group" style="margin-bottom: 10px;">
+            <input type="text" id="object-search" placeholder="Search objects..." style="padding: 6px;">
+        </div>
+        <div id="objects-list"></div>
+    </div>
+
+    <!-- Bookmarks Panel -->
+    <div class="panel" id="bookmarks-panel">
+        <h3>Bookmarks</h3>
+        <div class="input-group" style="margin-bottom: 10px;">
+            <input type="text" id="bookmark-search" placeholder="Search bookmarks..." style="padding: 6px;">
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-small" id="add-bookmark-btn">+ Add</button>
+            <button class="btn btn-small btn-secondary" id="play-bookmarks-btn">▶ Play</button>
+            <button class="btn btn-small btn-danger" id="stop-bookmarks-btn" style="display:none;">⏹ Stop</button>
+        </div>
+        <div id="bookmarks-list"></div>
+    </div>
+
+    <!-- Properties Panel -->
+    <div class="panel" id="properties-panel">
+        <h3>Properties</h3>
+        <div id="properties-content">
+            <p style="color: #888; font-size: 12px; text-align: center; padding: 20px;">Select an object to edit</p>
+        </div>
+    </div>
+
+    <!-- ADD THIS NEW SETTINGS PANEL -->
+    <div class="panel" id="settings-panel">
+        <h3>Canvas Settings</h3>
+        <div id="settings-content">
+            <div class="input-group">
+                <label>Background Color</label>
+                <input type="color" id="bg-color-input" value="#121212">
+            </div>
+            <div class="input-group">
+                <label>Custom Color (Hex)</label>
+                <input type="text" id="bg-color-text" placeholder="#121212">
+            </div>
+            <div class="input-group">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="bg-transparent"> Transparent Background
+                </label>
+            </div>
+            <div class="input-group">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="grid-visible" checked> Show Grid
+                </label>
+            </div>
+            <div class="input-group">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="grid-auto-adjust" checked> Auto-adjust Grid Color
+                </label>
+            </div>
+            <div class="input-group">
+                <label>Grid Color</label>
+                <input type="color" id="grid-color-input" value="#ffffff">
+                <input type="range" id="grid-opacity" min="0" max="100" value="8" style="width: 100%; margin-top: 4px;">
+                <small style="color: #888;">Opacity: <span id="grid-opacity-value">8</span>%</small>
+            </div>
+        </div>
+    </div>
+
+
+
+
+<script>
+/**
+ * INFINITE ZOOM APP
+ * Core Logic: BigNumber.js for precision coordinates, Canvas API for rendering.
+ */
+
+// --- MATH UTILS ---
+
+// Configure BigNumber for high precision logic
+BigNumber.config({ 
+    DECIMAL_PLACES: 50, // 100 is overkill for UI, 50 is plenty for "infinite" feeling
+    EXPONENTIAL_AT: [-50, 50]
+});
+
+class BigVec2 {
+    constructor(x, y) {
+        this.x = new BigNumber(x || 0);
+        this.y = new BigNumber(y || 0);
+    }
+
+    add(other) {
+        return new BigVec2(this.x.plus(other.x), this.y.plus(other.y));
+    }
+
+    subtract(other) {
+        return new BigVec2(this.x.minus(other.x), this.y.minus(other.y));
+    }
+
+    multiply(scalar) {
+        return new BigVec2(this.x.times(scalar), this.y.times(scalar));
+    }
+
+    static lerp(a, b, t) {
+        const tBig = new BigNumber(t);
+        const oneMinusT = new BigNumber(1).minus(tBig);
+        return new BigVec2(
+            a.x.times(oneMinusT).plus(b.x.times(tBig)),
+            a.y.times(oneMinusT).plus(b.y.times(tBig))
+        );
+    }
+
+    clone() {
+        return new BigVec2(this.x, this.y);
+    }
+}
+
+// --- CAMERA SYSTEM ---
+
+class InfiniteCamera {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.position = new BigVec2(0, 0);
+        this.zoom = new BigNumber(1);
+        this.rotation = 0; // Standard number (radians)
+        
+        // Animation targets
+        this.targetPosition = new BigVec2(0, 0);
+        this.targetZoom = new BigNumber(1);
+        this.targetRotation = 0;
+        
+        this.isAnimating = false;
+        this.animationTime = 0;
+        this.animationDuration = 0.5;
+    }
+
+    // Convert screen pixel (x,y) to Infinite World coordinate
+    screenToWorld(screenX, screenY) {
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
+        // 1. Center offset
+        const x = screenX - centerX;
+        const y = screenY - centerY;
+        
+        // 2. Rotate backwards
+        const cos = Math.cos(-this.rotation);
+        const sin = Math.sin(-this.rotation);
+        const rotX = x * cos - y * sin;
+        const rotY = x * sin + y * cos;
+        
+        // 3. Scale and Translate
+        // world = pos + (rot / zoom)
+        const worldX = new BigNumber(rotX).dividedBy(this.zoom).plus(this.position.x);
+        const worldY = new BigNumber(rotY).dividedBy(this.zoom).plus(this.position.y);
+        
+        return new BigVec2(worldX, worldY);
+    }
+
+    // Convert Infinite World coordinate to screen pixel
+    worldToScreen(worldPos) {
+        // 1. Translate
+        const relX = worldPos.x.minus(this.position.x);
+        const relY = worldPos.y.minus(this.position.y);
+        
+        // 2. Scale (Zoom)
+        // Note: We convert to Number here. If the point is too far away to fit on screen,
+        // Number(Infinity) is acceptable as it just won't draw.
+        const zoomedX = relX.times(this.zoom).toNumber();
+        const zoomedY = relY.times(this.zoom).toNumber();
+        
+        // 3. Rotate
+        const cos = Math.cos(this.rotation);
+        const sin = Math.sin(this.rotation);
+        const rotX = zoomedX * cos - zoomedY * sin;
+        const rotY = zoomedX * sin + zoomedY * cos;
+        
+        // 4. Center
+        return {
+            x: rotX + this.canvas.width / 2,
+            y: rotY + this.canvas.height / 2
+        };
+    }
+
+    zoomAt(screenX, screenY, factor) {
+        const worldBefore = this.screenToWorld(screenX, screenY);
+        
+        this.targetZoom = this.targetZoom.times(factor);
+        
+        // Determine where that world point *would* be after zoom if we didn't move
+        // We want to move the camera such that worldBefore stays at screenX, screenY
+        // New Cam Pos = Old Cam Pos + (World - NewWorld_if_cam_stayed)
+        
+        // To implement smoothly with animation, we update targets
+        // However, calculating the exact target position for a smooth zoom-to-mouse 
+        // with BigNumber interpolation is tricky.
+        // A simpler approach for the target:
+        // 1. Instant update (no animation) for responsiveness during scroll
+        // 2. Or, calculate offset based on current state.
+        
+        // Let's do instant update for zoom feel, but animate standard movements.
+        // For 'infinite' feeling, laggy zoom is bad.
+        
+        // Instant Zoom Logic (Hybrid):
+        this.zoom = this.zoom.times(factor);
+        this.targetZoom = this.zoom; // Sync target
+        
+        const worldAfter = this.screenToWorld(screenX, screenY);
+        const correction = worldBefore.subtract(worldAfter);
+        this.position = this.position.add(correction);
+        this.targetPosition = this.position.clone(); // Sync target
+    }
+
+    pan(deltaX, deltaY) {
+        // Rotate delta to match camera rotation
+        const cos = Math.cos(-this.rotation);
+        const sin = Math.sin(-this.rotation);
+        const rotX = deltaX * cos - deltaY * sin;
+        const rotY = deltaX * sin + deltaY * cos;
+        
+        const worldDelta = new BigVec2(
+            new BigNumber(rotX).dividedBy(this.zoom),
+            new BigNumber(rotY).dividedBy(this.zoom)
+        );
+        
+        this.position = this.position.subtract(worldDelta);
+        this.targetPosition = this.position.clone();
+    }
+
+    moveTo(position, zoom, rotation = 0) {
+        this.targetPosition = position.clone();
+        this.targetZoom = new BigNumber(zoom);
+        this.targetRotation = rotation;
+        this.startAnimation();
+    }
+
+    startAnimation() {
+        this.isAnimating = true;
+        this.animationTime = 0;
+    }
+
+    update(deltaTime) {
+        if (!this.isAnimating) return;
+        
+        this.animationTime += deltaTime;
+        let t = Math.min(this.animationTime / this.animationDuration, 1);
+        
+        // Ease-in-out Cubic
+        const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        
+        // Interpolate Position
+        this.position = BigVec2.lerp(this.position, this.targetPosition, ease);
+        
+        // Interpolate Zoom (Logarithmic for scale)
+        const startLog = this.zoom.e; // Approx log10
+        const endLog = this.targetZoom.e;
+        // Exact Log interpolation using natural log if available, or just simple check
+        // BigNumber doesn't have efficient log() in standard build sometimes, so we use linear for now 
+        // or a simple multiplication power.
+        // Let's stick to linear interpolation of the exponent if they are far apart, 
+        // or standard lerp if close.
+        
+        // Simple Lerp for zoom usually looks okay if duration is short
+        // For "Infinite" zoom, we really want log lerp.
+        // zoom = start * (target/start)^t
+        if (!this.zoom.isEqualTo(this.targetZoom)) {
+            const ratio = this.targetZoom.dividedBy(this.zoom);
+            // pow(t) is hard with BigNumber without extra libs.
+            // Workaround: Do iterative approach or just snap if close.
+             const tBN = new BigNumber(ease);
+             const oneMinusT = new BigNumber(1).minus(tBN);
+             this.zoom = this.zoom.times(oneMinusT).plus(this.targetZoom.times(tBN));
+        }
+        
+        this.rotation = this.rotation + (this.targetRotation - this.rotation) * ease;
+        
+        if (t >= 1) {
+            this.position = this.targetPosition.clone();
+            this.zoom = this.targetZoom;
+            this.rotation = this.targetRotation;
+            this.isAnimating = false;
+        }
+    }
+}
+
+// --- OBJECT SYSTEM ---
+
+class CanvasObject {
+    constructor(type) {
+        this.id = Date.now() + Math.random();
+        this.name = `${type} ${this.id.toString().slice(-4)}`;
+        this.type = type;
+        this.position = new BigVec2(0, 0);
+        this.scale = new BigNumber(1);
+        this.rotation = 0;
+        this.visible = true;
+        this.zIndex = 0;
+    }
+
+    render(ctx, camera) {
+        if (!this.visible) return;
+        
+        // Optimization: Cull if completely off screen?
+        // Hard with rotation and infinite scale, skipping for simplicity.
+        
+        const screenPos = camera.worldToScreen(this.position);
+        
+        // Calculate relative scale
+        const totalScale = this.scale.times(camera.zoom).toNumber();
+        
+        // Safety: If scale is too tiny to see or too huge to render
+        if (totalScale < 0.001 || totalScale > 100000) {
+            // Optional: Draw a dot or bounding box if too small?
+            if (totalScale > 100000) return; // Too big, probably fills screen or clipped
+            // If too small, maybe render a pixel?
+        }
+
+        ctx.save();
+        ctx.translate(screenPos.x, screenPos.y);
+        ctx.rotate(this.rotation + camera.rotation);
+        ctx.scale(totalScale, totalScale);
+        
+        this.draw(ctx);
+        
+        ctx.restore();
+    }
+
+    draw(ctx) { /* Override */ }
+
+    getBounds() {
+        return {
+            min: this.position.subtract(new BigVec2(50, 50)),
+            max: this.position.add(new BigVec2(50, 50))
+        };
+    }
+}
+
+class TextObject extends CanvasObject {
+    constructor() {
+        super('Text');
+        this.text = 'Hello World';
+        this.fontSize = 24;
+        this.fontFamily = 'Arial';
+        this.color = '#ffffff';
+    }
+
+    draw(ctx) {
+        ctx.font = `${this.fontSize}px ${this.fontFamily}`;
+        ctx.fillStyle = this.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.text, 0, 0);
+    }
+    
+    // Bounds logic helps with "Fit View"
+    getBounds() {
+        // Approximate
+        const w = this.text.length * this.fontSize * 0.6; 
+        const h = this.fontSize;
+        const hw = new BigNumber(w/2).times(this.scale);
+        const hh = new BigNumber(h/2).times(this.scale);
+        
+        return {
+            min: new BigVec2(this.position.x.minus(hw), this.position.y.minus(hh)),
+            max: new BigVec2(this.position.x.plus(hw), this.position.y.plus(hh))
+        };
+    }
+}
+
+// updated ImageObject CLASS
+class ImageObject extends CanvasObject {
+    constructor(source, isSvg = false, assetId = null) {
+        super(isSvg ? 'SVG' : 'Image');
+        this.image = new Image();
+        this.loaded = false;
+        this.width = 100;
+        this.height = 100;
+        this.assetId = assetId || `asset_${Date.now()}_${Math.random()}`; // ADDED: Unique asset ID
+        this.isSvg = isSvg; // ADDED: Track if SVG
+        this.originalFilename = ''; // ADDED: Store original filename
+
+        this.image.onload = () => {
+            this.loaded = true;
+            this.width = this.image.width || 100;
+            this.height = this.image.height || 100;
+        };
+
+        // MODIFIED: Don't set src here if we're loading from storage
+        if (source) {
+            this.image.src = source;
+        }
+    }
+
+    // ADDED: Method to load from blob
+    loadFromBlob(blob) {
+        const url = URL.createObjectURL(blob);
+        this.image.src = url;
+        // Note: We should revoke this URL when object is destroyed, but for simplicity keeping it
+    }
+
+    draw(ctx) {
+        if (!this.loaded) {
+            ctx.fillStyle = '#333';
+            ctx.fillRect(-50, -50, 100, 100);
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Loading...', 0, 0);
+            return;
+        }
+        ctx.drawImage(this.image, -this.width/2, -this.height/2, this.width, this.height);
+    }
+
+    getBounds() {
+        const hw = new BigNumber(this.width/2).times(this.scale);
+        const hh = new BigNumber(this.height/2).times(this.scale);
+        return {
+            min: new BigVec2(this.position.x.minus(hw), this.position.y.minus(hh)),
+            max: new BigVec2(this.position.x.plus(hw), this.position.y.plus(hh))
+        };
+    }
+}
+
+
+class Bookmark {
+    constructor(name, position, zoom, rotation) {
+        this.id = Date.now();
+        this.name = name;
+        this.position = position.clone();
+        this.zoom = new BigNumber(zoom);
+        this.rotation = rotation;
+    }
+}
+
+// --- MAIN APPLICATION ---
+// --- STORAGE MANAGER WITH INDEXEDDB ---
+// ADD THIS ENTIRE CLASS BEFORE InfiniteZoomApp class
+
+class StorageManager {
+    constructor() {
+        this.dbName = 'InfiniteCanvasDB';
+        this.dbVersion = 1;
+        this.db = null;
+        this.initPromise = this.initDB();
+    }
+
+    async initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, this.dbVersion);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                this.db = request.result;
+                resolve(this.db);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+
+                // Store for image/SVG blobs
+                if (!db.objectStoreNames.contains('assets')) {
+                    db.createObjectStore('assets', { keyPath: 'id' });
+                }
+
+                // Store for project metadata
+                if (!db.objectStoreNames.contains('projects')) {
+                    db.createObjectStore('projects', { keyPath: 'id' });
+                }
+            };
+        });
+    }
+
+    async saveAsset(id, blob, filename, type) {
+        await this.initPromise;
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['assets'], 'readwrite');
+            const store = transaction.objectStore('assets');
+
+            const asset = {
+                id: id,
+                blob: blob,
+                filename: filename,
+                type: type,
+                timestamp: Date.now()
+            };
+
+            const request = store.put(asset);
+            request.onsuccess = () => resolve(id);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getAsset(id) {
+        await this.initPromise;
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['assets'], 'readonly');
+            const store = transaction.objectStore('assets');
+            const request = store.get(id);
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async getAllAssets() {
+        await this.initPromise;
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['assets'], 'readonly');
+            const store = transaction.objectStore('assets');
+            const request = store.getAll();
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async deleteAsset(id) {
+        await this.initPromise;
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['assets'], 'readwrite');
+            const store = transaction.objectStore('assets');
+            const request = store.delete(id);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async clearAllAssets() {
+        await this.initPromise;
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['assets'], 'readwrite');
+            const store = transaction.objectStore('assets');
+            const request = store.clear();
+
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+}
+
+// ============================================
+// REPLACE ENTIRE VideoExporter CLASS WITH THIS VERSION
+// ============================================
+
+class VideoExporter {
+    constructor(app) {
+        this.app = app;
+        this.isRecording = false;
+        this.recorder = null;
+        this.recordingTimer = null;
+        this.recordingStartTime = 0;
+        this.animationFrame = null;
+
+        // Watermark
+        this.watermarkSvg = '<svg width="150" height="40" xmlns="http://www.w3.org/2000/svg"><text x="75" y="25" font-family="Arial" font-size="14" fill="rgba(255,255,255,0.7)" text-anchor="middle">Infinite Canvas</text></svg>';
+        this.watermarkImage = null;
+    }
+
+    initialize() {
+        console.log('VideoExporter initialized');
+
+        const exportBtn = document.getElementById('export-video-btn');
+        if (!exportBtn) {
+            console.error('Export button not found');
+            return;
+        }
+
+        exportBtn.addEventListener('click', () => this.toggleVideoRecording());
+
+        // Watermark setup
+        const watermarkUpload = document.getElementById('watermark-upload');
+        const showWatermark = document.getElementById('show-watermark');
+
+        if (showWatermark) {
+            showWatermark.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    watermarkUpload?.click();
+                }
+            });
+        }
+
+        if (watermarkUpload) {
+            watermarkUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file && file.type === 'image/svg+xml') {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        this.watermarkSvg = evt.target.result;
+                        this.loadWatermarkImage();
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        }
+
+        this.loadWatermarkImage();
+
+
+    }
+
+    loadWatermarkImage() {
+        this.watermarkImage = new Image();
+        this.watermarkImage.src = 'data:image/svg+xml;base64,' + btoa(this.watermarkSvg);
+    }
+
+    async toggleVideoRecording() {
+        if (this.isRecording) {
+            await this.stopRecording();
+        } else {
+            if (this.app.bookmarks.length < 2) {
+                alert('Please add at least 2 bookmarks before recording a tour');
+                return;
+            }
+            await this.startRecording();
+        }
+    }
+
+    async startRecording() {
+        console.log('=== Starting Video Recording ===');
+
+        try {
+            if (typeof RecordRTC === 'undefined') {
+                throw new Error('RecordRTC library not loaded. Please refresh the page.');
+            }
+
+            // 1. Initialize State
+            this.isRecording = true;
+            this.updateRecordingUI(true);
+            this.startRecordingTimer();
+
+            // 2. Setup Dimensions and Canvas
+            const quality = document.getElementById('video-quality')?.value || 'medium';
+            const format = document.getElementById('video-format')?.value || 'webm';
+            const showWatermark = document.getElementById('show-watermark')?.checked || false;
+            const dimensions = this.getVideoDimensions(quality);
+
+            const sourceCanvas = document.getElementById('main-canvas');
+            if (!sourceCanvas) throw new Error('Main canvas not found');
+
+            const recordCanvas = document.createElement('canvas');
+            recordCanvas.width = dimensions.width;
+            recordCanvas.height = dimensions.height;
+            const recordCtx = recordCanvas.getContext('2d', { alpha: false }); // Optimization: no alpha needed for mp4/webm
+
+            this.hideUIElements();
+
+            // 3. Capture Stream @ 60FPS
+            const stream = recordCanvas.captureStream(60);
+
+            const selectedFormat = document.getElementById('video-format')?.value || 'webm';
+            const recorderOptions = {
+                type: 'video',
+                // UPDATED: Dynamically set mimeType based on selection
+                mimeType: selectedFormat === 'mp4' ? 'video/mp4' : 'video/webm;codecs=vp9',
+                bitsPerSecond: quality === 'high' ? 10000000 : quality === 'medium' ? 6000000 : 3000000,
+                videoBitsPerSecond: quality === 'high' ? 10000000 : quality === 'medium' ? 6000000 : 3000000,
+                canvas: {
+                    width: dimensions.width,
+                    height: dimensions.height
+                },
+                disableLogs: false
+            };
+
+
+            this.recorder = new RecordRTC(stream, recorderOptions);
+            this.recorder.startRecording();
+
+            // 5. High-Performance Frame Loop
+            let lastCaptureTime = performance.now();
+            const targetFrameTime = 1000 / 60;
+
+            const captureFrame = (timestamp) => {
+                if (!this.isRecording) return;
+
+                // Handle first frame where timestamp might be undefined
+                const now = timestamp || performance.now();
+                const elapsed = now - lastCaptureTime;
+
+                if (elapsed >= targetFrameTime) {
+                    lastCaptureTime = now - (elapsed % targetFrameTime);
+
+                    try {
+                        // Render Background
+                        recordCtx.fillStyle = this.app.settings.backgroundTransparent ? '#000000' : this.app.settings.backgroundColor;
+                        recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
+
+                        // Draw Main Content
+                        recordCtx.imageSmoothingEnabled = true;
+                        recordCtx.imageSmoothingQuality = 'high';
+                        recordCtx.drawImage(sourceCanvas, 0, 0, recordCanvas.width, recordCanvas.height);
+
+                        // Draw Watermark
+                        if (showWatermark && this.watermarkImage && this.watermarkImage.complete) {
+                            const wmWidth = 150;
+                            const wmHeight = 40;
+                            const padding = 20;
+                            recordCtx.globalAlpha = 0.6;
+                            recordCtx.drawImage(
+                                this.watermarkImage,
+                                recordCanvas.width - wmWidth - padding,
+                                recordCanvas.height - wmHeight - padding,
+                                wmWidth,
+                                wmHeight
+                            );
+                            recordCtx.globalAlpha = 1.0;
+                        }
+                    } catch (err) {
+                        console.error('Frame draw error:', err);
+                    }
+                }
+
+                // Keep the loop going!
+                this.animationFrame = requestAnimationFrame(captureFrame);
+            };
+
+            // Start the loop
+            this.animationFrame = requestAnimationFrame(captureFrame);
+
+            // 6. Handle Automation / Tour
+            if (this.app.playBookmarks) {
+                this.app.playBookmarks(() => {
+                    console.log('Tour finished. Stopping in 2s...');
+                    setTimeout(() => {
+                        this.stopRecording();
+                    }, 2000);
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Recording start error:', error);
+            this.cleanupRecordingUI();
+            alert('Error: ' + error.message);
+        }
+    }
+
+// Helper to clean up UI on error
+    cleanupRecordingUI() {
+        this.isRecording = false;
+        this.updateRecordingUI(false);
+        this.showUIElements();
+        if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
+    }
+
+    async stopRecording() {
+        console.log('=== Stopping Video Recording ===');
+
+        if (!this.isRecording) {
+            console.log('Not recording, nothing to stop');
+            return;
+        }
+
+        if (!this.recorder) {
+            console.error('No recorder instance found');
+            this.isRecording = false;
+            this.updateRecordingUI(false);
+            this.showUIElements();
+            return;
+        }
+
+        this.isRecording = false;
+        this.stopRecordingTimer();
+
+        // Cancel animation frame
+        if (this.animationFrame) {
+            cancelAnimationFrame(this.animationFrame);
+            this.animationFrame = null;
+        }
+
+        // Stop bookmark playback
+        this.app.stopBookmarks();
+
+        console.log('Stopping RecordRTC...');
+
+        try {
+            await new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Recording stop timeout'));
+                }, 10000); // 10 second timeout
+
+                this.recorder.stopRecording(() => {
+                    clearTimeout(timeout);
+                    console.log('RecordRTC stopped successfully');
+
+                    try {
+                        const blob = this.recorder.getBlob();
+                        console.log('Got blob:', blob.size, 'bytes, type:', blob.type);
+
+                        if (blob.size === 0) {
+                            throw new Error('Recording is empty (0 bytes)');
+                        }
+
+                        this.saveVideo(blob);
+                        this.recorder.destroy();
+                        this.recorder = null;
+                        this.showUIElements();
+                        this.updateRecordingUI(false);
+
+                        console.log('✓ Recording complete!');
+                        resolve();
+                    } catch (err) {
+                        console.error('Error processing blob:', err);
+                        reject(err);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('❌ Error stopping recording:', error);
+            alert('Error saving video: ' + error.message);
+            this.showUIElements();
+            this.updateRecordingUI(false);
+        }
+    }
+
+    // Replace the entire saveVideo function with this:
+    saveVideo(blob) {
+        console.log('Saving video file...');
+
+        // UPDATED: Get the format from the UI dropdown
+        const format = document.getElementById('video-format')?.value || 'webm';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+
+        // UPDATED: Use the selected format extension
+        a.download = `infinite-canvas-tour_${timestamp}.${format}`;
+
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            console.log(`✓ Video file downloaded as ${format}`);
+        }, 1000);
+    }
+
+    getVideoDimensions(quality) {
+        // Handle "Screen" option - specific to user's current view
+        if (quality === 'screen') {
+            // Ensure even numbers for video encoding requirements (vital for some codecs)
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            return {
+                width: w % 2 === 0 ? w : w - 1,
+                height: h % 2 === 0 ? h : h - 1
+            };
+        }
+
+        switch (quality) {
+            // Standard Landscape
+            case 'high':
+                return { width: 1920, height: 1080 };
+            case 'medium':
+                return { width: 1280, height: 720 };
+            case 'low':
+                return { width: 854, height: 480 };
+
+            // NEW: Vertical Mobile Formats
+            case 'vertical-high':
+                return { width: 1080, height: 1920 }; // High quality Shorts/Reels
+            case 'vertical-medium':
+                return { width: 720, height: 1280 };  // Standard quality Shorts/Reels
+
+            default:
+                return { width: 1280, height: 720 };
+        }
+    }
+
+    hideUIElements() {
+        console.log('Hiding UI elements');
+        const panels = ['toolbar', 'objects-panel', 'bookmarks-panel', 'properties-panel', 'settings-panel', 'camera-info'];
+
+        panels.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.dataset.wasVisible = el.style.display !== 'none' ? 'true' : 'false';
+                el.style.display = 'none';
+            }
+        });
+    }
+
+    showUIElements() {
+        console.log('Showing UI elements');
+        const panels = ['toolbar', 'objects-panel', 'bookmarks-panel', 'properties-panel', 'settings-panel', 'camera-info'];
+
+        panels.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.dataset.wasVisible === 'true') {
+                el.style.display = '';
+            }
+        });
+    }
+
+    updateRecordingUI(recording) {
+        const exportBtn = document.getElementById('export-video-btn');
+        const indicator = document.getElementById('recording-indicator');
+
+        if (exportBtn) {
+            exportBtn.textContent = recording ? '⏹ Stop Recording' : '🎥 Record Tour';
+            exportBtn.classList.toggle('recording', recording);
+            exportBtn.disabled = false;
+        }
+
+        if (indicator) {
+            indicator.style.display = recording ? 'block' : 'none';
+        }
+    }
+
+    startRecordingTimer() {
+        this.recordingStartTime = Date.now();
+        const timerElement = document.querySelector('.recording-timer');
+
+        this.recordingTimer = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            if (timerElement) {
+                timerElement.textContent = `${minutes}:${seconds}`;
+            }
+        }, 1000);
+    }
+
+    stopRecordingTimer() {
+        if (this.recordingTimer) {
+            clearInterval(this.recordingTimer);
+            this.recordingTimer = null;
+        }
+    }
+}
+
+// ============================================
+// END OF VideoExporter CLASS
+// ============================================
+
+
+class InfiniteZoomApp {
+    constructor() {
+        this.canvas = document.getElementById('main-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.camera = new InfiniteCamera(this.canvas);
+        
+        this.objects = [];
+        this.bookmarks = [];
+        this.selectedObject = null;
+
+        this.storage = new StorageManager();
+        this.loadingAssets = new Map(); // Track loading assets to prevent duplicates
+
+        // CANVAS SETTINGS
+        this.settings = {
+            backgroundColor: '#121212',
+            backgroundTransparent: false,
+            gridVisible: true,
+            gridColor: 'rgba(255, 255, 255, 0.08)',
+            gridAutoAdjust: true
+        };
+
+
+        // State
+        this.isPanning = false;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+        this.bookmarkPlayIndex = -1;
+        this.playInterval = null;
+        this.isPlayingBookmarks = false;
+
+        this.init();
+    }
+
+    init() {
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.setupInput();
+        this.setupFileHandling();
+        this.setupBookmarkControls();
+        this.setupToolbarControls();
+        this.setupSettingsControls();
+        this.setupSearchControls();
+        
+        // Start Loop
+        this.loop();
+        
+        // Demo Content
+        this.createDemoContent();
+
+        // ADD THIS LINE - Initialize video exporter
+        this.videoExporter = new VideoExporter(this);
+        this.videoExporter.initialize();
+
+    }
+
+    resize() {
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        this.render();
+    }
+
+    setupInput() {
+        // Wheel Zoom
+        this.canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.1 : 0.9;
+            this.camera.zoomAt(e.clientX, e.clientY, factor);
+            this.showZoomIndicator();
+        }, { passive: false });
+
+        // Mouse Pan
+        this.canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0 || e.button === 1) {
+                this.isPanning = true;
+                this.lastMouseX = e.clientX;
+                this.lastMouseY = e.clientY;
+                document.getElementById('canvas-container').classList.add('panning');
+                
+                // Selection Logic (Simple hit test)
+                // In a real infinite canvas, we'd need a spatial index (QuadTree).
+                // Here we just loop reverse.
+                if (e.button === 0 && !e.shiftKey) {
+                    this.checkSelection(e.clientX, e.clientY);
+                }
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (this.isPanning) {
+                const dx = e.clientX - this.lastMouseX;
+                const dy = e.clientY - this.lastMouseY;
+                this.camera.pan(dx, dy);
+                this.lastMouseX = e.clientX;
+                this.lastMouseY = e.clientY;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            this.isPanning = false;
+            document.getElementById('canvas-container').classList.remove('panning');
+        });
+        
+        // Touch events
+        let lastDist = 0;
+        this.canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                lastDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            } else if (e.touches.length === 1) {
+                this.isPanning = true;
+                this.lastMouseX = e.touches[0].clientX;
+                this.lastMouseY = e.touches[0].clientY;
+            }
+        }, {passive: false});
+
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                
+                if (lastDist > 0) {
+                    const factor = dist / lastDist;
+                    this.camera.zoomAt(cx, cy, factor);
+                }
+                lastDist = dist;
+            } else if (e.touches.length === 1 && this.isPanning) {
+                const dx = e.touches[0].clientX - this.lastMouseX;
+                const dy = e.touches[0].clientY - this.lastMouseY;
+                this.camera.pan(dx, dy);
+                this.lastMouseX = e.touches[0].clientX;
+                this.lastMouseY = e.touches[0].clientY;
+            }
+        }, {passive: false});
+
+        this.canvas.addEventListener('touchend', () => {
+            this.isPanning = false;
+            lastDist = 0;
+        });
+
+        // Keyboard
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if(this.selectedObject) this.deleteObject(this.selectedObject);
+            }
+            if (e.key.toLowerCase() === 'r') this.resetView();
+        });
+    }
+
+    // updated setupFileHandling() METHOD
+    setupFileHandling() {
+        const fileInput = document.getElementById('file-input');
+        fileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+
+            for (const file of files) {
+                const reader = new FileReader();
+
+                reader.onload = async (ev) => {
+                    let obj;
+                    const assetId = `asset_${Date.now()}_${Math.random()}`;
+
+                    if(file.type.includes('svg')) {
+                        // UPDATED: Store SVG blob in IndexedDB
+                        const blob = new Blob([ev.target.result], {type: 'image/svg+xml'});
+                        await this.storage.saveAsset(assetId, blob, file.name, 'svg');
+
+                        const url = URL.createObjectURL(blob);
+                        obj = new ImageObject(url, true, assetId);
+                        obj.originalFilename = file.name;
+                    } else {
+                        // UPDATED: Convert data URL to blob and store
+                        const response = await fetch(ev.target.result);
+                        const blob = await response.blob();
+                        await this.storage.saveAsset(assetId, blob, file.name, 'image');
+
+                        obj = new ImageObject(ev.target.result, false, assetId);
+                        obj.originalFilename = file.name;
+                    }
+
+                    // Place at center of screen
+                    obj.position = this.camera.position.clone();
+                    // Scale relative to current zoom so it's visible
+                    obj.scale = new BigNumber(1).dividedBy(this.camera.zoom);
+                    obj.name = file.name;
+
+                    this.objects.push(obj);
+                    this.updateObjectsList();
+                };
+
+                if(file.type.includes('svg')) {
+                    reader.readAsText(file);
+                } else {
+                    reader.readAsDataURL(file);
+                }
+            }
+            fileInput.value = ''; // Reset
+        });
+
+        const importInput = document.getElementById('import-input');
+        importInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if(file) {
+                // UPDATED: Handle both JSON and ZIP files
+                if (file.name.endsWith('.zip')) {
+                    await this.importFromZIP(file);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => this.importFromJSON(ev.target.result);
+                    reader.readAsText(file);
+                }
+            }
+            importInput.value = '';
+        });
+    }
+
+
+    // FUNCTION BELOW setupFileHandling()
+    setupBookmarkControls() {
+        // Add Bookmark Button - works with both mouse and touch
+        const addBtn = document.getElementById('add-bookmark-btn');
+        if (addBtn) {
+            // Remove any existing listeners
+            addBtn.replaceWith(addBtn.cloneNode(true));
+            const newAddBtn = document.getElementById('add-bookmark-btn');
+
+            const addBookmarkHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.addBookmark();
+            };
+
+            newAddBtn.addEventListener('click', addBookmarkHandler);
+            newAddBtn.addEventListener('touchend', addBookmarkHandler);
+        }
+
+        // Play Bookmarks Button
+        const playBtn = document.getElementById('play-bookmarks-btn');
+        if (playBtn) {
+            playBtn.replaceWith(playBtn.cloneNode(true));
+            const newPlayBtn = document.getElementById('play-bookmarks-btn');
+
+            const playBookmarkHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.playBookmarks();
+            };
+
+            newPlayBtn.addEventListener('click', playBookmarkHandler);
+            newPlayBtn.addEventListener('touchend', playBookmarkHandler);
+        }
+
+        // Stop Bookmarks Button
+        const stopBtn = document.getElementById('stop-bookmarks-btn');
+        if (stopBtn) {
+            stopBtn.replaceWith(stopBtn.cloneNode(true));
+            const newStopBtn = document.getElementById('stop-bookmarks-btn');
+
+            const stopBookmarkHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.stopBookmarks();
+            };
+
+            newStopBtn.addEventListener('click', stopBookmarkHandler);
+            newStopBtn.addEventListener('touchend', stopBookmarkHandler);
+        }
+    }
+
+
+    // ADD after setupBookmarkControls FUNCTION
+    setupToolbarControls() {
+        // Add Text Button
+        const addTextBtn = document.getElementById('add-text-btn');
+        if (addTextBtn) {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.addTextObject();
+            };
+            addTextBtn.addEventListener('click', handler);
+            addTextBtn.addEventListener('touchend', handler);
+        }
+
+        // Add Image Button
+        const addImageBtn = document.getElementById('add-image-btn');
+        if (addImageBtn) {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                document.getElementById('file-input').click();
+            };
+            addImageBtn.addEventListener('click', handler);
+            addImageBtn.addEventListener('touchend', handler);
+        }
+
+        // Reset View Button
+        const resetBtn = document.getElementById('reset-view-btn');
+        if (resetBtn) {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.resetView();
+            };
+            resetBtn.addEventListener('click', handler);
+            resetBtn.addEventListener('touchend', handler);
+        }
+
+        // Fit All Button
+        const fitBtn = document.getElementById('fit-all-btn');
+        if (fitBtn) {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.fitAllObjects();
+            };
+            fitBtn.addEventListener('click', handler);
+            fitBtn.addEventListener('touchend', handler);
+        }
+
+        // Export JSON Button
+        const exportBtn = document.getElementById('export-json-btn');
+        if (exportBtn) {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.exportToJSON();
+            };
+            exportBtn.addEventListener('click', handler);
+            exportBtn.addEventListener('touchend', handler);
+        }
+
+        // Import JSON Button
+        const importBtn = document.getElementById('import-json-btn');
+        if (importBtn) {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                document.getElementById('import-input').click();
+            };
+            importBtn.addEventListener('click', handler);
+            importBtn.addEventListener('touchend', handler);
+        }
+    }
+
+
+    // ADD THIS ENTIRE NEW METHOD AFTER setupToolbarControls()
+    setupSettingsControls() {
+        // Background Color Picker
+        const bgColorInput = document.getElementById('bg-color-input');
+        const bgColorText = document.getElementById('bg-color-text');
+        const bgTransparent = document.getElementById('bg-transparent');
+
+        if (bgColorInput) {
+            bgColorInput.value = this.settings.backgroundColor;
+            bgColorInput.addEventListener('input', (e) => {
+                this.settings.backgroundColor = e.target.value;
+                bgColorText.value = e.target.value;
+                this.settings.backgroundTransparent = false;
+                bgTransparent.checked = false;
+                this.updateGridColor();
+            });
+        }
+
+        if (bgColorText) {
+            bgColorText.value = this.settings.backgroundColor;
+            bgColorText.addEventListener('change', (e) => {
+                let color = e.target.value.trim();
+                if (!color.startsWith('#')) color = '#' + color;
+                if (/^#[0-9A-F]{6}$/i.test(color)) {
+                    this.settings.backgroundColor = color;
+                    bgColorInput.value = color;
+                    this.settings.backgroundTransparent = false;
+                    bgTransparent.checked = false;
+                    this.updateGridColor();
+                }
+            });
+        }
+
+        if (bgTransparent) {
+            bgTransparent.addEventListener('change', (e) => {
+                this.settings.backgroundTransparent = e.target.checked;
+                if (e.target.checked) {
+                    this.updateGridColor();
+                }
+            });
+        }
+
+        // Grid Visibility
+        const gridVisible = document.getElementById('grid-visible');
+        if (gridVisible) {
+            gridVisible.addEventListener('change', (e) => {
+                this.settings.gridVisible = e.target.checked;
+            });
+        }
+
+        // Grid Auto-adjust
+        const gridAutoAdjust = document.getElementById('grid-auto-adjust');
+        if (gridAutoAdjust) {
+            gridAutoAdjust.addEventListener('change', (e) => {
+                this.settings.gridAutoAdjust = e.target.checked;
+                if (e.target.checked) {
+                    this.updateGridColor();
+                }
+            });
+        }
+
+        // Grid Color
+        const gridColorInput = document.getElementById('grid-color-input');
+        const gridOpacity = document.getElementById('grid-opacity');
+        const gridOpacityValue = document.getElementById('grid-opacity-value');
+
+        if (gridColorInput && gridOpacity) {
+            const updateGridColor = () => {
+                const color = gridColorInput.value;
+                const opacity = gridOpacity.value / 100;
+                const r = parseInt(color.substr(1,2), 16);
+                const g = parseInt(color.substr(3,2), 16);
+                const b = parseInt(color.substr(5,2), 16);
+                this.settings.gridColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+                this.settings.gridAutoAdjust = false;
+                document.getElementById('grid-auto-adjust').checked = false;
+                gridOpacityValue.textContent = gridOpacity.value;
+            };
+
+            gridColorInput.addEventListener('input', updateGridColor);
+            gridOpacity.addEventListener('input', updateGridColor);
+        }
+    }
+
+
+    // ADD THESE TWO NEW METHODS AFTER setupSettingsControls()
+    setupSearchControls() {
+        // Object search
+        const objectSearch = document.getElementById('object-search');
+        if (objectSearch) {
+            objectSearch.addEventListener('input', (e) => {
+                this.filterObjects(e.target.value);
+            });
+        }
+
+        // Bookmark search
+        const bookmarkSearch = document.getElementById('bookmark-search');
+        if (bookmarkSearch) {
+            bookmarkSearch.addEventListener('input', (e) => {
+                this.filterBookmarks(e.target.value);
+            });
+        }
+    }
+
+    filterObjects(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        const items = document.querySelectorAll('#objects-list .list-item');
+
+        items.forEach(item => {
+            const name = item.querySelector('.item-name').textContent.toLowerCase();
+            const type = item.querySelector('.item-meta').textContent.toLowerCase();
+
+            if (name.includes(term) || type.includes(term) || term === '') {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    filterBookmarks(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+        const items = document.querySelectorAll('#bookmarks-list .list-item');
+
+        items.forEach(item => {
+            const name = item.querySelector('.item-name').textContent.toLowerCase();
+
+            if (name.includes(term) || term === '') {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+
+// ADD THIS HELPER METHOD
+    updateGridColor() {
+        if (!this.settings.gridAutoAdjust) return;
+
+        // Calculate brightness of background
+        let r, g, b;
+
+        if (this.settings.backgroundTransparent) {
+            // Use medium gray for transparent
+            this.settings.gridColor = 'rgba(128, 128, 128, 0.3)';
+            return;
+        }
+
+        const color = this.settings.backgroundColor;
+        r = parseInt(color.substr(1,2), 16);
+        g = parseInt(color.substr(3,2), 16);
+        b = parseInt(color.substr(5,2), 16);
+
+        // Calculate perceived brightness (0-255)
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+        // If dark background, use light grid; if light background, use dark grid
+        if (brightness < 128) {
+            this.settings.gridColor = 'rgba(255, 255, 255, 0.08)';
+        } else {
+            this.settings.gridColor = 'rgba(0, 0, 0, 0.15)';
+        }
+    }
+
+
+    checkSelection(x, y) {
+        // Very basic hit detection: Distance from center vs arbitrary size
+        // Real implementation requires matrix inversion per object
+
+        // Just deselect if clicking empty space
+        this.selectedObject = null;
+
+        // Simple loop reverse to find top-most
+        for (let i = this.objects.length - 1; i >= 0; i--) {
+            const obj = this.objects[i];
+            const screenPos = this.camera.worldToScreen(obj.position);
+
+            // Assume roughly 50px radius hit area for simplicity in this demo
+            const dx = x - screenPos.x;
+            const dy = y - screenPos.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            // Rough size estimation on screen - INCREASED for touch devices
+            let size = 50 * obj.scale.times(this.camera.zoom).toNumber();
+            if (size < 40) size = 40; // CHANGED: Increased min hit area from 20 to 40 for touch
+
+            if (dist < size) {
+                this.selectObject(obj);
+                break;
+            }
+        }
+        this.updatePropertiesPanel();
+        this.updateObjectsList();
+    }
+
+
+    loop() {
+        const now = performance.now();
+        const dt = (now - (this.lastTime || now)) / 1000;
+        this.lastTime = now;
+
+        this.camera.update(dt);
+        this.render();
+        this.updateCameraUI();
+
+        requestAnimationFrame(() => this.loop());
+    }
+
+    // REPLACE THESE LINES IN render() METHOD
+    render() {
+        // Clear with settings-based background
+        if (this.settings.backgroundTransparent) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        } else {
+            this.ctx.fillStyle = this.settings.backgroundColor;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        // Draw grid only if visible
+        if (this.settings.gridVisible) {
+            this.drawGrid();
+        }
+
+
+        // Draw Objects
+        this.objects.forEach(obj => obj.render(this.ctx, this.camera));
+        
+        // Draw Selection Outline
+        if (this.selectedObject) {
+            const screenPos = this.camera.worldToScreen(this.selectedObject.position);
+            const scale = this.selectedObject.scale.times(this.camera.zoom).toNumber();
+            
+            this.ctx.strokeStyle = '#4CAF50';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            // A simple box around the center
+            const size = Math.max(20, 100 * scale); 
+            this.ctx.rect(screenPos.x - size/2, screenPos.y - size/2, size, size);
+            this.ctx.stroke();
+            
+            // Connecting line to center if far away? No, simple box is enough.
+        }
+    }
+
+    drawGrid() {
+        const zoom = this.camera.zoom.toNumber();
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        this.ctx.strokeStyle = this.settings.gridColor;
+        this.ctx.lineWidth = 1;
+
+        // Determine Grid Spacing (Powers of 10)
+        // We want a grid line roughly every 100 pixels
+        // zoom * worldSpace = screenSpace
+        // worldSpace = 100 / zoom
+        
+        const logZoom = Math.log10(zoom);
+        const exponent = Math.floor(Math.log10(100 / zoom));
+        const gridStepWorld = new BigNumber(10).pow(exponent);
+        
+        // Calculate screen size of one grid step
+        const gridStepScreen = gridStepWorld.times(this.camera.zoom).toNumber();
+        
+        // Prevent drawing if too dense (shouldn't happen with math above)
+        if (gridStepScreen < 20) return;
+
+        // Calculate Offset using BigNumber Modulo
+        // We need (camera.x % gridStepWorld) transformed to screen space
+        
+        const offsetX = this.camera.position.x.modulo(gridStepWorld).times(this.camera.zoom).toNumber();
+        const offsetY = this.camera.position.y.modulo(gridStepWorld).times(this.camera.zoom).toNumber();
+
+        // The grid moves opposite to camera, so we subtract offset from center
+        // However, screenToWorld logic centers at width/2.
+        // Screen position of World(0) is: (0 - camX)*zoom + W/2
+        // We want Screen position of World(k*step).
+        // It's a repeating pattern.
+        
+        // Vertical lines
+        // Start from center, go left and right
+        const startX = (centerX - offsetX) % gridStepScreen;
+        for (let x = startX - gridStepScreen; x < width + gridStepScreen; x += gridStepScreen) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, height);
+            this.ctx.stroke();
+        }
+
+        // Horizontal lines
+        const startY = (centerY - offsetY) % gridStepScreen;
+        for (let y = startY - gridStepScreen; y < height + gridStepScreen; y += gridStepScreen) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(width, y);
+            this.ctx.stroke();
+        }
+        
+        // Origin Crosshair
+        // Only draw if origin is somewhat on screen or close
+        // BigNumber comparison might be slow every frame, but okay for one point
+        // Let's just use worldToScreen. If it returns coordinates within canvas, draw it.
+        const originScreen = this.camera.worldToScreen(new BigVec2(0,0));
+        if (originScreen.x > -100 && originScreen.x < width + 100 && 
+            originScreen.y > -100 && originScreen.y < height + 100) {
+            this.ctx.strokeStyle = '#4CAF50';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(originScreen.x - 10, originScreen.y);
+            this.ctx.lineTo(originScreen.x + 10, originScreen.y);
+            this.ctx.moveTo(originScreen.x, originScreen.y - 10);
+            this.ctx.lineTo(originScreen.x, originScreen.y + 10);
+            this.ctx.stroke();
+        }
+    }
+
+    // --- UI HELPERS ---
+
+    updateCameraUI() {
+        // Scientific notation for very large/small numbers
+        let z = this.camera.zoom.toNumber();
+        let zStr = (z > 10000 || z < 0.0001) ? z.toExponential(2) : z.toFixed(2);
+        
+        document.getElementById('zoom-display').innerText = zStr;
+        document.getElementById('pos-x').innerText = this.formatBigNum(this.camera.position.x);
+        document.getElementById('pos-y').innerText = this.formatBigNum(this.camera.position.y);
+    }
+    
+    formatBigNum(bn) {
+        if (bn.abs().isGreaterThan(10000) || (bn.abs().isLessThan(0.01) && !bn.isZero())) {
+            return bn.toExponential(2);
+        }
+        return bn.toFixed(2);
+    }
+
+    showZoomIndicator() {
+        const el = document.getElementById('zoom-indicator');
+        let z = this.camera.zoom.toNumber();
+        let zStr = (z > 10000 || z < 0.0001) ? z.toExponential(2) : z.toFixed(2);
+        el.innerText = `Zoom: ${zStr}x`;
+        el.classList.add('show');
+        clearTimeout(this.zoomTimeout);
+        this.zoomTimeout = setTimeout(() => el.classList.remove('show'), 800);
+    }
+
+    // --- DATA MANAGEMENT ---
+
+    addTextObject() {
+        const obj = new TextObject();
+        obj.position = this.camera.position.clone();
+        obj.scale = new BigNumber(1).dividedBy(this.camera.zoom);
+        this.objects.push(obj);
+        this.selectObject(obj);
+        this.updateObjectsList();
+    }
+
+    // Updated THE ENTIRE deleteObject() METHOD
+    async deleteObject(obj) {
+        // ADDED: Clean up IndexedDB asset if it's an image/SVG
+        if ((obj.type === 'Image' || obj.type === 'SVG') && obj.assetId) {
+            try {
+                await this.storage.deleteAsset(obj.assetId);
+            } catch (e) {
+                console.warn('Could not delete asset:', e);
+            }
+        }
+
+        this.objects = this.objects.filter(o => o !== obj);
+        if (this.selectedObject === obj) {
+            this.selectedObject = null;
+            this.updatePropertiesPanel();
+        }
+        this.updateObjectsList();
+    }
+
+
+    selectObject(obj) {
+        this.selectedObject = obj;
+        
+        // Highlight in list
+        const items = document.querySelectorAll('.list-item');
+        items.forEach(el => el.classList.remove('selected'));
+        // We'd need IDs to map perfectly, but re-rendering list works too
+        this.updateObjectsList();
+        this.updatePropertiesPanel();
+    }
+
+    updateObjectsList() {
+        const container = document.getElementById('objects-list');
+        container.innerHTML = '';
+        document.getElementById('object-count').innerText = this.objects.length;
+
+        this.objects.slice().reverse().forEach(obj => {
+            const div = document.createElement('div');
+            div.className = `list-item ${this.selectedObject === obj ? 'selected' : ''}`;
+
+            // UPDATED: Add both click and touch handlers
+            const selectHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.selectObject(obj);
+            };
+            div.addEventListener('click', selectHandler);
+            div.addEventListener('touchend', selectHandler);
+
+
+            div.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${obj.name}</div>
+                    <div class="item-meta">${obj.type}</div>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                    <button class="btn btn-small btn-secondary" data-goto-id="${obj.id}" title="Go to object">📍</button>
+                    <button class="btn btn-small btn-danger" data-obj-id="${obj.id}">×</button>
+                </div>
+            `;
+
+            container.appendChild(div);
+
+
+        // UPDATED: Setup "Go To" button - improved zoom and no rotation
+            const gotoBtn = div.querySelector('[data-goto-id]');
+            const gotoHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const objId = Number(e.target.getAttribute('data-goto-id'));
+                const targetObj = this.objects.find(o => o.id === objId);
+                if (targetObj) {
+                    // Calculate appropriate zoom to fit the object nicely on screen
+                    // Show the object at a comfortable viewing size
+                    let targetZoom;
+
+                    if (targetObj.type === 'Text') {
+                        // For text: zoom to make font size appear ~40-60px on screen
+                        const desiredScreenFontSize = 50;
+                        targetZoom = new BigNumber(desiredScreenFontSize).dividedBy(targetObj.fontSize).dividedBy(targetObj.scale);
+                    } else if (targetObj.type === 'Image' || targetObj.type === 'SVG') {
+                        // For images: fit to ~40% of screen height/width
+                        const targetScreenSize = Math.min(this.canvas.width, this.canvas.height) * 0.4;
+                        const objectSize = Math.max(targetObj.width, targetObj.height);
+                        targetZoom = new BigNumber(targetScreenSize).dividedBy(objectSize).dividedBy(targetObj.scale);
+                    } else {
+                        // Default: reasonable zoom level
+                        targetZoom = new BigNumber(1).dividedBy(targetObj.scale);
+                    }
+
+                    // Clamp zoom to reasonable range (prevent extreme values)
+                    const zoomNum = targetZoom.toNumber();
+                    if (zoomNum < 0.01) targetZoom = new BigNumber(0.01);
+                    if (zoomNum > 100) targetZoom = new BigNumber(100);
+
+                    // Use smoothMoveTo for direct, no-rotation movement
+                    // Keep camera rotation at 0 (upright)
+                    this.smoothMoveTo(targetObj.position, targetZoom, 0, 1.2);
+                }
+            };
+            gotoBtn.addEventListener('click', gotoHandler);
+            gotoBtn.addEventListener('touchend', gotoHandler);
+
+
+            // ADDED: Setup delete button touch handler
+            const deleteBtn = div.querySelector('.btn-danger');
+
+            const deleteHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const objId = Number(e.target.getAttribute('data-obj-id'));
+                const objToDelete = this.objects.find(o => o.id === objId);
+                if (objToDelete) this.deleteObject(objToDelete);
+            };
+            deleteBtn.addEventListener('click', deleteHandler);
+            deleteBtn.addEventListener('touchend', deleteHandler);
+
+        });
+    }
+    
+    updatePropertiesPanel() {
+        const container = document.getElementById('properties-content');
+        if (!this.selectedObject) {
+            container.innerHTML = '<p style="color: #888; font-size: 12px; text-align: center; padding: 20px;">Select an object to edit</p>';
+            return;
+        }
+
+        const obj = this.selectedObject;
+        container.innerHTML = '';
+        
+        // Name
+        this.createInput(container, 'Name', 'text', obj.name, (v) => { obj.name = v; this.updateObjectsList(); });
+        
+        // Scale (Logarithmic adjustment feel)
+        // Displaying raw BigNumber scale is ugly. Let's just have buttons to scale up/down?
+        // Or a raw multiplier input.
+        this.createInput(container, 'Scale Multiplier', 'number', 1, (v) => {
+            if(v && !isNaN(v) && v != 0) {
+                 obj.scale = obj.scale.times(v);
+            }
+        });
+
+        // Rotation
+        this.createInput(container, 'Rotation (Deg)', 'number', Math.round(obj.rotation * 180/Math.PI), (v) => {
+            obj.rotation = v * Math.PI / 180;
+        });
+
+        if (obj.type === 'Text') {
+            this.createInput(container, 'Text', 'text', obj.text, (v) => obj.text = v);
+            this.createInput(container, 'Font Size', 'number', obj.fontSize, (v) => obj.fontSize = Number(v));
+            this.createInput(container, 'Color', 'color', obj.color, (v) => obj.color = v);
+        }
+        
+        // Jump Button
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.marginTop = '10px';
+        btn.innerText = 'Go To Object';
+        btn.onclick = () => this.camera.moveTo(obj.position, new BigNumber(1).dividedBy(obj.scale).dividedBy(2)); // Zoom to fit roughly
+        container.appendChild(btn);
+    }
+
+    createInput(parent, label, type, val, callback) {
+        const group = document.createElement('div');
+        group.className = 'input-group';
+        group.innerHTML = `<label>${label}</label>`;
+        const input = document.createElement('input');
+        input.type = type;
+        if(type !== 'color') input.value = val; // Colors need specific handling sometimes
+        else input.value = val;
+        
+        input.onchange = (e) => callback(e.target.value);
+        if(type === 'text') input.oninput = (e) => callback(e.target.value);
+        
+        group.appendChild(input);
+        parent.appendChild(group);
+    }
+
+    // --- BOOKMARKS ---
+
+    addBookmark() {
+        const name = prompt("Bookmark Name:", `View ${this.bookmarks.length + 1}`);
+        if (!name) return;
+        this.bookmarks.push(new Bookmark(name, this.camera.position, this.camera.zoom, this.camera.rotation));
+        this.updateBookmarksList();
+    }
+
+    updateBookmarksList() {
+        const container = document.getElementById('bookmarks-list');
+        container.innerHTML = '';
+        this.bookmarks.forEach((bm, idx) => {
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.innerHTML = `
+                <div class="item-info" onclick="app.loadBookmark(${idx})">
+                    <div class="item-name">${bm.name}</div>
+                </div>
+                <button class="btn btn-small btn-danger" onclick="app.bookmarks.splice(${idx},1); app.updateBookmarksList()">×</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    loadBookmark(idx) {
+        const bm = this.bookmarks[idx];
+        if(bm) {
+            // Use smoothMoveTo for manual bookmark loading
+            // This gives a nice transition when clicking individual bookmarks
+            this.smoothMoveTo(bm.position, bm.zoom, bm.rotation, 1.5);
+        }
+    }
+
+
+    // REPLACE THE ENTIRE playBookmarks() METHOD
+    // REPLACE ENTIRE playBookmarks() METHOD
+    playBookmarks(onComplete = null) {
+        console.log('playBookmarks called, onComplete:', onComplete ? 'YES' : 'NO'); // DEBUG
+
+        if(this.bookmarks.length < 2) return alert("Need at least 2 bookmarks to play.");
+
+        // Stop any existing playback
+        this.stopBookmarks();
+
+        // Show stop button, hide play button
+        const playBtn = document.getElementById('play-bookmarks-btn');
+        const stopBtn = document.getElementById('stop-bookmarks-btn');
+        if (playBtn) playBtn.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = 'block';
+
+        // Set flag to true
+        this.isPlayingBookmarks = true;
+        let currentIndex = 0;
+        let visitedCount = 0; // ADDED: Track how many bookmarks visited
+
+        // ADDED: Store completion callback
+        this.onTourComplete = onComplete;
+
+        console.log('Tour starting with', this.bookmarks.length, 'bookmarks'); // DEBUG
+
+        const flyToNext = () => {
+            // Check if stopped
+            if (!this.isPlayingBookmarks) {
+                console.log('Tour stopped by user'); // DEBUG
+                this.stopBookmarks();
+                return;
+            }
+
+            const bookmark = this.bookmarks[currentIndex];
+            console.log('Flying to bookmark', currentIndex + 1, 'of', this.bookmarks.length); // DEBUG
+
+            // Calculate intelligent duration
+            const currentPos = this.camera.position;
+            const targetPos = bookmark.position;
+            const currentZoom = this.camera.zoom.toNumber();
+            const targetZoom = new BigNumber(bookmark.zoom).toNumber();
+
+            const dx = targetPos.x.minus(currentPos.x).abs().toNumber();
+            const dy = targetPos.y.minus(currentPos.y).abs().toNumber();
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            const zoomRatio = Math.max(currentZoom, targetZoom) / Math.min(currentZoom, targetZoom);
+            const zoomFactor = Math.log10(Math.max(1, zoomRatio));
+
+            let rotDiff = Math.abs(bookmark.rotation - this.camera.rotation);
+            while (rotDiff > Math.PI) rotDiff = Math.abs(rotDiff - 2 * Math.PI);
+
+            const distanceTime = Math.min(2, Math.log10(Math.max(1, distance * currentZoom)) * 0.5);
+            const zoomTime = Math.min(2, zoomFactor * 0.8);
+            const rotTime = Math.min(1, rotDiff * 0.5);
+
+            let duration = 2 + distanceTime + zoomTime + rotTime;
+            duration = Math.max(2, Math.min(6, duration));
+
+            // Move to bookmark
+            this.smoothMoveTo(bookmark.position, bookmark.zoom, bookmark.rotation, duration, () => {
+                console.log('Arrived at bookmark', currentIndex + 1); // DEBUG
+
+                // Check if stopped during transition
+                if (!this.isPlayingBookmarks) {
+                    console.log('Tour stopped during transition'); // DEBUG
+                    this.stopBookmarks();
+                    return;
+                }
+
+                // Increment visited count
+                visitedCount++;
+                console.log('Visited count:', visitedCount, '/', this.bookmarks.length); // DEBUG
+
+                // Move to next bookmark index
+                currentIndex = (currentIndex + 1) % this.bookmarks.length;
+
+                // UPDATED: Check if we've completed full cycle
+                if (visitedCount >= this.bookmarks.length) {
+                    console.log('✓✓✓ TOUR COMPLETED! All', this.bookmarks.length, 'bookmarks visited'); // DEBUG
+
+                    // Tour completed - call the callback
+                    if (this.onTourComplete) {
+                        console.log('Calling onTourComplete callback'); // DEBUG
+                        const callback = this.onTourComplete;
+                        this.onTourComplete = null; // Clear callback first
+                        callback(); // Call it
+                    }
+                    return; // STOP - don't schedule next bookmark
+                }
+
+                // Wait before moving to next bookmark
+                this.playInterval = setTimeout(() => {
+                    if (!this.isPlayingBookmarks) {
+                        console.log('Tour stopped before next bookmark'); // DEBUG
+                        this.stopBookmarks();
+                        return;
+                    }
+                    flyToNext(); // Continue to next bookmark
+                }, 1500);
+            });
+        };
+
+        // Start the sequence
+        flyToNext();
+    }
+
+
+
+
+
+    // ADD THIS ENTIRE NEW METHOD AFTER playBookmarks()
+    smoothFlyTo(targetPosition, targetZoom, targetRotation, duration, callback) {
+        // ADDED: Disable default camera animation during flight
+        // This method keeps the "fly-through" effect for manual navigation
+        // (like clicking "Go To Object" or loading a single bookmark)
+
+        this.camera.isAnimating = false;
+
+        // Store original camera state
+        const startPosition = this.camera.position.clone();
+
+        const startZoom = this.camera.zoom;
+        const startRotation = this.camera.rotation;
+
+        const startTime = performance.now();
+
+        // Calculate intermediate zoom point for "fly through" effect
+        // We'll zoom out first, then zoom in
+        const currentZoomNum = startZoom.toNumber();
+        const targetZoomNum = new BigNumber(targetZoom).toNumber();
+        const minZoom = Math.min(currentZoomNum, targetZoomNum) * 0.3; // Zoom out to 30% of minimum
+
+        const animate = (currentTime) => {
+
+
+            const elapsed = (currentTime - startTime) / 1000;
+            let t = Math.min(elapsed / duration, 1);
+
+            const ease = t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+            // Fly-through zoom curve
+            let zoomProgress;
+            if (t < 0.5) {
+                const phase = t * 2;
+                zoomProgress = currentZoomNum + (minZoom - currentZoomNum) * (4 * phase * phase * phase);
+            } else {
+                const phase = (t - 0.5) * 2;
+                zoomProgress = minZoom + (targetZoomNum - minZoom) * (4 * phase * phase * phase);
+            }
+
+            this.camera.position = BigVec2.lerp(startPosition, targetPosition, ease);
+            this.camera.zoom = new BigNumber(zoomProgress);
+
+            let rotDiff = targetRotation - startRotation;
+            while (rotDiff > Math.PI) rotDiff -= 2 * Math.PI;
+            while (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
+            this.camera.rotation = startRotation + rotDiff * ease;
+
+            this.camera.targetPosition = this.camera.position.clone();
+            this.camera.targetZoom = this.camera.zoom;
+            this.camera.targetRotation = this.camera.rotation;
+
+            if (t < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                this.camera.position = targetPosition.clone();
+                this.camera.zoom = new BigNumber(targetZoom);
+                this.camera.rotation = targetRotation;
+                this.camera.targetPosition = this.camera.position.clone();
+                this.camera.targetZoom = this.camera.zoom;
+                this.camera.targetRotation = this.camera.rotation;
+
+                if (callback) callback();
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }
+
+// ADD THIS ENTIRE NEW METHOD - Place it after smoothFlyTo() method
+    smoothMoveTo(targetPosition, targetZoom, targetRotation, duration, callback) {
+        // Direct smooth interpolation - NO fly-through effect
+        // Perfect for bookmark-to-bookmark transitions
+
+        const startPosition = this.camera.position.clone();
+        const startZoom = this.camera.zoom;
+        const startRotation = this.camera.rotation;
+        const startTime = performance.now();
+
+        const animate = (currentTime) => {
+            // Check if playback was stopped
+            if (!this.isPlayingBookmarks && this.playInterval !== null) {
+                if (callback) callback();
+                return;
+            }
+
+            const elapsed = (currentTime - startTime) / 1000; // seconds
+            let t = Math.min(elapsed / duration, 1);
+
+            // Smooth ease-in-out cubic
+            const ease = t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+            // DIRECT interpolation - no fancy zoom curves
+            // Position
+            this.camera.position = BigVec2.lerp(startPosition, targetPosition, ease);
+
+            // Zoom - LINEAR interpolation in log space for smooth scaling
+            const startLog = Math.log(startZoom.toNumber());
+            const targetLog = Math.log(new BigNumber(targetZoom).toNumber());
+            const currentLog = startLog + (targetLog - startLog) * ease;
+            this.camera.zoom = new BigNumber(Math.exp(currentLog));
+
+            // Rotation - shortest path
+            let rotDiff = targetRotation - startRotation;
+            while (rotDiff > Math.PI) rotDiff -= 2 * Math.PI;
+            while (rotDiff < -Math.PI) rotDiff += 2 * Math.PI;
+            this.camera.rotation = startRotation + rotDiff * ease;
+
+            // Sync targets
+            this.camera.targetPosition = this.camera.position.clone();
+            this.camera.targetZoom = this.camera.zoom;
+            this.camera.targetRotation = this.camera.rotation;
+
+            if (t < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Ensure exact final values
+                this.camera.position = targetPosition.clone();
+                this.camera.zoom = new BigNumber(targetZoom);
+                this.camera.rotation = targetRotation;
+                this.camera.targetPosition = this.camera.position.clone();
+                this.camera.targetZoom = this.camera.zoom;
+                this.camera.targetRotation = this.camera.rotation;
+
+                if (callback) {
+                    console.log('smoothMoveTo complete, calling callback'); // ADD THIS
+                    callback();
+                }
+
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }
+
+
+    // UPDATED THE ENTIRE stopBookmarks() METHOD
+    stopBookmarks() {
+        console.log('stopBookmarks() called');
+        // Set flag to false FIRST
+        this.isPlayingBookmarks = false;
+
+        // Clear any pending timeout
+        if (this.playInterval) {
+            clearTimeout(this.playInterval);
+            this.playInterval = null;
+        }
+
+        // Update UI
+        const playBtn = document.getElementById('play-bookmarks-btn');
+        const stopBtn = document.getElementById('stop-bookmarks-btn');
+        if (playBtn) playBtn.style.display = 'block';
+        if (stopBtn) stopBtn.style.display = 'none';
+    }
+
+
+
+
+
+    // --- DEMO & UTILS ---
+
+    resetView() {
+        this.camera.moveTo(new BigVec2(0,0), 1, 0);
+    }
+
+    fitAllObjects() {
+        if(this.objects.length === 0) return this.resetView();
+        // Calculate average position
+        // This is a naive fit. 
+        this.resetView(); // Fallback
+    }
+
+    createDemoContent() {
+        // Level 1: Standard
+        let t1 = new TextObject();
+        t1.text = "Start Here";
+        t1.position = new BigVec2(0,0);
+        this.objects.push(t1);
+
+        // Level 2: Micro
+        let t2 = new TextObject();
+        t2.text = "Micro World";
+        t2.position = new BigVec2(10, 10);
+        t2.scale = new BigNumber(0.01);
+        t2.color = "#FF5722";
+        this.objects.push(t2);
+
+        // Level 3: Macro
+        let t3 = new TextObject();
+        t3.text = "Macro Universe";
+        t3.position = new BigVec2(-500, -500);
+        t3.scale = new BigNumber(100);
+        t3.color = "#2196F3";
+        this.objects.push(t3);
+        
+        // Deep Zoom
+        let t4 = new TextObject();
+        t4.text = "The Atom";
+        t4.position = new BigVec2(10.05, 10.05); // Near Micro World
+        t4.scale = new BigNumber(0.00001);
+        t4.color = "#E91E63";
+        this.objects.push(t4);
+        
+        this.updateObjectsList();
+        
+        // Add bookmarks
+        this.bookmarks.push(new Bookmark("Home", new BigVec2(0,0), 1, 0));
+        this.bookmarks.push(new Bookmark("Micro", new BigVec2(10,10), 100, 0));
+        this.bookmarks.push(new Bookmark("Macro", new BigVec2(-500,-500), 0.01, 0));
+        this.bookmarks.push(new Bookmark("Atom", new BigVec2(10.05,10.05), 100000, 0));
+        this.updateBookmarksList();
+    }
+
+    // REPLACE THE ENTIRE exportToJSON() METHOD
+    async exportToJSON() {
+        // Show loading indicator
+        const originalText = 'Exporting...';
+        const loadingDiv = document.createElement('div');
+        loadingDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);color:white;padding:20px 40px;border-radius:10px;z-index:1000;font-size:16px;';
+        loadingDiv.textContent = originalText;
+        document.body.appendChild(loadingDiv);
+
+        try {
+            const zip = new JSZip();
+
+            // Prepare object data WITHOUT image data URLs
+            const objectsData = [];
+
+            for (const o of this.objects) {
+                const objData = {
+                    type: o.type,
+                    name: o.name,
+                    id: o.id,
+                    pos: {x: o.position.x.toString(), y: o.position.y.toString()},
+                    scale: o.scale.toString(),
+                    rot: o.rotation,
+                    visible: o.visible,
+                    zIndex: o.zIndex
+                };
+
+                // Add type-specific data
+                if (o.type === 'Text') {
+                    objData.text = o.text;
+                    objData.color = o.color;
+                    objData.fontSize = o.fontSize;
+                    objData.fontFamily = o.fontFamily;
+                } else if (o.type === 'Image' || o.type === 'SVG') {
+                    // UPDATED: Store reference to asset, not the data itself
+                    objData.assetId = o.assetId;
+                    objData.originalFilename = o.originalFilename;
+                    objData.isSvg = o.isSvg;
+                    objData.width = o.width;
+                    objData.height = o.height;
+                }
+
+                objectsData.push(objData);
+            }
+
+            // Create project JSON
+            const projectData = {
+                version: '2.0',
+                objects: objectsData,
+                bookmarks: this.bookmarks.map(b => ({
+                    name: b.name,
+                    pos: {x: b.position.x.toString(), y: b.position.y.toString()},
+                    zoom: b.zoom.toString(),
+                    rot: b.rotation
+                })),
+                camera: {
+                    pos: {x: this.camera.position.x.toString(), y: this.camera.position.y.toString()},
+                    zoom: this.camera.zoom.toString(),
+                    rot: this.camera.rotation
+                }
+            };
+
+            // Add project JSON to ZIP
+            zip.file('project.json', JSON.stringify(projectData, null, 2));
+
+            // Add all assets from IndexedDB to ZIP
+            const assets = await this.storage.getAllAssets();
+            const assetsFolder = zip.folder('assets');
+
+            loadingDiv.textContent = `Exporting... (0/${assets.length} assets)`;
+
+            for (let i = 0; i < assets.length; i++) {
+                const asset = assets[i];
+                const ext = asset.type === 'svg' ? 'svg' :
+                    (asset.filename ? asset.filename.split('.').pop() : 'png');
+                const filename = `${asset.id}.${ext}`;
+                assetsFolder.file(filename, asset.blob);
+
+                loadingDiv.textContent = `Exporting... (${i + 1}/${assets.length} assets)`;
+            }
+
+            // Generate ZIP
+            loadingDiv.textContent = 'Generating ZIP file...';
+            const blob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            });
+
+            // Download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `infinite-canvas-project-${Date.now()}.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            loadingDiv.textContent = 'Export complete!';
+            setTimeout(() => document.body.removeChild(loadingDiv), 1500);
+
+        } catch (error) {
+            console.error('Export error:', error);
+            loadingDiv.textContent = 'Export failed: ' + error.message;
+            loadingDiv.style.background = 'rgba(211, 47, 47, 0.9)';
+            setTimeout(() => document.body.removeChild(loadingDiv), 3000);
+        }
+    }
+
+
+    // ADD THIS ENTIRE NEW METHOD AFTER exportToJSON()
+    async importFromZIP(file) {
+        // Show loading indicator
+        const loadingDiv = document.createElement('div');
+        loadingDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.9);color:white;padding:20px 40px;border-radius:10px;z-index:1000;font-size:16px;';
+        loadingDiv.textContent = 'Loading project...';
+        document.body.appendChild(loadingDiv);
+
+        try {
+            const zip = await JSZip.loadAsync(file);
+
+            // Load project.json
+            const projectFile = zip.file('project.json');
+            if (!projectFile) {
+                throw new Error('Invalid project file: missing project.json');
+            }
+
+            const projectJSON = await projectFile.async('string');
+            const data = JSON.parse(projectJSON);
+
+            // Clear current project
+            this.objects = [];
+            this.bookmarks = [];
+            this.selectedObject = null;
+
+            // Clear existing assets in IndexedDB (optional - comment out if you want to keep old assets)
+            // await this.storage.clearAllAssets();
+
+            // Load all assets from ZIP into IndexedDB
+            const assetsFolder = zip.folder('assets');
+            const assetFiles = [];
+            assetsFolder.forEach((relativePath, file) => {
+                assetFiles.push({ relativePath, file });
+            });
+
+            loadingDiv.textContent = `Loading assets... (0/${assetFiles.length})`;
+
+            // Load assets into IndexedDB
+            for (let i = 0; i < assetFiles.length; i++) {
+                const { relativePath, file } = assetFiles[i];
+                const blob = await file.async('blob');
+
+                // Extract asset ID from filename (format: assetId.ext)
+                const assetId = relativePath.split('.')[0];
+                const isSvg = relativePath.endsWith('.svg');
+                const type = isSvg ? 'svg' : 'image';
+
+                await this.storage.saveAsset(assetId, blob, relativePath, type);
+
+                loadingDiv.textContent = `Loading assets... (${i + 1}/${assetFiles.length})`;
+            }
+
+            // Restore objects
+            loadingDiv.textContent = 'Restoring objects...';
+
+            for (const objData of data.objects) {
+                let obj;
+
+                if (objData.type === 'Text') {
+                    obj = new TextObject();
+                    obj.text = objData.text || 'Text';
+                    obj.color = objData.color || '#ffffff';
+                    obj.fontSize = objData.fontSize || 24;
+                    obj.fontFamily = objData.fontFamily || 'Arial';
+                } else if (objData.type === 'Image' || objData.type === 'SVG') {
+                    // CRITICAL: Load from IndexedDB
+                    const asset = await this.storage.getAsset(objData.assetId);
+
+                    if (asset && asset.blob) {
+                        obj = new ImageObject(null, objData.isSvg, objData.assetId);
+                        obj.originalFilename = objData.originalFilename || 'image';
+                        obj.width = objData.width || 100;
+                        obj.height = objData.height || 100;
+
+                        // Load the blob into the image
+                        obj.loadFromBlob(asset.blob);
+                    } else {
+                        console.warn(`Asset ${objData.assetId} not found, skipping object`);
+                        continue;
+                    }
+                }
+
+                // Restore common properties
+                obj.id = objData.id;
+                obj.name = objData.name;
+                obj.position = new BigVec2(objData.pos.x, objData.pos.y);
+                obj.scale = new BigNumber(objData.scale);
+                obj.rotation = objData.rot;
+                obj.visible = objData.visible !== false;
+                obj.zIndex = objData.zIndex || 0;
+
+                this.objects.push(obj);
+            }
+
+            // Restore bookmarks
+            if (data.bookmarks) {
+                this.bookmarks = data.bookmarks.map(b =>
+                    new Bookmark(
+                        b.name,
+                        new BigVec2(b.pos.x, b.pos.y),
+                        b.zoom,
+                        b.rot
+                    )
+                );
+            }
+
+            // Restore camera position (optional)
+            if (data.camera) {
+                this.camera.position = new BigVec2(data.camera.pos.x, data.camera.pos.y);
+                this.camera.zoom = new BigNumber(data.camera.zoom);
+                this.camera.rotation = data.camera.rot;
+                this.camera.targetPosition = this.camera.position.clone();
+                this.camera.targetZoom = this.camera.zoom;
+                this.camera.targetRotation = this.camera.rotation;
+            }
+
+            // Update UI
+            this.updateObjectsList();
+            this.updateBookmarksList();
+
+            loadingDiv.textContent = 'Project loaded successfully!';
+            loadingDiv.style.background = 'rgba(76, 175, 80, 0.9)';
+            setTimeout(() => document.body.removeChild(loadingDiv), 2000);
+
+        } catch (error) {
+            console.error('Import error:', error);
+            loadingDiv.textContent = 'Import failed: ' + error.message;
+            loadingDiv.style.background = 'rgba(211, 47, 47, 0.9)';
+            setTimeout(() => document.body.removeChild(loadingDiv), 3000);
+        }
+    }
+
+    // Updated THE ENTIRE importFromJSON() METHOD
+    async importFromJSON(json) {
+        try {
+            const data = JSON.parse(json);
+
+            // Check if it's old format (version 1.0 or no version)
+            if (!data.version || data.version === '1.0') {
+                alert('This is an old format file. Images will not be restored. Please use ZIP export format for full project saves.');
+            }
+
+            this.objects = [];
+            this.bookmarks = [];
+
+            // Restore objects
+            for (const d of data.objects) {
+                let obj;
+
+                if (d.type === 'Text') {
+                    obj = new TextObject();
+                    obj.text = d.text || 'Text';
+                    obj.color = d.color || '#ffffff';
+                    obj.fontSize = d.fontSize || 24;
+                    obj.fontFamily = d.fontFamily || 'Arial';
+
+                    obj.name = d.name;
+                    obj.position = new BigVec2(d.pos.x, d.pos.y);
+                    obj.scale = new BigNumber(d.scale);
+                    obj.rotation = d.rot;
+
+                    this.objects.push(obj);
+                }
+                // Note: Images/SVGs from old JSON format cannot be restored
+            }
+
+            // Restore bookmarks
+            if (data.bookmarks) {
+                this.bookmarks = data.bookmarks.map(b =>
+                    new Bookmark(
+                        b.name,
+                        new BigVec2(b.pos.x, b.pos.y),
+                        b.zoom,
+                        b.rot
+                    )
+                );
+            }
+
+            this.updateObjectsList();
+            this.updateBookmarksList();
+            alert("Project Loaded (Text objects only from old format)");
+        } catch(e) {
+            alert("Error loading project: " + e.message);
+            console.error(e);
+        }
+    }
+
+
+}
+
+// Start
+let app;
+window.onload = () => {
+    app = new InfiniteZoomApp();
+};
+
+</script>
+</body>
+</html>
