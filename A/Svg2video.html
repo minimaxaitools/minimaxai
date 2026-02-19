@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SVG Animation Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root {
+  --bg: #08090D;
+  --bg2: #0F1018;
+  --bg3: #161820;
+  --bg4: #1E2030;
+  --border: #252738;
+  --border2: #2E3147;
+  --accent: #E8943A;
+  --accent2: #F2C063;
+  --accent-glow: rgba(232,148,58,0.12);
+  --cyan: #22D3EE;
+  --purple: #A78BFA;
+  --green: #4ADE80;
+  --red: #F87171;
+  --text1: #F0EDF8;
+  --text2: #9B97A8;
+  --text3: #5E5A6E;
+  --panel-w: 260px;
+  --prop-w: 240px;
+  --timeline-h: 180px;
+  --header-h: 52px;
+  --radius: 6px;
+  --shadow: 0 4px 24px rgba(0,0,0,.6);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text1); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+#app-header {
+height: var(–header-h);
+background: var(–bg2);
+border-bottom: 1px solid var(–border);
+display: flex; align-items: center; justify-content: space-between;
+padding: 0 18px;
+flex-shrink: 0;
+z-index: 100;
+}
+.logo { display:flex; align-items:center; gap:10px; }
+.logo-icon {
+width:32px; height:32px; background: linear-gradient(135deg, var(–accent), var(–accent2));
+border-radius: var(–radius); display:flex; align-items:center; justify-content:center;
+font-size:16px;
+}
+.logo-name { font-family:‘Syne’,sans-serif; font-weight:800; font-size:16px; letter-spacing:-0.3px; color:var(–text1); }
+.header-status { display:flex; align-items:center; gap:12px; }
+.status-pill {
+display:flex; align-items:center; gap:5px; background:var(–bg3);
+border:1px solid var(–border); padding:4px 10px; border-radius:20px;
+font-size:10px; color:var(–text2);
+}
+.status-dot { width:6px; height:6px; border-radius:50%; background:var(–text3); }
+.status-dot.ok { background:var(–green); box-shadow:0 0 6px var(–green); }
+.header-fps { font-family:‘Syne’,sans-serif; font-weight:600; color:var(–accent2); font-size:13px; }
+
+#app-body {
+display: flex; flex-direction: column;
+height: calc(100vh - var(–header-h));
+overflow: hidden;
+}
+#main-area { display: flex; flex: 1; overflow: hidden; }
+
+#panel-left {
+width: var(–panel-w); flex-shrink:0;
+background: var(–bg2); border-right: 1px solid var(–border);
+display: flex; flex-direction: column; overflow: hidden;
+}
+#panel-center {
+flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(–bg);
+}
+#panel-right {
+width: var(–prop-w); flex-shrink:0;
+background: var(–bg2); border-left: 1px solid var(–border);
+display: flex; flex-direction: column; overflow: hidden;
+}
+#panel-bottom {
+height: var(–timeline-h); flex-shrink:0;
+background: var(–bg2); border-top: 1px solid var(–border);
+display: flex; overflow: hidden;
+}
+
+.panel-header {
+padding: 10px 14px 8px;
+border-bottom: 1px solid var(–border);
+display: flex; align-items: center; justify-content: space-between;
+}
+.panel-title {
+font-family:‘Syne’,sans-serif; font-weight:700; font-size:10px;
+letter-spacing:1.5px; text-transform:uppercase; color:var(–text2);
+}
+.panel-body { flex:1; overflow-y:auto; padding:10px; }
+.panel-body::-webkit-scrollbar { width:4px; }
+.panel-body::-webkit-scrollbar-thumb { background:var(–border2); border-radius:4px; }
+
+.btn {
+display:inline-flex; align-items:center; gap:6px;
+padding:6px 12px; border-radius:var(–radius);
+border:1px solid var(–border2); background:var(–bg3);
+color:var(–text1); font-family:‘JetBrains Mono’,monospace;
+font-size:11px; cursor:pointer; transition:all .15s; white-space:nowrap;
+}
+.btn:hover { background:var(–bg4); }
+.btn.accent { background:var(–accent); border-color:var(–accent); color:#000; font-weight:600; }
+.btn.accent:hover { background:var(–accent2); border-color:var(–accent2); }
+.btn.sm { padding:4px 8px; font-size:10px; }
+.btn.danger { border-color:var(–red); color:var(–red); }
+.btn.danger:hover { background:rgba(248,113,113,0.1); }
+.btn:disabled { opacity:.4; cursor:not-allowed; }
+
+#drop-zone {
+border: 2px dashed var(–border2); border-radius:var(–radius);
+padding: 20px 12px; text-align:center;
+color:var(–text3); cursor:pointer; transition:all .2s;
+background: var(–bg);
+}
+#drop-zone:hover, #drop-zone.drag-over {
+border-color:var(–accent); color:var(–accent); background:var(–accent-glow);
+}
+#drop-zone .dz-icon { font-size:24px; margin-bottom:6px; }
+#drop-zone p { font-size:11px; line-height:1.5; }
+
+.clip-item {
+background:var(–bg3); border:1px solid var(–border);
+border-radius:var(–radius); margin-bottom:6px;
+cursor:pointer; transition:all .15s; overflow:hidden;
+}
+.clip-item:hover { border-color:var(–border2); }
+.clip-item.selected { border-color:var(–accent); background:var(–accent-glow); }
+.clip-item-header { display:flex; align-items:center; gap:8px; padding:8px 10px; }
+.clip-thumb {
+width:36px; height:36px; background:var(–bg4); border-radius:4px;
+flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center;
+}
+.clip-thumb img { width:100%; height:100%; object-fit:contain; }
+.clip-info { flex:1; overflow:hidden; }
+.clip-name { font-size:11px; font-weight:600; color:var(–text1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.clip-meta { font-size:10px; color:var(–text3); margin-top:2px; }
+.clip-actions { display:flex; gap:4px; }
+
+#preview-wrap {
+flex:1; display:flex; align-items:center; justify-content:center;
+background: radial-gradient(ellipse at center, #131520 0%, #08090D 70%);
+position:relative; overflow:hidden;
+}
+.preview-grid-bg {
+position:absolute; inset:0;
+background-image:
+linear-gradient(var(–border) 1px, transparent 1px),
+linear-gradient(90deg, var(–border) 1px, transparent 1px);
+background-size: 24px 24px;
+opacity:0.3;
+}
+#preview-stage {
+position:relative; z-index:1;
+background:#fff; border-radius:4px;
+overflow:hidden;
+box-shadow: 0 0 0 1px var(–border2), 0 20px 80px rgba(0,0,0,.7);
+}
+#preview-iframe { display:block; border:none; width:100%; height:100%; }
+#preview-controls {
+position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
+display:flex; align-items:center; gap:8px;
+background: rgba(8,9,13,0.92); border:1px solid var(–border2);
+border-radius:28px; padding:6px 14px;
+backdrop-filter: blur(12px);
+z-index:10;
+}
+.ctrl-btn {
+width:28px; height:28px; border-radius:50%; border:none;
+background:var(–bg3); color:var(–text1); cursor:pointer;
+display:flex; align-items:center; justify-content:center;
+font-size:11px; transition:all .15s;
+}
+.ctrl-btn:hover { background:var(–bg4); }
+.ctrl-btn.play-btn { background:var(–accent); color:#000; width:32px; height:32px; }
+.ctrl-btn.play-btn:hover { background:var(–accent2); }
+#time-display { font-size:11px; color:var(–text2); min-width:80px; text-align:center; }
+.ctrl-sep { width:1px; height:16px; background:var(–border2); }
+
+#scrubber-wrap {
+position:absolute; bottom:60px; left:20px; right:20px; z-index:10;
+display:flex; align-items:center; gap:8px;
+}
+#scrubber {
+-webkit-appearance:none; flex:1; height:3px;
+background: linear-gradient(to right, var(–accent) var(–prog,0%), var(–border2) var(–prog,0%));
+border-radius:2px; cursor:pointer; outline:none;
+}
+#scrubber::-webkit-slider-thumb {
+-webkit-appearance:none; width:12px; height:12px;
+border-radius:50%; background:var(–accent);
+box-shadow:0 0 0 2px rgba(232,148,58,0.3);
+}
+
+.field { margin-bottom:10px; }
+.field-label { font-size:10px; color:var(–text3); letter-spacing:0.5px; margin-bottom:4px; display:block; }
+.field input[type=text],
+.field input[type=number],
+.field select,
+.field textarea {
+width:100%; background:var(–bg); border:1px solid var(–border2);
+border-radius:var(–radius); padding:5px 8px;
+color:var(–text1); font-family:‘JetBrains Mono’,monospace; font-size:11px;
+outline:none; transition:border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color:var(–accent); }
+.field textarea { resize:vertical; min-height:80px; line-height:1.5; }
+.field select { cursor:pointer; }
+.field select option { background:var(–bg3); }
+input[type=range] {
+-webkit-appearance:none; width:100%; height:4px;
+background: linear-gradient(to right, var(–accent) var(–v,50%), var(–border2) var(–v,50%));
+border-radius:2px; cursor:pointer; outline:none;
+}
+input[type=range]::-webkit-slider-thumb {
+-webkit-appearance:none; width:12px; height:12px;
+border-radius:50%; background:var(–accent);
+}
+.color-row { display:flex; align-items:center; gap:8px; }
+input[type=color] { width:28px; height:24px; border:1px solid var(–border2); border-radius:3px; background:none; cursor:pointer; padding:1px; }
+
+#timeline-section {
+flex:1; display:flex; flex-direction:column; overflow:hidden; border-right:1px solid var(–border);
+}
+#timeline-ruler {
+height:24px; background:var(–bg3); border-bottom:1px solid var(–border);
+display:flex; align-items:center; padding:0 12px;
+font-size:10px; color:var(–text3);
+}
+#timeline-clips { flex:1; overflow-x:auto; overflow-y:hidden; position:relative; padding:12px; }
+#timeline-clips::-webkit-scrollbar { height:4px; }
+#timeline-clips::-webkit-scrollbar-thumb { background:var(–border2); border-radius:4px; }
+#timeline-track {
+height:52px; min-width:600px; background:var(–bg3); border-radius:6px;
+display:flex; align-items:stretch; position:relative; overflow:hidden;
+}
+.tl-clip {
+height:100%; position:absolute; overflow:hidden;
+display:flex; align-items:center; padding:0 8px;
+cursor:pointer; transition:opacity .15s;
+border-right:2px solid var(–bg);
+}
+.tl-clip.selected { outline:2px solid var(–accent); outline-offset:-1px; }
+.tl-clip-label { font-size:10px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#000; mix-blend-mode:multiply; }
+.tl-playhead {
+position:absolute; top:0; bottom:0; width:2px; background:var(–accent);
+pointer-events:none; z-index:10;
+box-shadow:0 0 8px var(–accent);
+}
+#tl-duration { font-size:10px; color:var(–text3); margin-left:auto; }
+
+#export-section {
+width:340px; flex-shrink:0; padding:14px; display:flex; flex-direction:column; gap:10px; overflow-y:auto;
+}
+.export-row { display:flex; gap:6px; }
+.export-row .field { flex:1; margin-bottom:0; }
+
+#paste-modal {
+display:none; position:fixed; inset:0; z-index:1000;
+background:rgba(0,0,0,0.85); backdrop-filter:blur(4px);
+align-items:center; justify-content:center;
+}
+#paste-modal.open { display:flex; }
+.modal-box {
+background:var(–bg2); border:1px solid var(–border2); border-radius:10px;
+width:560px; max-height:80vh; display:flex; flex-direction:column;
+box-shadow:var(–shadow);
+}
+.modal-header { padding:14px 18px; border-bottom:1px solid var(–border); display:flex; align-items:center; justify-content:space-between; }
+.modal-title { font-family:‘Syne’,sans-serif; font-weight:700; font-size:14px; }
+.modal-body { padding:14px 18px; flex:1; overflow:auto; }
+.modal-footer { padding:12px 18px; border-top:1px solid var(–border); display:flex; justify-content:flex-end; gap:8px; }
+
+#toast {
+position:fixed; top:16px; right:16px; z-index:9999;
+padding:10px 16px; border-radius:var(–radius);
+font-size:11px; font-weight:600;
+display:none; animation:slideIn .2s ease;
+}
+#toast.ok { background:rgba(74,222,128,0.15); border:1px solid var(–green); color:var(–green); }
+#toast.err { background:rgba(248,113,113,0.15); border:1px solid var(–red); color:var(–red); }
+#toast.warn { background:rgba(232,148,58,0.15); border:1px solid var(–accent); color:var(–accent); }
+@keyframes slideIn { from{transform:translateX(20px);opacity:0;} to{transform:none;opacity:1;} }
+
+.empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:8px; color:var(–text3); }
+.empty-state .es-icon { font-size:40px; opacity:.4; }
+.empty-state p { font-size:11px; }
+
+#capture-overlay {
+display:none; position:fixed; inset:0; z-index:900;
+background:rgba(0,0,0,0.92); align-items:center; justify-content:center;
+flex-direction:column; gap:16px;
+}
+#capture-overlay.open { display:flex; }
+#capture-overlay .cap-title { font-family:‘Syne’,sans-serif; font-weight:700; font-size:18px; color:var(–text1); }
+#capture-overlay .cap-bar-wrap { width:380px; height:8px; background:var(–border2); border-radius:4px; overflow:hidden; }
+#capture-overlay .cap-bar-fill { height:100%; background:linear-gradient(90deg,var(–accent),var(–accent2)); width:0%; transition:width .2s; border-radius:4px; }
+#capture-overlay .cap-info { font-size:11px; color:var(–text2); text-align:center; max-width:400px; }
+#capture-overlay .cap-sub { font-size:10px; color:var(–text3); }
+
+- { scrollbar-width: thin; scrollbar-color: var(–border2) transparent; }
+
+</style>
+</head>
+<body>
+
+<header id="app-header">
+  <div class="logo">
+    <div class="logo-icon">▶</div>
+    <div>
+      <div class="logo-name">SVG<span style="color:var(--accent)">Studio</span></div>
+    </div>
+  </div>
+  <div class="header-status">
+    <div class="status-pill">
+      <div class="status-dot ok" id="engine-status-dot"></div>
+      <span id="engine-status-text">Engine Ready</span>
+    </div>
+    <div class="status-pill">
+      <span class="header-fps" id="live-fps">-- fps</span>
+    </div>
+    <div class="status-pill">
+      <span id="codec-label">Detecting...</span>
+    </div>
+  </div>
+</header>
+
+<div id="app-body">
+  <div id="main-area">
+
+```
+<aside id="panel-left">
+  <div class="panel-header">
+    <span class="panel-title">Assets</span>
+    <div style="display:flex;gap:4px;">
+      <button class="btn sm" onclick="App.openPasteModal()">+ Paste</button>
+      <label class="btn sm" style="cursor:pointer">
+        + Upload
+        <input type="file" accept=".svg,image/svg+xml" style="display:none" onchange="App.handleFileUpload(this)">
+      </label>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div id="drop-zone" onclick="App.openPasteModal()">
+      <div class="dz-icon">⬇</div>
+      <p>Drop SVG files here<br>or click to paste code</p>
+    </div>
+    <div style="margin-top:10px; margin-bottom:4px;">
+      <div class="panel-title" style="font-size:9px;">CLIPS</div>
+    </div>
+    <div id="clip-list">
+      <div class="empty-state" style="height:80px;font-size:10px;"><p>No clips yet</p></div>
+    </div>
+  </div>
+</aside>
+
+<section id="panel-center">
+  <div id="preview-wrap">
+    <div class="preview-grid-bg"></div>
+    <div id="preview-stage" style="width:640px;height:360px;">
+      <iframe id="preview-iframe" scrolling="no" sandbox="allow-scripts allow-same-origin"></iframe>
+      <div class="empty-state" id="preview-empty">
+        <div class="es-icon">▷</div>
+        <p>Add an SVG clip to begin</p>
+      </div>
+    </div>
+    <div id="scrubber-wrap" style="display:none;">
+      <input type="range" id="scrubber" min="0" max="100" value="0" step="0.1">
+    </div>
+    <div id="preview-controls">
+      <button class="ctrl-btn" onclick="App.prevClip()" title="Previous">⏮</button>
+      <button class="ctrl-btn play-btn" id="play-btn" onclick="App.togglePlay()">▶</button>
+      <button class="ctrl-btn" onclick="App.nextClip()" title="Next">⏭</button>
+      <button class="ctrl-btn" onclick="App.stopPlayback()" title="Stop">⏹</button>
+      <div class="ctrl-sep"></div>
+      <div id="time-display">0.00s / 0.00s</div>
+      <div class="ctrl-sep"></div>
+      <button class="ctrl-btn" onclick="App.toggleLoop()" id="loop-btn" title="Loop">🔁</button>
+    </div>
+  </div>
+</section>
+
+<aside id="panel-right">
+  <div class="panel-header">
+    <span class="panel-title">Properties</span>
+  </div>
+  <div class="panel-body" id="props-body">
+    <div class="empty-state">
+      <div class="es-icon" style="font-size:24px;">◻</div>
+      <p>Select a clip</p>
+    </div>
+  </div>
+</aside>
+```
+
+  </div>
+
+  <div id="panel-bottom">
+    <div id="timeline-section">
+      <div id="timeline-ruler">
+        <span style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">TIMELINE</span>
+        <span id="tl-duration" style="font-size:10px;color:var(--text3);margin-left:auto;">Total: 0.00s</span>
+      </div>
+      <div id="timeline-clips">
+        <div id="timeline-track">
+          <div class="tl-playhead" id="tl-playhead" style="left:0;"></div>
+        </div>
+      </div>
+    </div>
+    <div id="export-section">
+      <div class="panel-title">EXPORT</div>
+      <div class="export-row">
+        <div class="field">
+          <label class="field-label">Format</label>
+          <select id="exp-format">
+            <option value="mp4">MP4 / WebM</option>
+            <option value="frames">PNG Frames (ZIP)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Resolution</label>
+          <select id="exp-res">
+            <option value="480">480p</option>
+            <option value="720" selected>720p</option>
+            <option value="1080">1080p</option>
+            <option value="2160">4K ⚠</option>
+          </select>
+        </div>
+      </div>
+      <div class="export-row">
+        <div class="field">
+          <label class="field-label">FPS</label>
+          <select id="exp-fps">
+            <option value="24">24 fps</option>
+            <option value="30" selected>30 fps</option>
+            <option value="60">60 fps</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Quality <span id="quality-val" style="color:var(--accent2);">8</span></label>
+          <input type="range" id="exp-quality" min="1" max="10" value="8" style="--v:77.8%;">
+        </div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);line-height:1.4;padding:4px 0;">
+        ✦ Frames are captured live — animations render correctly<br>
+        ✦ 4K exports use streaming to avoid memory crash
+      </div>
+      <button class="btn accent" id="export-btn" onclick="App.startExport()" style="width:100%;justify-content:center;">
+        <span>⬇</span> Export Video
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="paste-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">Import SVG</div>
+      <button class="btn sm" onclick="App.closePasteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label">Clip Name</label>
+        <input type="text" id="paste-name" placeholder="e.g., Logo Animation" value="Clip">
+      </div>
+      <div class="field">
+        <label class="field-label">SVG Code</label>
+        <textarea id="paste-code" style="min-height:240px;font-size:10px;" placeholder="Paste your SVG code here..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="App.closePasteModal()">Cancel</button>
+      <button class="btn accent" onclick="App.importFromPaste()">Add Clip</button>
+    </div>
+  </div>
+</div>
+
+<div id="capture-overlay">
+  <div class="cap-title">🎬 Capturing &amp; Encoding</div>
+  <div class="cap-bar-wrap"><div class="cap-bar-fill" id="cap-bar"></div></div>
+  <div class="cap-info" id="cap-info">Initializing...</div>
+  <div class="cap-sub" id="cap-sub"></div>
+  <button class="btn" onclick="App.cancelExport()" style="margin-top:12px;">✕ Cancel</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  SVG ANIMATION STUDIO — Fixed Animation Capture Engine
+// ═══════════════════════════════════════════════════════════
+
+const CLIP_COLORS = [
+  '#3B82F6','#8B5CF6','#EC4899','#10B981','#F59E0B',
+  '#EF4444','#06B6D4','#84CC16','#F97316','#6366F1'
+];
+
+const state = {
+  clips: [],
+  selectedId: null,
+  playing: false,
+  looping: true,
+  currentTime: 0,
+  totalDuration: 0,
+  playInterval: null,
+  cancelExport: false,
+};
+
+// ── SVG SANITIZER ──
+const SVGSanitizer = {
+  sanitize(svgStr) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svgStr.trim(), 'image/svg+xml');
+    const err = doc.querySelector('parsererror');
+    if (err) throw new Error('Invalid SVG: ' + err.textContent.substring(0, 120));
+    const svg = doc.documentElement;
+    this._cleanNode(svg);
+    return new XMLSerializer().serializeToString(svg);
+  },
+  _cleanNode(node) {
+    if (node.nodeName.toLowerCase() === 'script') { node.parentNode?.removeChild(node); return; }
+    if (node.attributes) {
+      Array.from(node.attributes).forEach(attr => {
+        if (/^on/i.test(attr.name) || /^javascript:/i.test(attr.value)) node.removeAttribute(attr.name);
+      });
+    }
+    Array.from(node.childNodes).forEach(child => {
+      if (child.nodeName?.toLowerCase() === 'script') child.parentNode?.removeChild(child);
+      else this._cleanNode(child);
+    });
+  },
+  detectAnimations(svgStr) {
+    return {
+      hasCSS: /<style|animation:|@keyframes/.test(svgStr),
+      hasSMIL: /<animate[\s>]|<animateTransform|<animateMotion|<set[\s>]/.test(svgStr),
+    };
+  },
+  extractDimensions(svgStr) {
+    const doc = new DOMParser().parseFromString(svgStr, 'image/svg+xml');
+    const svg = doc.documentElement;
+    let w = parseFloat(svg.getAttribute('width')) || 0;
+    let h = parseFloat(svg.getAttribute('height')) || 0;
+    if (!w || !h) {
+      const vb = svg.getAttribute('viewBox');
+      if (vb) { const p = vb.trim().split(/[\s,]+/); w = parseFloat(p[2])||300; h = parseFloat(p[3])||150; }
+    }
+    return { w: w||300, h: h||150 };
+  }
+};
+
+// ── CLIP MANAGER ──
+const ClipManager = {
+  create(svgContent, name) {
+    const dims = SVGSanitizer.extractDimensions(svgContent);
+    const anims = SVGSanitizer.detectAnimations(svgContent);
+    return {
+      id: 'clip_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
+      name: name || 'Clip',
+      svgContent,
+      duration: 3.0,
+      speed: 1.0,
+      delay: 0,
+      bgColor: '#FFFFFF',
+      color: CLIP_COLORS[state.clips.length % CLIP_COLORS.length],
+      dims, anims,
+      thumbnail: null,
+    };
+  },
+  add(clip) {
+    state.clips.push(clip);
+    this._thumb(clip);
+    UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
+    recalcDuration();
+    if (state.clips.length === 1) { state.selectedId = clip.id; App.previewClip(clip); }
+  },
+  get(id) { return state.clips.find(c => c.id === id); },
+  remove(id) {
+    state.clips = state.clips.filter(c => c.id !== id);
+    if (state.selectedId === id) state.selectedId = state.clips[0]?.id || null;
+    UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
+    recalcDuration();
+    const sel = state.selectedId ? this.get(state.selectedId) : null;
+    if (sel) App.previewClip(sel); else UI.clearPreview();
+  },
+  moveUp(id) {
+    const i = state.clips.findIndex(c => c.id === id);
+    if (i > 0) [state.clips[i-1], state.clips[i]] = [state.clips[i], state.clips[i-1]];
+    UI.renderClipList(); UI.renderTimeline(); recalcDuration();
+  },
+  moveDown(id) {
+    const i = state.clips.findIndex(c => c.id === id);
+    if (i < state.clips.length-1) [state.clips[i], state.clips[i+1]] = [state.clips[i+1], state.clips[i]];
+    UI.renderClipList(); UI.renderTimeline(); recalcDuration();
+  },
+  _thumb(clip) {
+    clip.thumbnail = URL.createObjectURL(new Blob([clip.svgContent], {type:'image/svg+xml'}));
+  }
+};
+
+function recalcDuration() {
+  state.totalDuration = state.clips.reduce((s,c) => s + c.duration + c.delay, 0);
+  document.getElementById('tl-duration').textContent = `Total: s`;
+}
+
+// ── UI RENDERER ──
+const UI = {
+  renderClipList() {
+    const el = document.getElementById('clip-list');
+    if (!state.clips.length) { el.innerHTML = '<div class="empty-state" style="height:80px;font-size:10px;"><p>No clips yet</p></div>'; return; }
+    el.innerHTML = state.clips.map((c,i) => `
+      <div class="clip-item ''" onclick="App.selectClip('')">
+        <div class="clip-item-header">
+          <div class="clip-thumb" style="background:;">
+            ">` : `<svg width="20" height="20"><rect width="20" height="20" fill="" opacity=".4"/></svg>`}
+          </div>
+          <div class="clip-info">
+            <div class="clip-name"></div>
+            <div class="clip-meta">s · x · var(--cyan)">SMIL</span> ':''var(--purple)">CSS</span>':''</div>
+          </div>
+          <div class="clip-actions">
+            <button class="btn sm" onclick="event.stopPropagation();ClipManager.moveUp('')" ''>↑</button>
+            <button class="btn sm" onclick="event.stopPropagation();ClipManager.moveDown('')" ''>↓</button>
+            <button class="btn sm danger" onclick="event.stopPropagation();ClipManager.remove('')">✕</button>
+          </div>
+        </div>
+      </div>`).join('');
+  },
+  renderTimeline() {
+    const track = document.getElementById('timeline-track');
+    const ph = track.querySelector('.tl-playhead');
+    track.querySelectorAll('.tl-clip').forEach(e => e.remove());
+    if (!state.clips.length) return;
+    const total = Math.max(state.totalDuration, 0.01);
+    state.clips.forEach((c,i) => {
+      const start = state.clips.slice(0,i).reduce((s,x) => s+x.duration+x.delay, 0);
+      const d = document.createElement('div');
+      d.className = `tl-clip''`;
+      d.style.cssText = `left:%;background:;`;
+      d.innerHTML = `<span class="tl-clip-label"></span>`;
+      d.onclick = () => App.selectClip(c.id);
+      track.insertBefore(d, ph);
+    });
+  },
+  renderProps() {
+    const el = document.getElementById('props-body');
+    const clip = state.selectedId ? ClipManager.get(state.selectedId) : null;
+    if (!clip) { el.innerHTML = '<div class="empty-state"><div class="es-icon" style="font-size:24px;">◻</div><p>Select a clip</p></div>'; return; }
+    el.innerHTML = `
+      <div class="field"><label class="field-label">Clip Name</label>
+        <input type="text" value="" onchange="App.updateClip('','name',this.value)">
+      </div>
+      <div class="field"><label class="field-label">Duration (s)</label>
+        <input type="number" min="0.1" max="300" step="0.1" value=""
+          onchange="App.updateClip('','duration',parseFloat(this.value)||1)">
+      </div>
+      <div class="field"><label class="field-label">Delay Before (s)</label>
+        <input type="number" min="0" max="60" step="0.1" value=""
+          onchange="App.updateClip('','delay',parseFloat(this.value)||0)">
+      </div>
+      <div class="field"><label class="field-label">Speed</label>
+        <input type="range" min="0.1" max="4" step="0.1" value=""
+          style="--v:${((clip.speed-0.1)/3.9*100).toFixed(0)}%"
+          oninput="App.updateClip('','speed',parseFloat(this.value));document.getElementById('speed-val').textContent=parseFloat(this.value).toFixed(1)+'x';this.style.setProperty('--v',((this.value-0.1)/3.9*100)+'%')">
+        <div style="font-size:10px;color:var(--text2);margin-top:2px;" id="speed-val">x</div>
+      </div>
+      <div class="field"><label class="field-label">Background</label>
+        <div class="color-row">
+          <input type="color" value="" onchange="App.updateClip('','bgColor',this.value);App.previewClip(ClipManager.get(''))">
+          <span style="color:var(--text2);font-size:11px;"></span>
+        </div>
+      </div>
+      <div class="field"><label class="field-label">Animation</label>
+        <div style="font-size:11px;color:var(--text2);padding:4px 0;">
+          var(--cyan)">SMIL </span>':''
+          var(--purple)">CSS Keyframes </span>':''
+          ${!clip.anims.hasSMIL&&!clip.anims.hasCSS?'<span style="color:var(--text3)">Static</span>':''}
+        </div>
+      </div>
+      <div class="field"><label class="field-label">Size</label>
+        <div style="font-size:11px;color:var(--text2);"> × </div>
+      </div>
+      <button class="btn" style="width:100%;justify-content:center;margin-top:4px;" onclick="App.previewClip(ClipManager.get(''))">▶ Preview</button>
+    `;
+  },
+  clearPreview() {
+    document.getElementById('preview-iframe').srcdoc = '';
+    document.getElementById('preview-empty').style.display = 'flex';
+  },
+  updatePlayhead(t) {
+    if (state.totalDuration <= 0) return;
+    const pct = Math.min(t/state.totalDuration,1)*100;
+    const ph = document.getElementById('tl-playhead');
+    if (ph) ph.style.left = pct+'%';
+  },
+  setTimeDisplay(cur, total) {
+    document.getElementById('time-display').textContent = `s / s`;
+  }
+};
+
+// ════════════════════════════════════════════════════════════
+//  FRAME CAPTURER — Fixed for CSS + SMIL animations
+//  Strategy:
+//  1. Load SVG in offscreen iframe (no sandbox = full DOM access)
+//  2. CSS animations: inject animation-delay + paused state at end of SVG
+//     then render via blob → img → canvas
+//  3. SMIL animations: setCurrentTime(t), then freezeSVGState() reads
+//     all animVal interfaces + computed styles → creates a static SVG snapshot
+//  4. Streaming encode: frames piped directly to MediaRecorder canvas
+//     → no large ImageData arrays in memory → fixes 60fps/4K crash
+// ════════════════════════════════════════════════════════════
+const FrameCapturer = {
+
+  /**
+   * Read the LIVE animated state of an SVG element (after setCurrentTime)
+   * and produce a static SVG XML string with all animation values baked in.
+   * Removes animation elements. Works for animateTransform, animate on geometry attrs,
+   * and CSS-animated presentation attributes via getComputedStyle.
+   */
+  freezeSVGState(liveSVGEl, iframeWindow) {
+    const clone = liveSVGEl.cloneNode(true);
+    const srcEls = Array.from(liveSVGEl.querySelectorAll('*'));
+    const cloneEls = Array.from(clone.querySelectorAll('*'));
+
+    srcEls.forEach((src, idx) => {
+      const cl = cloneEls[idx];
+      if (!cl || typeof cl.setAttribute !== 'function') return;
+
+      // 1. Bake animated transform (handles <animateTransform>)
+      try {
+        const animList = src.transform?.animVal;
+        if (animList && animList.numberOfItems > 0) {
+          const parts = [];
+          for (let j = 0; j < animList.numberOfItems; j++) {
+            const m = animList.getItem(j).matrix;
+            parts.push(`matrix(,,,,,)`);
+          }
+          cl.setAttribute('transform', parts.join(' '));
+        }
+      } catch(e) {}
+
+      // 2. Bake animated geometry attributes (handles <animate attributeName="r"> etc.)
+      const tag = src.tagName?.toLowerCase();
+      try {
+        const geoAttrs = {
+          circle:  ['r','cx','cy'],
+          ellipse: ['rx','ry','cx','cy'],
+          rect:    ['x','y','width','height','rx','ry'],
+          line:    ['x1','y1','x2','y2'],
+          image:   ['x','y','width','height'],
+          text:    ['x','y'],
+          use:     ['x','y','width','height'],
+        };
+        (geoAttrs[tag] || []).forEach(a => {
+          const prop = src[a];
+          if (prop && prop.animVal !== undefined) {
+            const v = prop.animVal;
+            cl.setAttribute(a, (typeof v === 'object' && v !== null) ? v.value : v);
+          }
+        });
+      } catch(e) {}
+
+      // 3. Bake presentation attributes via computed style (opacity, fill, etc.)
+      try {
+        if (iframeWindow && src.style !== undefined) {
+          const cs = iframeWindow.getComputedStyle(src);
+          const attrs = ['opacity','fill','fill-opacity','stroke','stroke-width','stroke-opacity','display','visibility','color'];
+          attrs.forEach(attr => {
+            try {
+              const val = cs.getPropertyValue(attr);
+              if (val && val !== '' && val !== 'initial' && val !== 'inherit') {
+                cl.setAttribute(attr, val);
+              }
+            } catch(e2) {}
+          });
+        }
+      } catch(e) {}
+
+      // 4. Remove all SMIL animation elements from clone (they've been baked)
+      Array.from(cl.querySelectorAll('animate,animateTransform,animateMotion,set')).forEach(a => a.remove());
+    });
+
+    return new XMLSerializer().serializeToString(clone);
+  },
+
+  /**
+   * Create a CSS-time-seeked SVG by injecting animation timing at the END of the SVG.
+   * Inserting after all existing <style> blocks ensures our !important overrides win.
+   * The negative animation-delay pauses CSS keyframes at exactly time t.
+   */
+  _createCSSTimedSVG(svgContent, t) {
+    // Inject timing style JUST before </svg> so it has highest source order
+    const style = [
+      '<style id="__svgs_t">',
+      '*, *::before, *::after {',
+      `  animation-play-state: paused !important;`,
+      `  animation-delay: -s !important;`,
+      `  animation-fill-mode: both !important;`,
+      '}',
+      '</style>'
+
+```
+].join('');
+// Replace last </svg> tag
+return svgContent.replace(/(<\/svg\s*>)\s*$/i, style + '');
+```
+
+},
+
+/**
+
+- Render an SVG XML string to a canvas at the given position/size.
+- Uses blob URL → HTMLImageElement → drawImage pipeline.
+  */
+  _renderSVGToCanvas(ctx, svgXml, x, y, w, h) {
+  return new Promise((resolve, reject) => {
+  const blob = new Blob([svgXml], { type: ‘image/svg+xml;charset=utf-8’ });
+  const url = URL.createObjectURL(blob);
+  const img = new Image();
+  img.onload = () => {
+  try { ctx.drawImage(img, x, y, w, h); } catch(e) {}
+  URL.revokeObjectURL(url);
+  resolve();
+  };
+  img.onerror = (e) => {
+  URL.revokeObjectURL(url);
+  reject(new Error(‘SVG render failed’));
+  };
+  img.src = url;
+  });
+  },
+
+/**
+
+- Create and load a capture iframe for a clip.
+- No sandbox so we have full DOM access for SMIL state reading.
+  */
+  async _openCaptureIframe(clip) {
+  const iframe = document.createElement(‘iframe’);
+  // Position far off-screen but still rendered (visibility:hidden would prevent paint)
+  iframe.style.cssText = ‘position:fixed;left:-9999px;top:0;width:1px;height:1px;border:none;opacity:0;pointer-events:none;’;
+  document.body.appendChild(iframe);
+
+```
+const html = [
+  '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>',
+  `html,body{margin:0;padding:0;overflow:hidden;background:;}`,
+  'svg{display:block;}',
+  '</style></head><body>',
+  clip.svgContent,
+  '</body></html>'
+].join('');
+
+await new Promise(resolve => {
+  iframe.onload = resolve;
+  iframe.srcdoc = html;
+});
+
+// Extra paint tick so browser applies initial animation state
+await new Promise(r => setTimeout(r, 30));
+
+return iframe;
+```
+
+},
+
+/**
+
+- Compute scale/offset to fit clip dimensions into the output frame (letterboxed).
+  */
+  _fitRect(clipW, clipH, outW, outH) {
+  const scale = Math.min(outW / clipW, outH / clipH);
+  const sw = clipW * scale, sh = clipH * scale;
+  return { sw, sh, ox: (outW - sw) / 2, oy: (outH - sh) / 2 };
+  },
+
+/**
+
+- Capture a single frame at time t into the given canvas context.
+- Handles SMIL, CSS, or static SVGs.
+  */
+  async _captureFrameToCtx(clip, t, ctx, W, H, iDoc, iWin, svgEl) {
+  ctx.fillStyle = clip.bgColor;
+  ctx.fillRect(0, 0, W, H);
+
+```
+const { sw, sh, ox, oy } = this._fitRect(clip.dims.w || 300, clip.dims.h || 150, W, H);
+const hasSMIL = clip.anims.hasSMIL;
+const hasCSS  = clip.anims.hasCSS;
+
+if (hasSMIL && svgEl) {
+  // SMIL path: seek animation → freeze state → render static snapshot
+  try {
+    if (svgEl.setCurrentTime) svgEl.setCurrentTime(t);
+    // Give browser a microtask to apply animated values
+    await new Promise(r => setTimeout(r, 0));
+    let frozenXml = this.freezeSVGState(svgEl, iWin);
+    // If the SVG also has CSS animations, inject timing into the frozen snapshot
+    if (hasCSS) {
+      frozenXml = this._createCSSTimedSVG(frozenXml, t);
+    }
+    await this._renderSVGToCanvas(ctx, frozenXml, ox, oy, sw, sh);
+  } catch(e) {
+    // Fallback: render static at position
+    try { await this._renderSVGToCanvas(ctx, clip.svgContent, ox, oy, sw, sh); } catch(e2) {}
+  }
+} else if (hasCSS) {
+  // CSS path: inject timing style into original SVG, render via blob
+  try {
+    const timedXml = this._createCSSTimedSVG(clip.svgContent, t);
+    await this._renderSVGToCanvas(ctx, timedXml, ox, oy, sw, sh);
+  } catch(e) {
+    try { await this._renderSVGToCanvas(ctx, clip.svgContent, ox, oy, sw, sh); } catch(e2) {}
+  }
+} else {
+  // Static SVG — just render it
+  try { await this._renderSVGToCanvas(ctx, clip.svgContent, ox, oy, sw, sh); } catch(e) {}
+}
+```
+
+},
+
+/**
+
+- MAIN VIDEO EXPORT — Streaming capture + MediaRecorder
+- Frames are drawn to a canvas one-by-one and MediaRecorder captures the stream.
+- No frame array storage → safe for 4K + 60fps.
+  */
+  async captureAndEncodeVideo(clips, fps, W, H, quality, onProgress) {
+  // ── Setup encode canvas + MediaRecorder ──
+  const canvas = document.createElement(‘canvas’);
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext(‘2d’);
+
+```
+// Find best supported MIME type
+let mimeType = '';
+const mimeOptions = [
+  'video/webm;codecs=vp9',
+  'video/webm;codecs=vp8',
+  'video/webm',
+  'video/mp4',
+];
+for (const m of mimeOptions) {
+  if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m)) {
+    mimeType = m; break;
+  }
+}
+
+// Bitrate: scale with resolution (not linearly — sqrt feels better)
+const bps = Math.round(quality * 600000 * Math.max(Math.sqrt(W / 1280), 1));
+
+const stream = canvas.captureStream(fps);
+let recorder;
+try {
+  const opts = { videoBitsPerSecond: bps };
+  if (mimeType) opts.mimeType = mimeType;
+  recorder = new MediaRecorder(stream, opts);
+} catch(e) {
+  // Fallback without options
+  recorder = new MediaRecorder(stream);
+  mimeType = recorder.mimeType || '';
+}
+
+const chunks = [];
+recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+const blobReady = new Promise((resolve, reject) => {
+  recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType || 'video/webm' }));
+  recorder.onerror = e => reject(e.error || new Error('Recorder error'));
+});
+
+recorder.start(100); // collect data every 100ms
+
+const frameMs = 1000 / fps;
+let totalFramesDone = 0;
+const allTotalFrames = clips.reduce((s, c) => s + Math.ceil(c.duration * fps), 0);
+
+// ── Process each clip ──
+for (let ci = 0; ci < clips.length; ci++) {
+  const clip = clips[ci];
+  if (state.cancelExport) { recorder.stop(); throw new Error('Cancelled'); }
+
+  // Open capture iframe
+  let iframe = null, iDoc = null, iWin = null, svgEl = null;
+  if (clip.anims.hasSMIL) {
+    iframe = await this._openCaptureIframe(clip);
+    iDoc = iframe.contentDocument;
+    iWin = iframe.contentWindow;
+    svgEl = iDoc?.querySelector('svg');
+    if (svgEl?.pauseAnimations) svgEl.pauseAnimations();
+  }
+
+  const totalFrames = Math.ceil(clip.duration * fps);
+
+  for (let i = 0; i < totalFrames; i++) {
+    if (state.cancelExport) { iframe?.remove(); recorder.stop(); throw new Error('Cancelled'); }
+
+    const frameStart = performance.now();
+    const t = (i / fps) * clip.speed;
+
+    await this._captureFrameToCtx(clip, t, ctx, W, H, iDoc, iWin, svgEl);
+
+    totalFramesDone++;
+    if (onProgress) onProgress(totalFramesDone / allTotalFrames, ci, clips.length, clip.name, i, totalFrames);
+
+    // Hold frame for MediaRecorder — ensure it gets enough time to capture the canvas
+    const elapsed = performance.now() - frameStart;
+    const wait = Math.max(frameMs - elapsed, 4);
+    await new Promise(r => setTimeout(r, wait));
+  }
+
+  if (iframe) iframe.remove();
+
+  // Delay frames (black) between clips
+  if (clip.delay > 0) {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+    const delayFrames = Math.ceil(clip.delay * fps);
+    for (let d = 0; d < delayFrames; d++) {
+      if (state.cancelExport) { recorder.stop(); throw new Error('Cancelled'); }
+      await new Promise(r => setTimeout(r, frameMs));
+    }
+  }
+}
+
+// Flush and stop — give recorder 600ms to collect final chunks
+await new Promise(r => setTimeout(r, 600));
+recorder.stop();
+const blob = await blobReady;
+const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+return { blob, ext, mime: mimeType };
+```
+
+},
+
+/**
+
+- FRAMES ZIP EXPORT — Collect individual PNG frames
+- Stores frames in memory — limit to lower resolutions for sanity.
+  */
+  async captureForZip(clips, fps, W, H, onProgress) {
+  const canvas = document.createElement(‘canvas’);
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext(‘2d’, { willReadFrequently: true });
+  const allFrames = [];
+
+```
+let totalDone = 0;
+const allTotal = clips.reduce((s, c) => s + Math.ceil(c.duration * fps), 0);
+
+for (let ci = 0; ci < clips.length; ci++) {
+  const clip = clips[ci];
+
+  let iframe = null, iDoc = null, iWin = null, svgEl = null;
+  if (clip.anims.hasSMIL) {
+    iframe = await this._openCaptureIframe(clip);
+    iDoc = iframe.contentDocument;
+    iWin = iframe.contentWindow;
+    svgEl = iDoc?.querySelector('svg');
+    if (svgEl?.pauseAnimations) svgEl.pauseAnimations();
+  }
+
+  const totalFrames = Math.ceil(clip.duration * fps);
+
+  for (let i = 0; i < totalFrames; i++) {
+    if (state.cancelExport) { iframe?.remove(); throw new Error('Cancelled'); }
+    const t = (i / fps) * clip.speed;
+
+    await this._captureFrameToCtx(clip, t, ctx, W, H, iDoc, iWin, svgEl);
+    allFrames.push(ctx.getImageData(0, 0, W, H));
+
+    totalDone++;
+    if (onProgress) onProgress(totalDone / allTotal);
+    if (i % 6 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+
+  if (iframe) iframe.remove();
+
+  // Delay frames
+  if (clip.delay > 0) {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, W, H);
+    const blank = ctx.getImageData(0, 0, W, H);
+    const df = Math.ceil(clip.delay * fps);
+    for (let d = 0; d < df; d++) allFrames.push(blank);
+  }
+}
+
+return allFrames;
+```
+
+}
+};
+
+// ── ZIP ENCODER ──
+const ZipEncoder = {
+async encode(frames, W, H, onProgress) {
+if (typeof JSZip === ‘undefined’) throw new Error(‘JSZip not loaded’);
+const zip = new JSZip();
+const canvas = document.createElement(‘canvas’);
+canvas.width = W; canvas.height = H;
+const ctx = canvas.getContext(‘2d’);
+for (let i = 0; i < frames.length; i++) {
+ctx.putImageData(frames[i], 0, 0);
+const blob = await new Promise(r => canvas.toBlob(r, ‘image/png’));
+zip.file(`frame_.png`, await blob.arrayBuffer());
+if (onProgress) onProgress(i / frames.length);
+}
+return zip.generateAsync({ type:‘blob’, compression:‘DEFLATE’, compressionOptions:{ level:5 } });
+}
+};
+
+// ── RESOLUTION PRESETS ──
+function getResolution(preset) {
+return ({ ‘480’:[854,480], ‘720’:[1280,720], ‘1080’:[1920,1080], ‘2160’:[3840,2160] })[preset] || [1280,720];
+}
+
+// ── MAIN APP ──
+const App = {
+openPasteModal() {
+document.getElementById(‘paste-modal’).classList.add(‘open’);
+setTimeout(() => document.getElementById(‘paste-name’).focus(), 80);
+},
+closePasteModal() { document.getElementById(‘paste-modal’).classList.remove(‘open’); },
+
+async handleFileUpload(input) {
+const file = input.files[0];
+if (!file) return;
+const text = await file.text();
+document.getElementById(‘paste-code’).value = text;
+document.getElementById(‘paste-name’).value = file.name.replace(/.svg$/i,’’);
+this.importFromPaste();
+input.value = ‘’;
+},
+
+importFromPaste() {
+const code = document.getElementById(‘paste-code’).value.trim();
+const name = document.getElementById(‘paste-name’).value.trim() || ‘Clip’;
+if (!code) { toast(‘Paste SVG code first’, ‘warn’); return; }
+try {
+const sanitized = SVGSanitizer.sanitize(code);
+const clip = ClipManager.create(sanitized, name);
+ClipManager.add(clip);
+state.selectedId = clip.id;
+this.closePasteModal();
+document.getElementById(‘paste-code’).value = ‘’;
+document.getElementById(‘paste-name’).value = ‘Clip’;
+UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
+this.previewClip(clip);
+toast(`Added: `, ‘ok’);
+} catch(e) { toast(’SVG Error: ’ + e.message, ‘err’); }
+},
+
+selectClip(id) {
+state.selectedId = id;
+UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
+this.previewClip(ClipManager.get(id));
+},
+
+updateClip(id, key, val) {
+const clip = ClipManager.get(id);
+if (!clip) return;
+clip[key] = val;
+if (key === ‘name’) { UI.renderClipList(); UI.renderTimeline(); }
+if (key === ‘duration’ || key === ‘delay’) { recalcDuration(); UI.renderTimeline(); }
+if (key === ‘bgColor’) this.previewClip(clip);
+},
+
+previewClip(clip) {
+if (!clip) return;
+state.selectedId = clip.id;
+const iframe = document.getElementById(‘preview-iframe’);
+const empty  = document.getElementById(‘preview-empty’);
+empty.style.display = ‘none’;
+iframe.style.display = ‘block’;
+
+```
+// Fit preview stage
+const wrap = document.getElementById('preview-wrap');
+const maxW = wrap.clientWidth - 40, maxH = wrap.clientHeight - 80;
+const ratio = (clip.dims.w || 1) / (clip.dims.h || 1);
+let sw = Math.min(clip.dims.w, maxW, 900);
+let sh = sw / ratio;
+if (sh > maxH) { sh = maxH; sw = sh * ratio; }
+const stage = document.getElementById('preview-stage');
+stage.style.width  = Math.round(sw) + 'px';
+stage.style.height = Math.round(sh) + 'px';
+
+// Preview uses sandbox — safe for display, animations run live
+iframe.srcdoc = [
+  '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>',
+  `html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:;}`,
+  'svg{width:100%;height:100%;display:block;}',
+  '</style></head><body>',
+  clip.svgContent,
+  '</body></html>'
+].join('');
+
+document.getElementById('scrubber-wrap').style.display = 'flex';
+const sc = document.getElementById('scrubber');
+sc.max = clip.duration; sc.value = 0;
+sc.style.setProperty('--prog', '0%');
+UI.setTimeDisplay(0, clip.duration);
+document.getElementById('live-fps').textContent = '∞ fps';
+```
+
+},
+
+togglePlay() {
+if (!state.clips.length) { toast(‘Add clips first’, ‘warn’); return; }
+state.playing ? this.pausePlayback() : this.startPlayback();
+},
+
+startPlayback() {
+state.playing = true;
+document.getElementById(‘play-btn’).textContent = ‘⏸’;
+const clip = state.selectedId ? ClipManager.get(state.selectedId) : state.clips[0];
+if (!clip) return;
+let t = 0;
+let last = performance.now();
+state.playInterval = setInterval(() => {
+const now = performance.now();
+t += (now - last) / 1000 * clip.speed;
+last = now;
+if (t > clip.duration) {
+if (state.looping) t %= clip.duration; else { t = 0; this.stopPlayback(); return; }
+}
+UI.setTimeDisplay(t, clip.duration);
+UI.updatePlayhead(t);
+const sc = document.getElementById(‘scrubber’);
+if (sc) { sc.value = t; sc.style.setProperty(’–prog’, (t/clip.duration*100)+’%’); }
+}, 33);
+},
+
+pausePlayback() {
+state.playing = false;
+document.getElementById(‘play-btn’).textContent = ‘▶’;
+clearInterval(state.playInterval); state.playInterval = null;
+},
+
+stopPlayback() {
+this.pausePlayback();
+const dur = state.selectedId ? (ClipManager.get(state.selectedId)?.duration || 0) : 0;
+UI.setTimeDisplay(0, dur); UI.updatePlayhead(0);
+const sc = document.getElementById(‘scrubber’);
+if (sc) { sc.value = 0; sc.style.setProperty(’–prog’,‘0%’); }
+},
+
+toggleLoop() {
+state.looping = !state.looping;
+document.getElementById(‘loop-btn’).style.opacity = state.looping ? ‘1’ : ‘0.4’;
+},
+
+prevClip() {
+const i = state.clips.findIndex(c => c.id === state.selectedId);
+if (i > 0) this.selectClip(state.clips[i-1].id);
+},
+nextClip() {
+const i = state.clips.findIndex(c => c.id === state.selectedId);
+if (i < state.clips.length-1) this.selectClip(state.clips[i+1].id);
+},
+
+cancelExport() {
+state.cancelExport = true;
+document.getElementById(‘capture-overlay’).classList.remove(‘open’);
+toast(‘Export cancelled’, ‘warn’);
+},
+
+async startExport() {
+if (!state.clips.length) { toast(‘Add clips first’, ‘warn’); return; }
+
+```
+const format  = document.getElementById('exp-format').value;
+const resPx   = getResolution(document.getElementById('exp-res').value);
+const fps     = parseInt(document.getElementById('exp-fps').value);
+const quality = parseInt(document.getElementById('exp-quality').value);
+const [W, H]  = resPx;
+
+state.cancelExport = false;
+
+const overlay = document.getElementById('capture-overlay');
+overlay.classList.add('open');
+
+const setInfo = txt => { document.getElementById('cap-info').textContent = txt; };
+const setSub  = txt => { document.getElementById('cap-sub').textContent = txt; };
+const setProg = pct => { document.getElementById('cap-bar').style.width = (Math.min(pct,1)*100).toFixed(1)+'%'; };
+
+// Warn about very large exports
+const totalFrames = state.clips.reduce((s,c) => s + Math.ceil(c.duration*fps), 0);
+const memMB = (W * H * 4 * totalFrames) / (1024*1024);
+if (format === 'frames' && memMB > 2000) {
+  setSub(`⚠  MB frame data — consider lower resolution`);
+} else {
+  setSub(` frames · × · fps`);
+}
+
+try {
+  let blob, ext;
+
+  if (format === 'frames') {
+    setInfo('Capturing frames...');
+    const frames = await FrameCapturer.captureForZip(state.clips, fps, W, H, pct => {
+      setProg(pct * 0.85);
+      setInfo(`Capturing frames... ${(pct*100).toFixed(0)}%`);
+    });
+    setInfo('Compressing PNG ZIP...');
+    setProg(0.88);
+    blob = await ZipEncoder.encode(frames, W, H, pct => setProg(0.88 + pct*0.1));
+    ext = 'zip';
+
+  } else {
+    setInfo('Starting streaming capture…');
+    const result = await FrameCapturer.captureAndEncodeVideo(
+      state.clips, fps, W, H, quality,
+      (pct, ci, clipCount, clipName, frameIdx, totalF) => {
+        setProg(pct);
+        setInfo(`Clip /: "" — frame /`);
+      }
+    );
+    blob = result.blob;
+    ext  = result.ext;
+    if (ext !== 'mp4') setSub(`Browser saved as . (MP4 requires desktop player support)`);
+  }
+
+  setProg(1);
+  setInfo('Complete — downloading…');
+  await new Promise(r => setTimeout(r, 400));
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `svg_export_.`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 6000);
+
+  overlay.classList.remove('open');
+  toast(`Export done! ${(blob.size/1024/1024).toFixed(2)} MB`, 'ok');
+
+} catch(e) {
+  overlay.classList.remove('open');
+  if (e.message !== 'Cancelled') {
+    toast('Export failed: ' + e.message, 'err');
+    console.error('[SVGStudio Export]', e);
+  }
+}
+```
+
+}
+};
+
+// ── UTILITIES ──
+function escHtml(s) {
+return String(s).replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’).replace(/”/g,’"’);
+}
+function toast(msg, type=‘ok’) {
+const el = document.getElementById(‘toast’);
+el.textContent = msg; el.className = type; el.style.display = ‘block’;
+clearTimeout(el._t); el._t = setTimeout(() => el.style.display=‘none’, 3500);
+}
+
+// ── SCRUBBER ──
+document.getElementById(‘scrubber’).addEventListener(‘input’, function() {
+const clip = state.selectedId ? ClipManager.get(state.selectedId) : null;
+if (!clip) return;
+const t = parseFloat(this.value);
+this.style.setProperty(’–prog’, (t/clip.duration*100)+’%’);
+UI.setTimeDisplay(t, clip.duration);
+});
+
+// ── DROP ZONE ──
+const dropZone = document.getElementById(‘drop-zone’);
+dropZone.addEventListener(‘dragover’, e => { e.preventDefault(); dropZone.classList.add(‘drag-over’); });
+dropZone.addEventListener(‘dragleave’, () => dropZone.classList.remove(‘drag-over’));
+dropZone.addEventListener(‘drop’, async e => {
+e.preventDefault(); dropZone.classList.remove(‘drag-over’);
+const file = e.dataTransfer.files[0];
+if (!file || !file.name.endsWith(’.svg’)) { toast(‘Please drop an SVG file’, ‘warn’); return; }
+const text = await file.text();
+try {
+const clip = ClipManager.create(SVGSanitizer.sanitize(text), file.name.replace(’.svg’,’’));
+ClipManager.add(clip);
+state.selectedId = clip.id;
+UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
+App.previewClip(clip);
+toast(`Imported: `, ‘ok’);
+} catch(e) { toast(’SVG Error: ’ + e.message, ‘err’); }
+});
+
+// ── MODALS ──
+document.getElementById(‘paste-modal’).addEventListener(‘keydown’, e => { if (e.key === ‘Escape’) App.closePasteModal(); });
+
+// ── QUALITY SLIDER ──
+document.getElementById(‘exp-quality’).addEventListener(‘input’, function() {
+this.style.setProperty(’–v’, ((this.value-1)/9*100)+’%’);
+document.getElementById(‘quality-val’).textContent = this.value;
+});
+
+// ── CODEC DETECTION ──
+(function detectCodec() {
+const el = document.getElementById(‘codec-label’);
+if (typeof MediaRecorder !== ‘undefined’) {
+const supported = [‘video/webm;codecs=vp9’,‘video/webm;codecs=vp8’,‘video/webm’,‘video/mp4’].find(m => MediaRecorder.isTypeSupported(m));
+if (supported) {
+el.textContent = supported.includes(‘mp4’) ? ‘MP4 ✓’ : ‘WebM/VP9 ✓’;
+el.style.color = ‘var(–green)’;
+} else {
+el.textContent = ‘MediaRecorder’; el.style.color = ‘var(–cyan)’;
+}
+} else {
+el.textContent = ‘Frames Only’; el.style.color = ‘var(–red)’;
+}
+})();
+
+// ── RESIZE ──
+window.addEventListener(‘resize’, () => {
+const clip = state.selectedId ? ClipManager.get(state.selectedId) : null;
+if (clip) App.previewClip(clip);
+});
+
+// ── DEMO SVG ──
+(function loadDemo() {
+const demoSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300"> <defs> <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"> <stop offset="0%" style="stop-color:#E8943A"/> <stop offset="100%" style="stop-color:#F2C063"/> </linearGradient> <filter id="glow"> <feGaussianBlur stdDeviation="3" result="blur"/> <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge> </filter> </defs> <rect width="300" height="300" fill="#0F1018"/> <g transform="translate(150,150)"> <circle cx="0" cy="0" r="60" fill="none" stroke="rgba(232,148,58,0.15)" stroke-width="1"/> <circle cx="0" cy="0" r="100" fill="none" stroke="rgba(232,148,58,0.08)" stroke-width="1"/> <circle cx="0" cy="0" r="20" fill="url(#g1)" filter="url(#glow)"> <animate attributeName="r" values="18;24;18" dur="2s" repeatCount="indefinite"/> </circle> <g> <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="3s" repeatCount="indefinite"/> <circle cx="60" cy="0" r="8" fill="#22D3EE" filter="url(#glow)"> <animate attributeName="r" values="6;10;6" dur="1.5s" repeatCount="indefinite"/> </circle> </g> <g> <animateTransform attributeName="transform" type="rotate" from="360" to="0" dur="5s" repeatCount="indefinite"/> <circle cx="100" cy="0" r="6" fill="#A78BFA" filter="url(#glow)"> <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/> </circle> </g> <g> <animateTransform attributeName="transform" type="rotate" from="90" to="450" dur="7s" repeatCount="indefinite"/> <g cx="95"> <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="2s" repeatCount="indefinite"/> <rect x="93" y="-4" width="8" height="8" rx="2" fill="#4ADE80" opacity="0.8"/> </g> </g> </g> <text x="150" y="265" text-anchor="middle" fill="rgba(240,237,248,0.35)" font-family="monospace" font-size="10" letter-spacing="3">SVG STUDIO</text> </svg>`;
+
+try {
+const clip = ClipManager.create(SVGSanitizer.sanitize(demoSVG), ‘Demo — Orbiting System’);
+clip.duration = 8; clip.bgColor = ‘#0F1018’;
+ClipManager.add(clip);
+state.selectedId = clip.id;
+UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
+App.previewClip(clip);
+} catch(e) { console.warn(‘Demo load failed:’, e); }
+})();
+</script>
+
+</body>
+</html>
