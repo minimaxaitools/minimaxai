@@ -608,7 +608,7 @@ const ClipManager = {
 
 function recalcDuration() {
   state.totalDuration = state.clips.reduce((s,c) => s + c.duration + c.delay, 0);
-  document.getElementById('tl-duration').textContent = `Total: s`;
+  document.getElementById('tl-duration').textContent = `Total: ${state.totalDuration.toFixed(2)}s`;
 }
 
 // ── UI RENDERER ──
@@ -617,19 +617,19 @@ const UI = {
     const el = document.getElementById('clip-list');
     if (!state.clips.length) { el.innerHTML = '<div class="empty-state" style="height:80px;font-size:10px;"><p>No clips yet</p></div>'; return; }
     el.innerHTML = state.clips.map((c,i) => `
-      <div class="clip-item ''" onclick="App.selectClip('')">
+      <div class="clip-item ${c.id===state.selectedId?'selected':''}" onclick="App.selectClip('${c.id}')">
         <div class="clip-item-header">
-          <div class="clip-thumb" style="background:;">
-            ">` : `<svg width="20" height="20"><rect width="20" height="20" fill="" opacity=".4"/></svg>`}
+          <div class="clip-thumb" style="background:${c.bgColor};">
+            ${c.thumbnail ? `<img src="${c.thumbnail}">` : `<svg width="20" height="20"><rect width="20" height="20" fill="${c.color}" opacity=".4"/></svg>`}
           </div>
           <div class="clip-info">
-            <div class="clip-name"></div>
-            <div class="clip-meta">s · x · var(--cyan)">SMIL</span> ':''var(--purple)">CSS</span>':''</div>
+            <div class="clip-name">${escHtml(c.name)}</div>
+            <div class="clip-meta">${c.duration.toFixed(1)}s · ${c.speed}x · ${c.anims.hasSMIL?'<span style="color:var(--cyan)">SMIL</span> ':''}${c.anims.hasCSS?'<span style="color:var(--purple)">CSS</span>':''}</div>
           </div>
           <div class="clip-actions">
-            <button class="btn sm" onclick="event.stopPropagation();ClipManager.moveUp('')" ''>↑</button>
-            <button class="btn sm" onclick="event.stopPropagation();ClipManager.moveDown('')" ''>↓</button>
-            <button class="btn sm danger" onclick="event.stopPropagation();ClipManager.remove('')">✕</button>
+            <button class="btn sm" onclick="event.stopPropagation();ClipManager.moveUp('${c.id}')" ${i===0?'disabled':''}>↑</button>
+            <button class="btn sm" onclick="event.stopPropagation();ClipManager.moveDown('${c.id}')" ${i===state.clips.length-1?'disabled':''}>↓</button>
+            <button class="btn sm danger" onclick="event.stopPropagation();ClipManager.remove('${c.id}')">✕</button>
           </div>
         </div>
       </div>`).join('');
@@ -643,9 +643,9 @@ const UI = {
     state.clips.forEach((c,i) => {
       const start = state.clips.slice(0,i).reduce((s,x) => s+x.duration+x.delay, 0);
       const d = document.createElement('div');
-      d.className = `tl-clip''`;
-      d.style.cssText = `left:%;background:;`;
-      d.innerHTML = `<span class="tl-clip-label"></span>`;
+      d.className = `tl-clip${c.id===state.selectedId?' selected':''}`;
+      d.style.cssText = `left:${start/total*100}%;width:${c.duration/total*100}%;background:${c.color};`;
+      d.innerHTML = `<span class="tl-clip-label">${escHtml(c.name)}</span>`;
       d.onclick = () => App.selectClip(c.id);
       track.insertBefore(d, ph);
     });
@@ -656,39 +656,39 @@ const UI = {
     if (!clip) { el.innerHTML = '<div class="empty-state"><div class="es-icon" style="font-size:24px;">◻</div><p>Select a clip</p></div>'; return; }
     el.innerHTML = `
       <div class="field"><label class="field-label">Clip Name</label>
-        <input type="text" value="" onchange="App.updateClip('','name',this.value)">
+        <input type="text" value="${escHtml(clip.name)}" onchange="App.updateClip('${clip.id}','name',this.value)">
       </div>
       <div class="field"><label class="field-label">Duration (s)</label>
-        <input type="number" min="0.1" max="300" step="0.1" value=""
-          onchange="App.updateClip('','duration',parseFloat(this.value)||1)">
+        <input type="number" min="0.1" max="300" step="0.1" value="${clip.duration}"
+          onchange="App.updateClip('${clip.id}','duration',parseFloat(this.value)||1)">
       </div>
       <div class="field"><label class="field-label">Delay Before (s)</label>
-        <input type="number" min="0" max="60" step="0.1" value=""
-          onchange="App.updateClip('','delay',parseFloat(this.value)||0)">
+        <input type="number" min="0" max="60" step="0.1" value="${clip.delay}"
+          onchange="App.updateClip('${clip.id}','delay',parseFloat(this.value)||0)">
       </div>
       <div class="field"><label class="field-label">Speed</label>
-        <input type="range" min="0.1" max="4" step="0.1" value=""
+        <input type="range" min="0.1" max="4" step="0.1" value="${clip.speed}"
           style="--v:${((clip.speed-0.1)/3.9*100).toFixed(0)}%"
-          oninput="App.updateClip('','speed',parseFloat(this.value));document.getElementById('speed-val').textContent=parseFloat(this.value).toFixed(1)+'x';this.style.setProperty('--v',((this.value-0.1)/3.9*100)+'%')">
-        <div style="font-size:10px;color:var(--text2);margin-top:2px;" id="speed-val">x</div>
+          oninput="App.updateClip('${clip.id}','speed',parseFloat(this.value));document.getElementById('speed-val').textContent=parseFloat(this.value).toFixed(1)+'x';this.style.setProperty('--v',((this.value-0.1)/3.9*100)+'%')">
+        <div style="font-size:10px;color:var(--text2);margin-top:2px;" id="speed-val">${clip.speed.toFixed(1)}x</div>
       </div>
       <div class="field"><label class="field-label">Background</label>
         <div class="color-row">
-          <input type="color" value="" onchange="App.updateClip('','bgColor',this.value);App.previewClip(ClipManager.get(''))">
-          <span style="color:var(--text2);font-size:11px;"></span>
+          <input type="color" value="${clip.bgColor}" onchange="App.updateClip('${clip.id}','bgColor',this.value);App.previewClip(ClipManager.get('${clip.id}'))">
+          <span style="color:var(--text2);font-size:11px;">${clip.bgColor}</span>
         </div>
       </div>
       <div class="field"><label class="field-label">Animation</label>
         <div style="font-size:11px;color:var(--text2);padding:4px 0;">
-          var(--cyan)">SMIL </span>':''
-          var(--purple)">CSS Keyframes </span>':''
+          ${clip.anims.hasSMIL?'<span style="color:var(--cyan)">SMIL </span>':''}
+          ${clip.anims.hasCSS?'<span style="color:var(--purple)">CSS Keyframes </span>':''}
           ${!clip.anims.hasSMIL&&!clip.anims.hasCSS?'<span style="color:var(--text3)">Static</span>':''}
         </div>
       </div>
       <div class="field"><label class="field-label">Size</label>
-        <div style="font-size:11px;color:var(--text2);"> × </div>
+        <div style="font-size:11px;color:var(--text2);">${clip.dims.w} × ${clip.dims.h}</div>
       </div>
-      <button class="btn" style="width:100%;justify-content:center;margin-top:4px;" onclick="App.previewClip(ClipManager.get(''))">▶ Preview</button>
+      <button class="btn" style="width:100%;justify-content:center;margin-top:4px;" onclick="App.previewClip(ClipManager.get('${clip.id}'))">▶ Preview</button>
     `;
   },
   clearPreview() {
@@ -702,7 +702,7 @@ const UI = {
     if (ph) ph.style.left = pct+'%';
   },
   setTimeDisplay(cur, total) {
-    document.getElementById('time-display').textContent = `s / s`;
+    document.getElementById('time-display').textContent = `${cur.toFixed(2)}s / ${total.toFixed(2)}s`;
   }
 };
 
@@ -741,7 +741,7 @@ const FrameCapturer = {
           const parts = [];
           for (let j = 0; j < animList.numberOfItems; j++) {
             const m = animList.getItem(j).matrix;
-            parts.push(`matrix(,,,,,)`);
+            parts.push(`matrix(${m.a.toFixed(5)},${m.b.toFixed(5)},${m.c.toFixed(5)},${m.d.toFixed(5)},${m.e.toFixed(5)},${m.f.toFixed(5)})`);
           }
           cl.setAttribute('transform', parts.join(' '));
         }
@@ -802,7 +802,7 @@ const FrameCapturer = {
       '<style id="__svgs_t">',
       '*, *::before, *::after {',
       `  animation-play-state: paused !important;`,
-      `  animation-delay: -s !important;`,
+      `  animation-delay: -${t.toFixed(6)}s !important;`,
       `  animation-fill-mode: both !important;`,
       '}',
       '</style>'
@@ -810,7 +810,7 @@ const FrameCapturer = {
 ```
 ].join('');
 // Replace last </svg> tag
-return svgContent.replace(/(<\/svg\s*>)\s*$/i, style + '');
+return svgContent.replace(/(<\/svg\s*>)\s*$/i, style + '$1');
 ```
 
 },
@@ -852,7 +852,7 @@ return svgContent.replace(/(<\/svg\s*>)\s*$/i, style + '');
 ```
 const html = [
   '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>',
-  `html,body{margin:0;padding:0;overflow:hidden;background:;}`,
+  `html,body{margin:0;padding:0;overflow:hidden;background:${clip.bgColor};}`,
   'svg{display:block;}',
   '</style></head><body>',
   clip.svgContent,
@@ -1112,7 +1112,7 @@ const ctx = canvas.getContext(‘2d’);
 for (let i = 0; i < frames.length; i++) {
 ctx.putImageData(frames[i], 0, 0);
 const blob = await new Promise(r => canvas.toBlob(r, ‘image/png’));
-zip.file(`frame_.png`, await blob.arrayBuffer());
+zip.file(`frame_${String(i).padStart(5,'0')}.png`, await blob.arrayBuffer());
 if (onProgress) onProgress(i / frames.length);
 }
 return zip.generateAsync({ type:‘blob’, compression:‘DEFLATE’, compressionOptions:{ level:5 } });
@@ -1156,7 +1156,7 @@ document.getElementById(‘paste-code’).value = ‘’;
 document.getElementById(‘paste-name’).value = ‘Clip’;
 UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
 this.previewClip(clip);
-toast(`Added: `, ‘ok’);
+toast(`Added: ${name}`, ‘ok’);
 } catch(e) { toast(’SVG Error: ’ + e.message, ‘err’); }
 },
 
@@ -1198,7 +1198,7 @@ stage.style.height = Math.round(sh) + 'px';
 // Preview uses sandbox — safe for display, animations run live
 iframe.srcdoc = [
   '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>',
-  `html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:;}`,
+  `html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:${clip.bgColor};}`,
   'svg{width:100%;height:100%;display:block;}',
   '</style></head><body>',
   clip.svgContent,
@@ -1298,9 +1298,9 @@ const setProg = pct => { document.getElementById('cap-bar').style.width = (Math.
 const totalFrames = state.clips.reduce((s,c) => s + Math.ceil(c.duration*fps), 0);
 const memMB = (W * H * 4 * totalFrames) / (1024*1024);
 if (format === 'frames' && memMB > 2000) {
-  setSub(`⚠  MB frame data — consider lower resolution`);
+  setSub(`⚠ ${memMB.toFixed(0)} MB frame data — consider lower resolution`);
 } else {
-  setSub(` frames · × · fps`);
+  setSub(`${totalFrames} frames · ${W}×${H} · ${fps}fps`);
 }
 
 try {
@@ -1323,12 +1323,12 @@ try {
       state.clips, fps, W, H, quality,
       (pct, ci, clipCount, clipName, frameIdx, totalF) => {
         setProg(pct);
-        setInfo(`Clip /: "" — frame /`);
+        setInfo(`Clip ${ci+1}/${clipCount}: "${clipName}" — frame ${frameIdx+1}/${totalF}`);
       }
     );
     blob = result.blob;
     ext  = result.ext;
-    if (ext !== 'mp4') setSub(`Browser saved as . (MP4 requires desktop player support)`);
+    if (ext !== 'mp4') setSub(`Browser saved as .${ext} (MP4 requires desktop player support)`);
   }
 
   setProg(1);
@@ -1337,7 +1337,7 @@ try {
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `svg_export_.`;
+  a.href = url; a.download = `svg_export_${Date.now()}.${ext}`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 6000);
 
@@ -1390,7 +1390,7 @@ ClipManager.add(clip);
 state.selectedId = clip.id;
 UI.renderClipList(); UI.renderTimeline(); UI.renderProps();
 App.previewClip(clip);
-toast(`Imported: `, ‘ok’);
+toast(`Imported: ${file.name}`, ‘ok’);
 } catch(e) { toast(’SVG Error: ’ + e.message, ‘err’); }
 });
 
