@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MD Learning Engine V2 — Nested Interactive .md Renderer</title>
+    <meta name="description"
+        content="Transform markdown files into interactive learning experiences with 10 UI component types.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] } } } };
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from {
+                opacity: 0
+            }
+
+            to {
+                opacity: 1
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(12px);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes slideRight {
+            from {
+                transform: translateX(-12px);
+                opacity: 0
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes pulseGlow {
+
+            0%,
+            100% {
+                opacity: 0.4
+            }
+
+            50% {
+                opacity: 1
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0
+            }
+
+            100% {
+                background-position: 200% 0
+            }
+        }
+
+        .anim-fade {
+            animation: fadeIn .4s ease-out both
+        }
+
+        .anim-up {
+            animation: slideUp .4s ease-out both
+        }
+
+        .anim-right {
+            animation: slideRight .4s ease-out both
+        }
+
+        .sb-hide::-webkit-scrollbar {
+            display: none
+        }
+
+        .sb-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none
+        }
+
+        .sb-thin::-webkit-scrollbar {
+            width: 5px
+        }
+
+        .sb-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9px
+        }
+
+        .line-clamp-1 {
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden
+        }
+
+        /* Markdown rendered content */
+        .md-body {
+            font-size: 0.95rem;
+            line-height: 1.75;
+            color: #374151;
+        }
+
+        .md-body h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 1rem 0 0.5rem;
+            color: #111827;
+        }
+
+        .md-body h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0.8rem 0 0.4rem;
+            color: #1f2937;
+        }
+
+        .md-body h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0.6rem 0 0.3rem;
+            color: #1f2937;
+        }
+
+        .md-body h4,
+        .md-body h5,
+        .md-body h6 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0.5rem 0 0.25rem;
+            color: #374151;
+        }
+
+        .md-body p {
+            margin: 0.4rem 0;
+        }
+
+        .md-body ul,
+        .md-body ol {
+            padding-left: 1.5rem;
+            margin: 0.4rem 0;
+        }
+
+        .md-body li {
+            margin: 0.15rem 0;
+        }
+
+        .md-body ul {
+            list-style: disc;
+        }
+
+        .md-body ol {
+            list-style: decimal;
+        }
+
+        .md-body code {
+            background: #f3f4f6;
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-family: 'JetBrains Mono', monospace;
+            color: #6366f1;
+        }
+
+        .md-body pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        .md-body pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        .md-body blockquote {
+            border-left: 4px solid #6366f1;
+            padding: 0.5rem 1rem;
+            margin: 0.5rem 0;
+            background: #f0f4ff;
+            border-radius: 0 0.5rem 0.5rem 0;
+            color: #4338ca;
+        }
+
+        .md-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .md-body th {
+            background: #f1f5f9;
+            font-weight: 700;
+            text-align: left;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .md-body td {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .md-body hr {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 0.75rem 0;
+        }
+
+        .md-body a {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .md-body strong {
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .md-body em {
+            font-style: italic;
+        }
+
+        .md-body img {
+            max-width: 100%;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .md-body-sm {
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .md-body-sm h1 {
+            font-size: 1.15rem;
+        }
+
+        .md-body-sm h2 {
+            font-size: 1.05rem;
+        }
+
+        .md-body-sm h3 {
+            font-size: 0.95rem;
+        }
+
+        .md-body-sm p {
+            margin: 0.25rem 0;
+        }
+
+        .md-body-dark {
+            color: #d1d5db;
+        }
+
+        .md-body-dark h1,
+        .md-body-dark h2,
+        .md-body-dark h3,
+        .md-body-dark strong {
+            color: #f3f4f6;
+        }
+
+        .md-body-dark code {
+            background: rgba(255, 255, 255, 0.1);
+            color: #a5b4fc;
+        }
+
+        .md-body-dark blockquote {
+            background: rgba(255, 255, 255, 0.05);
+            border-left-color: #818cf8;
+            color: #c7d2fe;
+        }
+
+        .md-body-dark a {
+            color: #93c5fd;
+        }
+
+        /* Task list checkboxes */
+        .md-body input[type="checkbox"] {
+            margin-right: 0.4rem;
+            accent-color: #6366f1;
+        }
+
+        .md-body .task-list-item {
+            list-style: none;
+            margin-left: -1.2rem;
+        }
+
+        /* Component block wrapper */
+        .comp-block {
+            position: relative;
+            margin: 1.25rem 0;
+            border-radius: 1rem;
+        }
+
+        .comp-badge {
+            position: absolute;
+            top: -10px;
+            right: 12px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 2px 10px;
+            border-radius: 6px;
+            z-index: 5;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+        /* ═══════════════════════════════════════════
+           ICONS
+           ═══════════════════════════════════════════ */
+        const IP = {
+            code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+            eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+            layout: '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>',
+            grid: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+            list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+            edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+            'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
+            'chevron-up': '<polyline points="18 15 12 9 6 15"/>',
+            'chevron-left': '<polyline points="15 18 9 12 15 6"/>',
+            'chevron-right': '<polyline points="9 18 15 12 9 6"/>',
+            'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+            'alert-circle': '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+            info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+            search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+            upload: '<polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>',
+            download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+            copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+            'refresh-cw': '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+            sparkles: '<path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z"/>',
+            'file-text': '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>',
+            'folder-open': '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+            zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+            'book-open': '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+            brain: '<path d="M9.5 2A5.5 5.5 0 0 0 4 7.5c0 1.58.68 3 1.76 4L12 19l6.24-7.5A5.5 5.5 0 0 0 14.5 2a5.5 5.5 0 0 0-5 0z"/>',
+            filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+            globe: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+            layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+        };
+        const Icon = ({ name, size = 20, className = '' }) => {
+            const d = IP[name]; if (!d) return null;
+            return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: d }} />;
+        };
+
+        /* ═══════════════════════════════════════════
+           MARKDOWN HELPERS
+           ═══════════════════════════════════════════ */
+        const renderMd = (text) => { try { return marked.parse(text || '', { breaks: true, gfm: true }); } catch (e) { return text || ''; } };
+        const MdContent = ({ text, className = '', small = false, dark = false }) => (
+            <div className={`md-body ${small ? 'md-body-sm' : ''} ${dark ? 'md-body-dark' : ''} ${className}`} dangerouslySetInnerHTML={{ __html: renderMd(text) }} />
+        );
+
+        /* ═══════════════════════════════════════════
+           PARSER — .md → AST
+           ═══════════════════════════════════════════ */
+        const parseProps = (str) => {
+            if (!str || !str.startsWith('{')) return {};
+            try { return JSON.parse(str); } catch (e) {
+                const props = {};
+                const re = /(\w+)\s*[=:]\s*(?:"([^"]*)"|'([^']*)'|(\S+))/g; let m;
+                while ((m = re.exec(str)) !== null) {
+                    const val = m[2] ?? m[3] ?? m[4];
+                    props[m[1]] = /^\d+$/.test(val) ? parseInt(val) : val === 'true' ? true : val === 'false' ? false : val;
+                }
+                return props;
+            }
+        };
+
+        /* ── Section splitters (now children-aware) ── */
+        const parseSections = (lines, children, marker) => {
+            const sections = []; let cur = null;
+            for (const line of lines) {
+                const m = line.match(new RegExp(`^${marker}\\s+(.+)$`));
+                if (m) { if (cur) sections.push(cur); cur = { title: m[1].trim(), lines: [] }; }
+                else if (cur) cur.lines.push(line);
+                else if (line.trim()) { cur = { title: '', lines: [line] }; }
+            }
+            if (cur) sections.push(cur);
+            /* Distribute child blocks into their nearest preceding section */
+            const result = sections.map(s => ({ title: s.title, content: s.lines.join('\n').trim(), children: [] }));
+            if (children && children.length && result.length) {
+                /* Simple heuristic: child order maps to section order.
+                   We assign each child to the section whose raw-line range it was within.
+                   Since we lost exact line positions, just append all children to the last section
+                   that existed before them. We use a positional index approach. */
+                let lineCount = 0; const sectionEnds = [];
+                for (const s of sections) { lineCount += s.lines.length + 1; sectionEnds.push(lineCount); }
+                /* Simpler: assign children round-robin to sections they appear after.
+                   Since children were extracted in order, and the raw lines between them
+                   define sections, we distribute children based on insertion order. */
+                children.forEach(c => {
+                    result[result.length - 1].children.push(c);
+                });
+            }
+            return result;
+        };
+
+        const parseRadio = (props, lines) => {
+            const questionLines = []; const options = [];
+            for (const line of lines) {
+                const m = line.match(/^\(([A-Za-z0-9])\)\s+(.+)$/);
+                if (m) options.push({ label: m[1], text: m[2].trim() });
+                else if (line.trim()) questionLines.push(line);
+            }
+            return { type: 'radio', props, question: questionLines.join('\n').trim(), options };
+        };
+
+        const parseCarousel = (lines) => {
+            const slides = []; let cur = null;
+            for (const line of lines) {
+                if (/^---\s*[Ss]lide/.test(line) || /^@slide\s*/i.test(line)) {
+                    if (cur) slides.push(cur);
+                    cur = { title: line.replace(/^---\s*[Ss]lide\s*/, '').replace(/^@slide\s*/i, '').trim() || '', lines: [] };
+                } else if (cur) cur.lines.push(line);
+                else { cur = { title: '', lines: [line] }; }
+            }
+            if (cur) slides.push(cur);
+            return slides.map(s => ({ title: s.title || s.lines[0]?.trim() || '', content: s.lines.join('\n').trim() }));
+        };
+
+        const parseBento = (lines) => {
+            const cards = []; let cur = null;
+            for (const line of lines) {
+                const m = line.match(/^@card\s+(?:Title:\s*)?(.+)$/i);
+                if (m) { if (cur) cards.push(cur); cur = { title: m[1].trim(), lines: [] }; }
+                else if (cur) cur.lines.push(line);
+            }
+            if (cur) cards.push(cur);
+            return cards.map(c => ({ title: c.title, content: c.lines.join('\n').trim(), children: [] }));
+        };
+
+        const parseDirective = (type, props, rawLines, children) => {
+            const ch = children || [];
+            switch (type) {
+                case 'tabs': return { type, props, items: parseSections(rawLines, ch, '@tab'), children: ch };
+                case 'accordion': return { type, props, items: parseSections(rawLines, ch, '@item'), children: ch };
+                case 'chips': return { type, props, items: rawLines.map(l => l.trim()).filter(Boolean), children: ch };
+                case 'radio': { const r = parseRadio(props, rawLines); r.children = ch; return r; }
+                case 'snackbar': return { type, props, content: rawLines.join('\n').trim(), children: ch };
+                case 'toast': return { type, props, content: rawLines.join('\n').trim(), children: ch };
+                case 'carousel': return { type, props, items: parseCarousel(rawLines), children: ch };
+                case 'bento': return { type, props, items: parseBento(rawLines), children: ch };
+                case 'breadcrumbs': return { type, props, path: rawLines.join('').split('>').map(s => s.trim()).filter(Boolean), children: ch };
+                case 'skeleton': return { type, props: { lines: props.lines || 4, ...props }, children: ch };
+                default: return { type: 'markdown', content: rawLines.join('\n'), children: ch };
+            }
+        };
+
+        /* ═══════════════════════════════════════════
+           RECURSIVE PARSER — supports nested :::directives
+           :::componentName = OPEN, bare ::: = CLOSE
+           ═══════════════════════════════════════════ */
+        const collectBlocks = (lines, startIdx, isNested) => {
+            const blocks = []; let mdBuf = []; let i = startIdx;
+            const flushMd = () => { const c = mdBuf.join('\n').trim(); if (c) blocks.push({ type: 'markdown', content: c, children: [] }); mdBuf = []; };
+            while (i < lines.length) {
+                const line = lines[i];
+                /* Bare ::: → close current nesting level */
+                if (/^:::\s*$/.test(line)) {
+                    if (isNested) { flushMd(); i++; break; }
+                    else { mdBuf.push(line); i++; continue; } /* stray ::: at top level → treat as text */
+                }
+                /* :::type → open a new directive (possibly nested) */
+                const dm = line.match(/^:::(\w[\w-]*)\s*(.*)?$/);
+                if (dm && dm[1]) {
+                    flushMd();
+                    const compType = dm[1].toLowerCase();
+                    const propsStr = (dm[2] || '').trim();
+                    i++;
+                    /* Recursively collect inner content — may contain more :::directives */
+                    const inner = collectBlocks(lines, i, true);
+                    i = inner.endIdx;
+                    /* Separate raw text lines from nested directive children */
+                    const rawLines = []; const childBlocks = [];
+                    inner.blocks.forEach(b => {
+                        if (b.type === 'markdown') { rawLines.push(...b.content.split('\n')); }
+                        else { childBlocks.push(b); }
+                    });
+                    blocks.push(parseDirective(compType, parseProps(propsStr), rawLines, childBlocks));
+                } else {
+                    mdBuf.push(line); i++;
+                }
+            }
+            flushMd();
+            return { blocks, endIdx: i };
+        };
+
+        const parseDoc = (text) => {
+            const result = { meta: {}, blocks: [] };
+            const fmMatch = text.match(/^---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
+            if (fmMatch) {
+                fmMatch[1].split('\n').forEach(line => {
+                    const idx = line.indexOf(':');
+                    if (idx > 0) {
+                        const key = line.slice(0, idx).trim();
+                        let val = line.slice(idx + 1).trim();
+                        if (val.startsWith('[') && val.endsWith(']')) val = val.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+                        else if (val === 'true') val = true;
+                        else if (val === 'false') val = false;
+                        else if (/^\d+$/.test(val)) val = parseInt(val);
+                        else val = val.replace(/^["']|["']$/g, '');
+                        result.meta[key] = val;
+                    }
+                });
+                text = fmMatch[2] || '';
+            }
+            const allLines = text.split('\n');
+            const parsed = collectBlocks(allLines, 0, false);
+            result.blocks = parsed.blocks;
+            return result;
+        };
+
+        /* ═══════════════════════════════════════════
+           NORMALIZE — convert any block to items[]
+           ═══════════════════════════════════════════ */
+        const normalizeBlock = (block) => {
+            switch (block.type) {
+                case 'tabs': case 'accordion': case 'carousel': case 'bento': return block.items || [];
+                case 'chips': return (block.items || []).map(c => ({ title: c, content: '' }));
+                case 'radio': return (block.options || []).map(o => ({ title: `(${o.label}) ${o.text}`, content: block.question || '' }));
+                case 'snackbar': case 'toast': return [{ title: block.props?.type || block.type, content: block.content || '' }];
+                case 'breadcrumbs': return (block.path || []).map(p => ({ title: p, content: '' }));
+                case 'skeleton': return Array(block.props?.lines || 3).fill(null).map((_, i) => ({ title: `Section ${i + 1}`, content: '...' }));
+                default: return [{ title: '', content: block.content || '' }];
+            }
+        };
+
+        /* ═══════════════════════════════════════════
+           RENDERERS — All 10 component types
+           ═══════════════════════════════════════════ */
+
+        const TabsBlock = ({ items }) => {
+            const [active, setActive] = useState(0);
+            const cur = items[active] || items[0];
+            return (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                    <div className="flex overflow-x-auto border-b border-gray-200 bg-gray-50 sb-hide">
+                        {items.map((item, i) => (
+                            <button key={i} onClick={() => setActive(i)} className={`whitespace-nowrap px-5 py-3 text-sm font-bold border-b-2 transition-colors ${active === i ? 'border-blue-600 text-blue-700 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}>
+                                {item.title || `Tab ${i + 1}`}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="p-6 anim-fade" key={active}>
+                        {cur?.title && <h3 className="text-xl font-bold text-gray-900 mb-3">{cur.title}</h3>}
+                        <MdContent text={cur?.content} />
+                        {cur?.children?.map((child, j) => <BlockRenderer key={`tc${j}`} block={child} />)}
+                    </div>
+                </div>
+            );
+        };
+
+        const AccordionBlock = ({ items }) => {
+            const [openIds, setOpenIds] = useState(new Set([0]));
+            const toggle = i => setOpenIds(p => { const n = new Set(p); n.has(i) ? n.delete(i) : n.add(i); return n; });
+            return (
+                <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                    {items.map((item, i) => {
+                        const open = openIds.has(i);
+                        return (
+                            <div key={i} className="border-b border-gray-200 last:border-0">
+                                <button onClick={() => toggle(i)} className={`w-full flex justify-between items-center p-4 text-left transition-colors ${open ? 'bg-blue-50/50' : 'hover:bg-gray-50'}`}>
+                                    <span className={`font-bold ${open ? 'text-blue-900' : 'text-gray-800'}`}>{item.title || `Section ${i + 1}`}</span>
+                                    <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} className={open ? 'text-blue-500' : 'text-gray-400'} />
+                                </button>
+                                {open && <div className="px-5 pb-5 pt-1 bg-blue-50/30 anim-fade">
+                                    <MdContent text={item.content} />
+                                    {item.children?.map((child, j) => <BlockRenderer key={`ac${j}`} block={child} />)}
+                                </div>}
+                            </div>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        const ChipsBlock = ({ items }) => {
+            const [sel, setSel] = useState(null);
+            const colors = ['bg-blue-100 text-blue-700 border-blue-200', 'bg-purple-100 text-purple-700 border-purple-200', 'bg-emerald-100 text-emerald-700 border-emerald-200', 'bg-amber-100 text-amber-700 border-amber-200', 'bg-rose-100 text-rose-700 border-rose-200', 'bg-cyan-100 text-cyan-700 border-cyan-200'];
+            return (
+                <div className="flex flex-wrap gap-2">
+                    {items.map((item, i) => {
+                        const label = typeof item === 'string' ? item : item.title;
+                        const isOn = sel === i;
+                        return (
+                            <button key={i} onClick={() => setSel(isOn ? null : i)} className={`px-4 py-2 rounded-full text-sm font-bold border-2 transition-all ${isOn ? 'ring-2 ring-offset-1 ring-blue-400 scale-105' : ''} ${colors[i % colors.length]}`}>
+                                {label}
+                            </button>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        const RadioBlock = ({ block }) => {
+            const [selected, setSelected] = useState(null);
+            const [revealed, setRevealed] = useState(false);
+            const answer = block.props?.answer;
+            return (
+                <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+                    {block.question && <div className="font-bold text-gray-900 text-lg"><MdContent text={block.question} small={true} /></div>}
+                    <div className="space-y-2">
+                        {(block.options || []).map((opt, i) => {
+                            const isCorrect = answer && opt.label.toUpperCase() === answer.toUpperCase();
+                            const isSelected = selected === i;
+                            let cls = 'border-gray-200 hover:border-blue-300 bg-white';
+                            if (revealed && isSelected && isCorrect) cls = 'border-green-500 bg-green-50';
+                            else if (revealed && isSelected && !isCorrect) cls = 'border-red-500 bg-red-50';
+                            else if (revealed && isCorrect) cls = 'border-green-400 bg-green-50/50';
+                            else if (isSelected) cls = 'border-blue-500 bg-blue-50';
+                            return (
+                                <label key={i} className={`flex items-center gap-3 p-3.5 border-2 rounded-xl cursor-pointer transition-all ${cls}`}>
+                                    <input type="radio" name={`q_${block.question?.slice(0, 10)}`} checked={isSelected} onChange={() => setSelected(i)} className="w-4 h-4 accent-blue-600" />
+                                    <span className="font-medium"><span className="font-bold text-gray-500 mr-1">({opt.label})</span> {opt.text}</span>
+                                    {revealed && isCorrect && <Icon name="check-circle" size={18} className="ml-auto text-green-500" />}
+                                </label>
+                            );
+                        })}
+                    </div>
+                    {answer && <button onClick={() => setRevealed(!revealed)} className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${revealed ? 'bg-gray-200 text-gray-700' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>
+                        {revealed ? 'Hide Answer' : 'Check Answer'}
+                    </button>}
+                </div>
+            );
+        };
+
+        const SnackbarBlock = ({ block }) => {
+            const variants = { info: 'bg-blue-600', warning: 'bg-amber-500', error: 'bg-red-600', success: 'bg-emerald-600', neutral: 'bg-gray-800' };
+            const vt = block.props?.type || 'info';
+            const bg = variants[vt] || variants.info;
+            return (
+                <div className={`${bg} text-white rounded-xl px-5 py-3.5 shadow-lg flex items-center gap-3`}>
+                    <Icon name={vt === 'warning' ? 'alert-circle' : vt === 'error' ? 'alert-circle' : vt === 'success' ? 'check-circle' : 'info'} size={20} className="flex-shrink-0" />
+                    <div className="flex-1 min-w-0"><MdContent text={block.content} small={true} dark={true} /></div>
+                </div>
+            );
+        };
+
+        const ToastBlock = ({ block }) => {
+            const [dismissed, setDismissed] = useState(false);
+            if (dismissed) return null;
+            return (
+                <div className="bg-white shadow-xl rounded-xl border border-gray-100 flex items-start gap-3 p-4 max-w-sm anim-right">
+                    <div className="flex-shrink-0 bg-blue-50 text-blue-500 p-1.5 rounded-lg"><Icon name="info" size={18} /></div>
+                    <div className="flex-1 min-w-0"><MdContent text={block.content} small={true} /></div>
+                    <button onClick={() => setDismissed(true)} className="text-gray-400 hover:text-gray-600 text-lg leading-none mt-0.5">&times;</button>
+                </div>
+            );
+        };
+
+        const CarouselBlock = ({ items }) => {
+            const [idx, setIdx] = useState(0);
+            const total = items.length;
+            const prev = () => setIdx(i => (i - 1 + total) % total);
+            const next = () => setIdx(i => (i + 1) % total);
+            const cur = items[idx];
+            return (
+                <div className="relative bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 rounded-2xl overflow-hidden shadow-xl text-white">
+                    <div className="p-8 min-h-[180px] anim-fade" key={idx}>
+                        {cur?.title && <h3 className="text-2xl font-black mb-3">{cur.title}</h3>}
+                        <MdContent text={cur?.content} dark={true} />
+                    </div>
+                    <div className="flex items-center justify-between px-6 pb-5">
+                        <button onClick={prev} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"><Icon name="chevron-left" size={20} /></button>
+                        <div className="flex gap-2">
+                            {items.map((_, i) => <div key={i} className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${i === idx ? 'bg-white scale-125' : 'bg-white/30'}`} onClick={() => setIdx(i)} />)}
+                        </div>
+                        <button onClick={next} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"><Icon name="chevron-right" size={20} /></button>
+                    </div>
+                </div>
+            );
+        };
+
+        const BentoBlock = ({ items }) => {
+            const colors = [
+                'from-blue-500 to-indigo-600', 'from-emerald-500 to-teal-600', 'from-purple-500 to-pink-600',
+                'from-amber-500 to-orange-600', 'from-cyan-500 to-blue-600', 'from-rose-500 to-red-600'
+            ];
+            return (
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {items.map((card, i) => (
+                        <div key={i} className={`bg-gradient-to-br ${colors[i % colors.length]} rounded-xl p-5 text-white shadow-lg hover:scale-[1.02] transition-transform anim-up`} style={{ animationDelay: `${i * 80}ms` }}>
+                            <h4 className="font-black text-lg mb-2">{card.title}</h4>
+                            {card.content && <MdContent text={card.content} small={true} dark={true} />}
+                            {card.children?.map((child, j) => <BlockRenderer key={`bc${j}`} block={child} />)}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const BreadcrumbsBlock = ({ block }) => {
+            const [activeIdx, setActiveIdx] = useState((block.path || []).length - 1);
+            return (
+                <nav className="flex px-5 py-3.5 border border-gray-200 rounded-2xl bg-white shadow-sm overflow-x-auto sb-hide" aria-label="Breadcrumb">
+                    <ol className="inline-flex items-center gap-1 flex-nowrap whitespace-nowrap">
+                        {(block.path || []).map((crumb, i) => {
+                            const isLast = i === (block.path.length - 1);
+                            const isActive = i === activeIdx;
+                            return (
+                                <li key={i} className="flex items-center gap-1">
+                                    {i > 0 && <Icon name="chevron-right" size={14} className="text-gray-300 mx-1" />}
+                                    <button onClick={() => setActiveIdx(i)} className={`text-sm font-semibold px-2 py-1 rounded-lg transition-colors ${isActive ? 'bg-blue-100 text-blue-700' : isLast ? 'text-gray-900' : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'}`}>
+                                        {crumb}
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ol>
+                </nav>
+            );
+        };
+
+        const SkeletonBlock = ({ block }) => {
+            const n = block.props?.lines || 4;
+            const widths = ['100%', '92%', '78%', '85%', '65%', '95%'];
+            return (
+                <div className="space-y-3 p-5 bg-white rounded-xl border border-gray-200">
+                    <div className="h-6 w-48 bg-gray-200 rounded-lg" style={{ background: 'linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+                    {Array(n).fill(null).map((_, i) => (
+                        <div key={i} className="h-4 bg-gray-200 rounded" style={{ width: widths[i % widths.length], background: 'linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%)', backgroundSize: '200% 100%', animation: `shimmer 1.5s ${i * 0.15}s infinite` }} />
+                    ))}
+                </div>
+            );
+        };
+
+        /* ═══════════════════════════════════════════
+           BLOCK RENDERER — dispatches to component
+           ═══════════════════════════════════════════ */
+        const COMP_LABELS = { tabs: 'Tabs', accordion: 'Accordion', chips: 'Chips', radio: 'Quiz', snackbar: 'Snackbar', toast: 'Toast', carousel: 'Carousel', bento: 'Bento Grid', breadcrumbs: 'Breadcrumbs', skeleton: 'Skeleton' };
+        const COMP_COLORS = { tabs: 'bg-blue-100 text-blue-700', accordion: 'bg-indigo-100 text-indigo-700', chips: 'bg-emerald-100 text-emerald-700', radio: 'bg-amber-100 text-amber-700', snackbar: 'bg-red-100 text-red-700', toast: 'bg-cyan-100 text-cyan-700', carousel: 'bg-purple-100 text-purple-700', bento: 'bg-pink-100 text-pink-700', breadcrumbs: 'bg-teal-100 text-teal-700', skeleton: 'bg-gray-200 text-gray-600' };
+
+        const renderComponent = (type, block, items) => {
+            switch (type) {
+                case 'tabs': return <TabsBlock items={items} />;
+                case 'accordion': return <AccordionBlock items={items} />;
+                case 'chips': return <ChipsBlock items={block.type === 'chips' ? block.items : items} />;
+                case 'radio': return <RadioBlock block={block} />;
+                case 'snackbar': return <SnackbarBlock block={block} />;
+                case 'toast': return <ToastBlock block={block} />;
+                case 'carousel': return <CarouselBlock items={items} />;
+                case 'bento': return <BentoBlock items={items} />;
+                case 'breadcrumbs': return <BreadcrumbsBlock block={block} />;
+                case 'skeleton': return <SkeletonBlock block={block} />;
+                default: return <MdContent text={block.content} />;
+            }
+        };
+
+        const BlockRenderer = ({ block, globalView }) => {
+            if (block.type === 'markdown') return <div className="anim-fade"><MdContent text={block.content} /></div>;
+            const renderType = globalView || block.type;
+            const items = normalizeBlock(block);
+            const label = COMP_LABELS[renderType] || renderType;
+            const color = COMP_COLORS[renderType] || 'bg-gray-100 text-gray-600';
+            // For global view override, create a modified block with normalized items
+            let renderBlock = block;
+            if (globalView && globalView !== block.type) {
+                renderBlock = { ...block, type: globalView, items, content: items.map(i => i.content).join('\n'), path: items.map(i => i.title), options: block.options || items.map((it, idx) => ({ label: String.fromCharCode(65 + idx), text: it.title })), question: block.question || items[0]?.content || '', props: { ...block.props, lines: block.props?.lines || items.length } };
+            }
+            return (
+                <div className="comp-block anim-up">
+                    <span className={`comp-badge ${color}`}>{label}{globalView ? ' ⇄' : ''}</span>
+                    {renderComponent(renderType, renderBlock, items)}
+                    {/* Render top-level children that aren't captured by item sections */}
+                    {block.children?.filter(c => !block.items?.some(it => it.children?.includes(c))).map((child, j) => <BlockRenderer key={`bl${j}`} block={child} />)}
+                </div>
+            );
+        };
+
+        /* ═══════════════════════════════════════════
+           DOCUMENT RENDERER
+           ═══════════════════════════════════════════ */
+        const MetaHeader = ({ meta }) => {
+            if (!meta || Object.keys(meta).length === 0) return null;
+            return (
+                <div className="mb-8 p-6 bg-gradient-to-r from-indigo-50 via-blue-50 to-purple-50 rounded-2xl border border-indigo-100 anim-fade">
+                    {meta.title && <h1 className="text-3xl font-black text-gray-900 mb-2">{meta.title}</h1>}
+                    <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                        {meta.author && <span className="flex items-center gap-1"><Icon name="edit" size={14} />{meta.author}</span>}
+                        {meta.date && <span>📅 {meta.date}</span>}
+                        {meta.status && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">{meta.status}</span>}
+                        {meta.difficulty && <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">{meta.difficulty}</span>}
+                    </div>
+                    {meta.tags && Array.isArray(meta.tags) && (
+                        <div className="flex flex-wrap gap-1.5 mt-3">{meta.tags.map(t => <span key={t} className="px-2.5 py-0.5 bg-white border border-gray-200 rounded-full text-xs font-medium text-gray-600">#{t}</span>)}</div>
+                    )}
+                </div>
+            );
+        };
+
+        const DocumentRenderer = ({ doc, globalView }) => (
+            <div className="max-w-4xl mx-auto">
+                <MetaHeader meta={doc.meta} />
+                <div className="space-y-6">
+                    {doc.blocks.map((block, i) => <BlockRenderer key={i} block={block} globalView={globalView} />)}
+                </div>
+            </div>
+        );
+
+        /* ═══════════════════════════════════════════
+           ERROR BOUNDARY
+           ═══════════════════════════════════════════ */
+        class ErrorBoundary extends React.Component {
+            constructor(p) { super(p); this.state = { hasError: false, error: null }; }
+            static getDerivedStateFromError(e) { return { hasError: true, error: e }; }
+            render() {
+                if (this.state.hasError) return (
+                    <div className="p-6 text-center bg-red-50 rounded-xl border border-red-200">
+                        <h3 className="text-lg font-bold text-red-800 mb-2">Render Error</h3>
+                        <p className="text-red-600 text-sm mb-4">{this.state.error?.message}</p>
+                        <button onClick={() => this.setState({ hasError: false })} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700">Retry</button>
+                    </div>
+                );
+                return this.props.children;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           DEFAULT TEMPLATE
+           ═══════════════════════════════════════════ */
+        const DEFAULT_MD = `---
+title: "The Mughal Empire — Interactive Study Notes"
+date: 2026-02-21
+author: "Learning Engine"
+status: "Complete"
+difficulty: "intermediate"
+tags: [history, mughal-empire, study-notes, india]
+---
+
+# 📚 The Mughal Empire (1526–1857)
+
+The Mughal Empire was one of the largest and most powerful empires in Indian history. Founded by **Babur** in 1526, it dominated the Indian subcontinent for over three centuries.
+
+> This document demonstrates all **10 interactive components** embedded directly in Markdown. Each \`:::component\` block renders as a different UI element!
+
+---
+
+## 🗂️ Key Topics
+
+:::tabs
+@tab Overview
+The Mughal Empire was established after the **Battle of Panipat** in 1526, when Babur defeated Ibrahim Lodi.
+
+Key characteristics:
+- Centralized administration
+- Cultural synthesis of Persian, Turkic, and Indian traditions
+- Remarkable architectural achievements
+
+@tab Timeline
+| Year | Event |
+|------|-------|
+| 1526 | Battle of Panipat — Babur founds the empire |
+| 1556 | Akbar ascends the throne |
+| 1632 | Shah Jahan begins building the Taj Mahal |
+| 1707 | Death of Aurangzeb — decline begins |
+| 1857 | Last emperor Bahadur Shah Zafar is exiled |
+
+@tab Key Figures
+1. **Babur** — Founder, military genius
+2. **Akbar** — Greatest administrator, *Din-i-Ilahi*
+3. **Shah Jahan** — Builder of the Taj Mahal
+4. **Aurangzeb** — Last strong emperor
+:::
+
+---
+
+## 📝 Quick Recall
+
+:::chips
+Babur
+Akbar
+Humayun
+Jahangir
+Shah Jahan
+Aurangzeb
+Mansabdari
+Din-i-Ilahi
+Taj Mahal
+Fatehpur Sikri
+:::
+
+---
+
+## 🧠 Self-Test
+
+:::radio {answer="B"}
+Who introduced the Mansabdari system?
+
+(A) Babur
+(B) Akbar
+(C) Shah Jahan
+(D) Aurangzeb
+:::
+
+:::radio {answer="C"}
+Which Mughal emperor built the Taj Mahal?
+
+(A) Akbar
+(B) Aurangzeb
+(C) Shah Jahan
+(D) Jahangir
+:::
+
+---
+
+## 📖 Deep Dive: Administration
+
+:::accordion
+@item What was the Mansabdari System?
+The **Mansabdari system** was a ranking system introduced by Akbar to organize the military and civil services.
+
+- Each officer (*mansabdar*) was assigned a rank
+- Ranks determined **salary** and number of cavalry
+- Dual ranking: *zat* (personal) and *sawar* (cavalry)
+
+> This system ensured loyalty to the emperor and efficient administration.
+
+@item What was Din-i-Ilahi?
+**Din-i-Ilahi** (Faith of God) was a syncretic religion founded by Akbar in 1582.
+
+Key principles:
+1. Universal tolerance
+2. Combined elements of Islam, Hinduism, Christianity, and Zoroastrianism
+3. \`Sulh-i-kul\` — peace with all
+
+@item Revenue System
+Akbar's revenue system called **Zabt** was introduced by Raja Todar Mal:
+
+\`\`\`
+Land Revenue = 1/3 of produce
+Measured in: Bigha (unit of area)
+Collection: Cash or kind
+\`\`\`
+:::
+
+---
+
+## 🎠 Key Battles
+
+:::carousel
+--- Slide
+### ⚔️ First Battle of Panipat (1526)
+**Babur** vs **Ibrahim Lodi**
+
+Babur used *tulughma* (flanking) tactics and **gunpowder artillery** — a first in Indian warfare.
+
+--- Slide
+### ⚔️ Battle of Khanwa (1527)
+**Babur** vs **Rana Sanga**
+
+Decisive victory that established Mughal dominance over Rajput resistance.
+
+--- Slide
+### ⚔️ Battle of Haldighati (1576)
+**Akbar's forces** vs **Maharana Pratap**
+
+Though Pratap lost, he continued guerrilla warfare and never surrendered.
+
+--- Slide
+### ⚔️ Battle of Plassey (1757)
+**British East India Company** vs **Siraj-ud-Daulah**
+
+Marked the beginning of British colonial rule and the decline of Mughal authority.
+:::
+
+---
+
+## 🏗️ Cultural Achievements
+
+:::bento
+@card Title: Architecture
+Taj Mahal, Red Fort, Fatehpur Sikri — blending Persian, Indian, and Islamic styles
+
+@card Title: Literature
+Patronage of Persian poetry, *Akbar-nama* by Abul Fazl
+
+@card Title: Painting
+Mughal miniature painting school — detailed portraits and court scenes
+
+@card Title: Music
+Tansen — one of the nine jewels (*Navaratnas*) of Akbar's court
+
+@card Title: Language
+Development of **Urdu** as a fusion of Hindi, Persian, Arabic, and Turkish
+
+@card Title: Science
+Astronomical observations, translation of Sanskrit texts into Persian
+:::
+
+---
+
+## 🧭 Topic Navigation
+
+:::breadcrumbs
+Indian History > Medieval Period > Mughal Empire > Akbar's Reign
+:::
+
+---
+
+## ⚠️ Exam Tips
+
+:::snackbar {type="warning"}
+**Important:** The Mansabdari system and Din-i-Ilahi are the most frequently asked topics in competitive exams!
+:::
+
+:::snackbar {type="success"}
+**Pro Tip:** Remember the sequence: Babur → Humayun → Akbar → Jahangir → Shah Jahan → Aurangzeb
+:::
+
+:::toast
+💡 *Fun Fact:* Akbar was illiterate but had an extraordinary memory. He had books read to him and could recall entire passages!
+:::
+
+---
+
+## 💻 Bonus: Code Example
+
+For the coders — here's how you might model this data:
+
+\`\`\`python
+class MughalEmperor:
+    def __init__(self, name, reign_start, reign_end, achievements):
+        self.name = name
+        self.reign = (reign_start, reign_end)
+        self.achievements = achievements
+
+    def __repr__(self):
+        return f"{self.name} ({self.reign[0]}-{self.reign[1]})"
+
+akbar = MughalEmperor(
+    name="Akbar",
+    reign_start=1556,
+    reign_end=1605,
+    achievements=["Mansabdari", "Din-i-Ilahi", "Sulh-i-kul"]
+)
+\`\`\`
+
+---
+
+## ⏳ Loading Preview
+
+:::skeleton {lines=5}
+:::
+
+---
+
+> *"An empire founded on war can only endure through wisdom."*
+> — Historical Motto
+
+**End of Study Notes** ✨
+`;
+
+        /* ═══════════════════════════════════════════
+           UI TYPE LIST
+           ═══════════════════════════════════════════ */
+        const VIEW_TYPES = [
+            { id: null, label: '✦ Native (Auto)' },
+            { id: 'tabs', label: '🗂 Tabs' },
+            { id: 'accordion', label: '📋 Accordion' },
+            { id: 'chips', label: '🏷 Chips' },
+            { id: 'radio', label: '⭕ Radio Quiz' },
+            { id: 'carousel', label: '🎠 Carousel' },
+            { id: 'bento', label: '🧱 Bento Grid' },
+            { id: 'breadcrumbs', label: '🧭 Breadcrumbs' },
+            { id: 'toast', label: '🔔 Toast' },
+            { id: 'snackbar', label: '📢 Snackbar' },
+            { id: 'skeleton', label: '💀 Skeleton' },
+        ];
+
+        /* ═══════════════════════════════════════════
+           MAIN APP
+           ═══════════════════════════════════════════ */
+        const App = () => {
+            const [mdSource, setMdSource] = useState(DEFAULT_MD);
+            const [editorText, setEditorText] = useState(DEFAULT_MD);
+            const [globalView, setGlobalView] = useState(null);
+            const [showEditor, setShowEditor] = useState(true);
+            const fileRef = useRef(null);
+
+            const doc = useMemo(() => { try { return parseDoc(mdSource); } catch (e) { return { meta: {}, blocks: [{ type: 'markdown', content: '⚠️ Parse error: ' + e.message }] }; } }, [mdSource]);
+
+            const commitEditor = () => setMdSource(editorText);
+
+            const loadFile = (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => { const t = ev.target.result; setEditorText(t); setMdSource(t); };
+                reader.readAsText(file);
+            };
+            const downloadMd = () => {
+                const b = new Blob([mdSource], { type: 'text/markdown' });
+                const u = URL.createObjectURL(b); const a = document.createElement('a');
+                a.href = u; a.download = (doc.meta.title || 'document').replace(/[^a-zA-Z0-9]/g, '_') + '.md';
+                a.click(); URL.revokeObjectURL(u);
+            };
+            const copyMd = () => navigator.clipboard?.writeText(mdSource);
+            const resetMd = () => { setEditorText(DEFAULT_MD); setMdSource(DEFAULT_MD); };
+
+            /* ── Export: Self-contained interactive HTML ── */
+            const exportHTML = () => {
+                const previewEl = document.querySelector('[data-preview]');
+                if (!previewEl) return;
+                const styles = document.querySelectorAll('style, link[rel=stylesheet]');
+                let styleStr = '';
+                styles.forEach(s => { if (s.tagName === 'STYLE') styleStr += s.outerHTML; });
+                const htmlContent = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${doc.meta.title || 'Interactive Study Notes'}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"><\/script>
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','system-ui','sans-serif'],mono:['JetBrains Mono','monospace']}}}};<\/script>
+${styleStr}
+<style>body{font-family:'Inter',system-ui,sans-serif;background:linear-gradient(135deg,#f8fafc 0%,#f1f5f9 50%,#f8fafc 100%);min-height:100vh;padding:2rem;}
+.export-badge{display:inline-block;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:2px 10px;border-radius:6px;margin-bottom:0.5rem;}
+</style></head><body>
+<div style="max-width:56rem;margin:0 auto;">${previewEl.innerHTML}</div>
+</body></html>`;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = (doc.meta.title || 'interactive-notes').replace(/[^a-zA-Z0-9]/g, '_') + '.html';
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            /* ── Export: PDF (expanded view) ── */
+            const exportPDF = async () => {
+                const previewEl = document.querySelector('[data-preview]');
+                if (!previewEl) return;
+                /* Expand all accordions & show all tabs before capture */
+                const clone = previewEl.cloneNode(true);
+                /* Remove hidden accordion/tab content */
+                clone.querySelectorAll('button').forEach(btn => {
+                    btn.style.pointerEvents = 'none';
+                });
+                /* Create a temporary container */
+                const container = document.createElement('div');
+                container.style.cssText = 'position:fixed;top:0;left:0;width:800px;padding:32px;background:white;z-index:99999;overflow:visible;';
+                container.innerHTML = `<div style="max-width:700px;margin:0 auto;font-family:Inter,system-ui,sans-serif;">${clone.innerHTML}</div>`;
+                document.body.appendChild(container);
+                try {
+                    await html2pdf().set({
+                        margin: [10, 10, 10, 10],
+                        filename: (doc.meta.title || 'study-notes').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf',
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true, logging: false },
+                        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                    }).from(container).save();
+                } finally {
+                    document.body.removeChild(container);
+                }
+            };
+
+            const blockCounts = useMemo(() => {
+                const counts = {};
+                doc.blocks.forEach(b => { if (b.type !== 'markdown') counts[b.type] = (counts[b.type] || 0) + 1; });
+                return counts;
+            }, [doc]);
+
+            return (
+                <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
+                    {/* Header */}
+                    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+                        <div className="max-w-[1600px] mx-auto px-4 py-3 flex items-center gap-4 flex-wrap">
+                            <div className="flex items-center gap-2.5">
+                                <div className="p-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl text-white"><Icon name="book-open" size={22} /></div>
+                                <div>
+                                    <h1 className="text-lg font-black text-gray-900 leading-tight">MD Learning Engine <span className="text-indigo-500">V2</span></h1>
+                                    <p className="text-xs text-gray-500">Nested Interactive Markdown Renderer</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 ml-auto flex-wrap">
+                                {/* Global View Switcher */}
+                                <select value={globalView || ''} onChange={e => setGlobalView(e.target.value || null)} className="px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium bg-white hover:border-blue-400 focus:ring-2 focus:ring-blue-500 outline-none">
+                                    {VIEW_TYPES.map(v => <option key={v.id || 'native'} value={v.id || ''}>{v.label}</option>)}
+                                </select>
+
+                                <button onClick={() => setShowEditor(!showEditor)} className={`p-2 rounded-xl border transition-colors ${showEditor ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700'}`} title="Toggle Editor">
+                                    <Icon name="edit" size={18} />
+                                </button>
+
+                                <div className="w-px h-6 bg-gray-200" />
+
+                                <input ref={fileRef} type="file" accept=".md,.markdown,.txt" onChange={loadFile} className="hidden" />
+                                <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                                    <Icon name="upload" size={16} />Load .md
+                                </button>
+                                <button onClick={downloadMd} className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50 transition-colors" title="Download"><Icon name="download" size={18} /></button>
+                                <button onClick={copyMd} className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50 transition-colors" title="Copy"><Icon name="copy" size={18} /></button>
+                                <button onClick={resetMd} className="p-2 rounded-xl border border-gray-200 text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50 transition-colors" title="Reset"><Icon name="refresh-cw" size={18} /></button>
+
+                                <div className="w-px h-6 bg-gray-200" />
+
+                                <button onClick={exportHTML} className="flex items-center gap-1.5 px-3 py-2 border border-emerald-200 rounded-xl text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors" title="Export as interactive HTML">
+                                    <Icon name="globe" size={16} />HTML
+                                </button>
+                                <button onClick={exportPDF} className="flex items-center gap-1.5 px-3 py-2 border border-rose-200 rounded-xl text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 transition-colors" title="Export as PDF">
+                                    <Icon name="file-text" size={16} />PDF
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Stats Bar */}
+                    <div className="bg-white border-b border-gray-100 px-4 py-2">
+                        <div className="max-w-[1600px] mx-auto flex items-center gap-3 text-xs overflow-x-auto sb-hide">
+                            <span className="text-gray-400 font-medium flex-shrink-0">{doc.blocks.length} blocks</span>
+                            <span className="text-gray-300">|</span>
+                            {Object.entries(blockCounts).map(([type, count]) => (
+                                <span key={type} className={`px-2 py-0.5 rounded-full font-bold flex-shrink-0 ${COMP_COLORS[type] || 'bg-gray-100 text-gray-600'}`}>
+                                    {COMP_LABELS[type]} × {count}
+                                </span>
+                            ))}
+                            {globalView && <span className="ml-auto px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full font-bold flex-shrink-0">🔀 Global: {COMP_LABELS[globalView]}</span>}
+                        </div>
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Editor Panel */}
+                        {showEditor && (
+                            <div className="w-[420px] flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
+                                <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+                                    <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2"><Icon name="code" size={16} />Markdown Editor</h3>
+                                    <button onClick={commitEditor} className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1">
+                                        <Icon name="eye" size={14} />Preview
+                                    </button>
+                                </div>
+                                <textarea
+                                    value={editorText}
+                                    onChange={e => setEditorText(e.target.value)}
+                                    onBlur={commitEditor}
+                                    className="flex-1 p-4 text-sm font-mono text-gray-800 leading-relaxed resize-none outline-none bg-gray-50"
+                                    placeholder="Paste your .md content here..."
+                                    spellCheck={false}
+                                />
+                            </div>
+                        )}
+
+                        {/* Preview Panel */}
+                        <div className="flex-1 overflow-y-auto sb-thin p-8" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)' }}>
+                            <div data-preview>
+                                <ErrorBoundary>
+                                    <DocumentRenderer doc={doc} globalView={globalView} />
+                                </ErrorBoundary>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+
+</html>
