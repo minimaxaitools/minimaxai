@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Canvas Automation Tool</title>
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/9.1.2/bignumber.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --panel: rgba(20, 20, 20, 0.85);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #0070f3;
+            --text: #efefef;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Layout */
+        #preview-container {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        #main-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #sidebar {
+            width: 400px;
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        .scrollbox {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* Components */
+        .section {
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #ccc;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: white;
+            padding: 10px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* Asset Grid */
+        .asset-drop {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .asset-drop:hover {
+            border-color: var(--accent);
+        }
+
+        .asset-list {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .asset-item {
+            aspect-ratio: 1;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .asset-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .asset-count {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--accent);
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        /* Controls */
+        .controls-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .controls-row > * {
+            flex: 1;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+
+        .badge {
+            background: rgba(0,0,0,0.5);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            backdrop-filter: blur(5px);
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+<div id="preview-container">
+    <canvas id="main-canvas"></canvas>
+    <div class="overlay">
+        <div class="badge">
+            <span id="node-info">0 Nodes</span>
+        </div>
+    </div>
+</div>
+
+<div id="sidebar">
+    <div class="scrollbox">
+        <div class="section">
+            <h2><i data-lucide="package"></i> Bulk Assets</h2>
+            <div class="asset-drop" onclick="document.getElementById('file-input').click()">
+                <i data-lucide="upload-cloud" style="margin-bottom: 8px;"></i>
+                <div style="font-size: 13px;">Upload Images / SVGs</div>
+                <input type="file" id="file-input" multiple accept="image/*,.svg" style="display: none;">
+            </div>
+            <button class="btn-secondary" onclick="app.assets = []; app.updateAssetPreview(); app.generateLayout();" style="margin-top: 5px; padding: 5px; font-size: 10px;">
+                Clear Assets
+            </button>
+            <div id="asset-preview" class="asset-list"></div>
+        </div>
+
+        <div class="section">
+            <h2><i data-lucide="type"></i> Bulk Text</h2>
+            <textarea id="bulk-text" placeholder="Each line becomes one object..." rows="4"></textarea>
+            <div class="input-group" style="margin-top: 10px;">
+                <label>Text Font (Random from list or default)</label>
+                <select id="font-family">
+                    <option value="Arial">Arial (System)</option>
+                    <option value="Inter">Inter (Google Fonts)</option>
+                    <option value="Roboto">Roboto (Google Fonts)</option>
+                    <option value="Outfit">Outfit (Google Fonts)</option>
+                    <option value="Orbitron">Orbitron (Sci-Fi)</option>
+                    <option value="RANDOM">RANDOM (Mix them up)</option>
+                </select>
+            </div>
+            <button class="btn-secondary" onclick="document.getElementById('bulk-text').value = ''; app.generateLayout();" style="margin-top: 5px; padding: 5px; font-size: 10px;">
+                Clear Text
+            </button>
+        </div>
+
+        <div class="section">
+            <h2><i data-lucide="layout"></i> Pattern Layout</h2>
+            <div class="input-group">
+                <label>Pattern Type</label>
+                <select id="pattern-type">
+                    <optgroup label="Radial">
+                        <option value="CIRCULAR_RING">Circular Ring</option>
+                        <option value="CONCENTRIC_RINGS">Concentric Rings</option>
+                        <option value="MANDALA">Mandala</option>
+                    </optgroup>
+                    <optgroup label="Spiral">
+                        <option value="ARCHIMEDEAN_SPIRAL">Archimedean (Linear)</option>
+                        <option value="LOGARITHMIC_SPIRAL">Logarithmic (Golden)</option>
+                        <option value="FERMAT_SPIRAL">Fermat (Phyllotaxis)</option>
+                    </optgroup>
+                    <optgroup label="Grid">
+                        <option value="RECTANGULAR_GRID">Rectangle Grid</option>
+                        <option value="OFFSET_GRID">Brick / Offset Grid</option>
+                    </optgroup>
+                    <optgroup label="Geometric">
+                        <option value="POLYGON">Regular Polygon</option>
+                        <option value="STAR">Star Shape</option>
+                        <option value="PORTAL">Infinite Portal (Depth)</option>
+                        <option value="CLOCK_FACE">Clock Face (12 points)</option>
+                        <option value="SIERPINSKI">Sierpinski (Fractal)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div id="pattern-controls">
+                <!-- Dynamic controls go here -->
+            </div>
+        </div>
+
+        <div class="section">
+            <h2><i data-lucide="settings"></i> Advanced Settings</h2>
+            <div class="controls-row">
+                <div class="input-group">
+                    <label>Base Spacing</label>
+                    <input type="number" id="base-spacing" value="500">
+                </div>
+                <div class="input-group">
+                    <label>Growth Multiplier</label>
+                    <input type="number" id="growth-factor" value="1.0" step="0.1">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>Rotation Offset (Deg)</label>
+                <input type="range" id="global-rotation" min="0" max="360" value="0">
+            </div>
+        </div>
+    </div>
+
+    <div style="padding: 20px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2);">
+        <button id="export-btn">
+            <i data-lucide="download"></i> Export Automation Project
+        </button>
+        <p style="font-size: 10px; color: #666; margin-top: 10px; text-align: center;">
+            Saves a .zip file to load in your main app.
+        </p>
+    </div>
+</div>
+
+<script>
+    // --- SHARED CORE LOGIC ---
+    // (Ported from main app to ensure coordinate compatibility)
+
+    class BigVec2 {
+        constructor(x, y) {
+            this.x = x instanceof BigNumber ? x : new BigNumber(x);
+            this.y = y instanceof BigNumber ? y : new BigNumber(y);
+        }
+        add(v) { return new BigVec2(this.x.plus(v.x), this.y.plus(v.y)); }
+        subtract(v) { return new BigVec2(this.x.minus(v.x), this.y.minus(v.y)); }
+        times(n) { return new BigVec2(this.x.times(n), this.y.times(n)); }
+        clone() { return new BigVec2(this.x, this.y); }
+    }
+
+    // --- ENUMS & TYPES ---
+    const PatternType = {
+        CIRCULAR_RING: 'CIRCULAR_RING',
+        CONCENTRIC_RINGS: 'CONCENTRIC_RINGS',
+        MANDALA: 'MANDALA',
+        ARCHIMEDEAN_SPIRAL: 'ARCHIMEDEAN_SPIRAL',
+        LOGARITHMIC_SPIRAL: 'LOGARITHMIC_SPIRAL',
+        FERMAT_SPIRAL: 'FERMAT_SPIRAL',
+        RECTANGULAR_GRID: 'RECTANGULAR_GRID',
+        OFFSET_GRID: 'OFFSET_GRID',
+        STAR: 'STAR',
+        PORTAL: 'PORTAL',
+        CLOCK_FACE: 'CLOCK_FACE',
+        SIERPINSKI: 'SIERPINSKI'
+    };
+
+    // --- MAIN APP CLASS ---
+    class AutomationApp {
+        constructor() {
+            this.canvas = document.getElementById('main-canvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.assets = [];
+            this.nodes = [];
+            
+            // Layout params
+            this.config = {
+                pattern: PatternType.CIRCULAR_RING,
+                spacing: 500,
+                growth: 1.0,
+                objectCount: 0,
+                rotation: 0
+            };
+
+            this.init();
+        }
+
+        init() {
+            lucide.createIcons();
+            this.resize();
+            window.addEventListener('resize', () => this.resize());
+            this.setupInputs();
+            this.loop();
+        }
+
+        resize() {
+            this.canvas.width = this.canvas.clientWidth;
+            this.canvas.height = this.canvas.clientHeight;
+        }
+
+        setupInputs() {
+            document.getElementById('file-input').onchange = (e) => this.handleFiles(e.target.files);
+            document.getElementById('pattern-type').onchange = (e) => {
+                this.config.pattern = e.target.value;
+                this.updatePatternControls();
+                this.generateLayout();
+            };
+            this.updatePatternControls();
+            document.getElementById('base-spacing').oninput = (e) => {
+                this.config.spacing = parseFloat(e.target.value) || 100;
+                this.generateLayout();
+            };
+            document.getElementById('growth-factor').oninput = (e) => {
+                this.config.growth = parseFloat(e.target.value) || 1.0;
+                this.generateLayout();
+            };
+            document.getElementById('global-rotation').oninput = (e) => {
+                this.config.rotation = (parseFloat(e.target.value) * Math.PI) / 180;
+                this.generateLayout();
+            };
+            document.getElementById('bulk-text').oninput = () => this.generateLayout();
+            document.getElementById('export-btn').onclick = () => this.exportProject();
+        }
+
+        async handleFiles(files) {
+            for (const file of files) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.assets.push({
+                        id: 'asset_' + Date.now() + '_' + Math.random(),
+                        name: file.name,
+                        type: file.name.endsWith('.svg') ? 'svg' : 'image',
+                        blob: file,
+                        preview: e.target.result
+                    });
+                    this.updateAssetPreview();
+                    this.generateLayout();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        updateAssetPreview() {
+            const container = document.getElementById('asset-preview');
+            container.innerHTML = '';
+            this.assets.slice(-8).forEach(asset => {
+                const div = document.createElement('div');
+                div.className = 'asset-item';
+                div.innerHTML = `<img src="${asset.preview}">`;
+                container.appendChild(div);
+            });
+        }
+
+        getUsedObjects() {
+            const textLines = document.getElementById('bulk-text').value.split('\n').filter(l => l.trim());
+            const objects = [];
+            
+            // Add all uploaded images
+            this.assets.forEach(a => objects.push({ type: 'asset', data: a }));
+            
+            // Add all text lines
+            textLines.forEach(l => objects.push({ type: 'text', data: l }));
+            
+            return objects;
+        }
+
+        generateLayout() {
+            const objects = this.getUsedObjects();
+            const count = objects.length;
+            this.nodes = [];
+            
+            if (count === 0) {
+                document.getElementById('node-info').textContent = '0 Nodes';
+                return;
+            }
+
+            const center = { x: 0, y: 0 }; // We work in relative space for preview
+            
+            switch (this.config.pattern) {
+                case PatternType.CIRCULAR_RING:
+                    this.generateCircular(count, center);
+                    break;
+                case PatternType.CONCENTRIC_RINGS:
+                    this.generateConcentric(count, center);
+                    break;
+                case PatternType.ARCHIMEDEAN_SPIRAL:
+                    this.generateSpiral(count, center, 'linear');
+                    break;
+                case PatternType.LOGARITHMIC_SPIRAL:
+                    this.generateSpiral(count, center, 'log');
+                    break;
+                case PatternType.FERMAT_SPIRAL:
+                    this.generateFermat(count, center);
+                    break;
+                case PatternType.RECTANGULAR_GRID:
+                    this.generateGrid(count, center, false);
+                    break;
+                case PatternType.OFFSET_GRID:
+                    this.generateGrid(count, center, true);
+                    break;
+                case PatternType.POLYGON:
+                    this.generatePolygon(count, center, false);
+                    break;
+                case PatternType.STAR:
+                    this.generatePolygon(count, center, true);
+                    break;
+                case PatternType.PORTAL:
+                    this.generatePortal(count, center);
+                    break;
+                case PatternType.CLOCK_FACE:
+                    this.generateClockFace(count, center);
+                    break;
+                case PatternType.SIERPINSKI:
+                    this.generateSierpinski(count, center);
+                    break;
+                default:
+                    this.generateCircular(count, center);
+            }
+
+            // Assign objects to nodes
+            this.nodes.forEach((node, i) => {
+                node.object = objects[i];
+            });
+
+            document.getElementById('node-info').textContent = `${this.nodes.length} Nodes Generated`;
+        }
+
+        updatePatternControls() {
+            const container = document.getElementById('pattern-controls');
+            container.innerHTML = '';
+            
+            const addControl = (label, id, value, step = 1) => {
+                const group = document.createElement('div');
+                group.className = 'input-group';
+                group.innerHTML = `<label>${label}</label><input type="number" id="${id}" value="${value}" step="${step}">`;
+                container.appendChild(group);
+                group.querySelector('input').oninput = () => this.generateLayout();
+            };
+
+            if (this.config.pattern === PatternType.POLYGON) {
+                addControl('Number of Sides', 'sides-count', 3);
+            } else if (this.config.pattern === PatternType.STAR) {
+                addControl('Star Points', 'sides-count', 5);
+                addControl('Inner Radius (%)', 'inner-radius', 40);
+            } else if (this.config.pattern === PatternType.PORTAL) {
+                addControl('Depth Steps', 'depth-steps', 10);
+            }
+        }
+
+        // --- PATTERN ALGORITHMS ---
+
+        generatePolygon(count, center, isStar) {
+            const sides = parseInt(document.getElementById('sides-count')?.value) || 3;
+            const innerRadiusFactor = (parseInt(document.getElementById('inner-radius')?.value) || 40) / 100;
+            const radius = this.config.spacing;
+            
+            // Total points in the pattern
+            const pointsPerPolygon = isStar ? sides * 2 : sides;
+            
+            for (let i = 0; i < count; i++) {
+                const step = i % pointsPerPolygon;
+                const angle = (2 * Math.PI * step) / pointsPerPolygon + this.config.rotation;
+                
+                let currentRadius = radius;
+                if (isStar && step % 2 === 1) {
+                    currentRadius *= innerRadiusFactor;
+                }
+
+                // If count > sides, we nested them?
+                const layer = Math.floor(i / pointsPerPolygon);
+                const layerRadius = currentRadius * Math.pow(this.config.growth, layer);
+
+                this.nodes.push({
+                    pos: new BigVec2(
+                        layerRadius * Math.cos(angle),
+                        layerRadius * Math.sin(angle)
+                    ),
+                    rot: angle,
+                    scale: new BigNumber(1)
+                });
+            }
+        }
+
+        generateCircular(count, center) {
+            const radius = this.config.spacing;
+            for (let i = 0; i < count; i++) {
+                const angle = (2 * Math.PI * i) / count + this.config.rotation;
+                this.nodes.push({
+                    pos: new BigVec2(
+                        radius * Math.cos(angle),
+                        radius * Math.sin(angle)
+                    ),
+                    rot: angle + Math.PI/2,
+                    scale: new BigNumber(1)
+                });
+            }
+        }
+
+        generateConcentric(count, center) {
+            let placed = 0;
+            let ring = 1;
+            const objectsPerRing = Math.floor(count / 3) || 1;
+
+            while (placed < count) {
+                const ringCount = Math.min(objectsPerRing * ring, count - placed);
+                const radius = this.config.spacing * ring;
+                for (let i = 0; i < ringCount; i++) {
+                    const angle = (2 * Math.PI * i) / ringCount + this.config.rotation;
+                    this.nodes.push({
+                        pos: new BigVec2(radius * Math.cos(angle), radius * Math.sin(angle)),
+                        rot: angle + Math.PI/2,
+                        scale: new BigNumber(1)
+                    });
+                }
+                placed += ringCount;
+                ring++;
+            }
+        }
+
+        generateSpiral(count, center, type) {
+            const a = 0;
+            const b = this.config.spacing / (2 * Math.PI);
+            for (let i = 0; i < count; i++) {
+                const angle = i * 0.5 + this.config.rotation;
+                let radius;
+                if (type === 'log') {
+                    // r = a * e^(b*theta)
+                    radius = 10 * Math.exp(0.1 * angle);
+                } else {
+                    // r = a + b * theta
+                    radius = a + b * angle;
+                }
+                this.nodes.push({
+                    pos: new BigVec2(radius * Math.cos(angle), radius * Math.sin(angle)),
+                    rot: angle,
+                    scale: new BigNumber(1)
+                });
+            }
+        }
+
+        generateFermat(count, center) {
+            const goldenAngle = 137.508 * (Math.PI / 180);
+            const c = this.config.spacing / 10;
+            for (let i = 0; i < count; i++) {
+                const angle = i * goldenAngle + this.config.rotation;
+                const radius = c * Math.sqrt(i);
+                this.nodes.push({
+                    pos: new BigVec2(radius * Math.cos(angle), radius * Math.sin(angle)),
+                    rot: angle,
+                    scale: new BigNumber(1)
+                });
+            }
+        }
+
+        generateGrid(count, center, offset) {
+            const cols = Math.ceil(Math.sqrt(count));
+            const spacing = this.config.spacing;
+            for (let i = 0; i < count; i++) {
+                const r = Math.floor(i / cols);
+                const c = i % cols;
+                let x = (c - cols/2) * spacing;
+                let y = (r - cols/2) * spacing;
+                if (offset && r % 2 === 1) x += spacing / 2;
+                
+                // Apply global rotation
+                const rx = x * Math.cos(this.config.rotation) - y * Math.sin(this.config.rotation);
+                const ry = x * Math.sin(this.config.rotation) + y * Math.cos(this.config.rotation);
+
+                this.nodes.push({
+                    pos: new BigVec2(rx, ry),
+                    rot: 0,
+                    scale: new BigNumber(1)
+                });
+            }
+        }
+
+        generatePortal(count, center) {
+            let currentScale = new BigNumber(1);
+            const step = new BigNumber(this.config.growth); 
+
+            for (let i = 0; i < count; i++) {
+                this.nodes.push({
+                    pos: new BigVec2(0, 0),
+                    rot: i * 0.2, // Rotation spiral
+                    scale: currentScale.clone()
+                });
+                currentScale = currentScale.times(step);
+            }
+        }
+
+        generateClockFace(count, center) {
+            const radius = this.config.spacing;
+            const points = 12;
+            for (let i = 0; i < count; i++) {
+                const step = i % points;
+                const angle = (2 * Math.PI * step) / points - Math.PI / 2; // Start from 12 o'clock
+                
+                const layer = Math.floor(i / points);
+                const layerRadius = radius * Math.pow(this.config.growth, layer);
+
+                this.nodes.push({
+                    pos: new BigVec2(
+                        layerRadius * Math.cos(angle),
+                        layerRadius * Math.sin(angle)
+                    ),
+                    rot: 0, 
+                    scale: new BigNumber(1)
+                });
+            }
+        }
+
+        generateSierpinski(count, center) {
+            const spacing = this.config.spacing;
+            let points = [
+                { x: 0, y: -spacing },
+                { x: -spacing * 0.866, y: spacing / 2 },
+                { x: spacing * 0.866, y: spacing / 2 }
+            ];
+            
+            let cur = { x: 0, y: 0 };
+            for (let i = 0; i < count; i++) {
+                const target = points[Math.floor(Math.random() * 3)];
+                cur.x = (cur.x + target.x) / 2;
+                cur.y = (cur.y + target.y) / 2;
+                
+                this.nodes.push({
+                    pos: new BigVec2(cur.x, cur.y),
+                    rot: 0,
+                    scale: new BigNumber(1)
+                });
+            }
+        }
+
+        // --- RENDER & PREVIEW ---
+
+        loop() {
+            this.render();
+            requestAnimationFrame(() => this.loop());
+        }
+
+        render() {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.save();
+            this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+            
+            // Simple preview system
+            const viewScale = 0.1; // Zoom out to see the pattern
+            
+            this.nodes.forEach(node => {
+                const x = node.pos.x.toNumber() * viewScale;
+                const y = node.pos.y.toNumber() * viewScale;
+                
+                // For portal, scale the dot size too
+                const dotSize = Math.max(0.5, 3 * node.scale.toNumber());
+                const alpha = Math.max(0.2, Math.min(1, node.scale.toNumber()));
+                
+                this.ctx.fillStyle = `rgba(0, 112, 243, ${alpha})`;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, dotSize, 0, 2 * Math.PI);
+                this.ctx.fill();
+                
+                // Draw rotation vector
+                this.ctx.strokeStyle = 'rgba(0, 112, 243, 0.3)';
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y);
+                this.ctx.lineTo(
+                    x + Math.cos(node.rot) * 15,
+                    y + Math.sin(node.rot) * 15
+                );
+                this.ctx.stroke();
+            });
+            
+            this.ctx.restore();
+        }
+
+        // --- EXPORT LOGIC ---
+
+        async exportProject() {
+            if (this.nodes.length === 0) return alert('Nothing to export!');
+            
+            const zip = new JSZip();
+            const objects = [];
+            const assetsFolder = zip.folder('assets');
+            
+            const font = document.getElementById('font-family').value;
+            const fonts = ['Arial', 'Inter', 'Roboto', 'Outfit', 'Orbitron'];
+
+            for (let i = 0; i < this.nodes.length; i++) {
+                const node = this.nodes[i];
+                const obj = node.object;
+                const id = Date.now() + i;
+                
+                const baseObj = {
+                    id: id,
+                    name: `Auto ${i}`,
+                    pos: { x: node.pos.x.toString(), y: node.pos.y.toString() },
+                    scale: node.scale.toString(),
+                    rot: node.rot,
+                    visible: true,
+                    zIndex: i
+                };
+
+                if (obj.type === 'text') {
+                    objects.push({
+                        ...baseObj,
+                        type: 'Text',
+                        text: obj.data,
+                        color: '#ffffff',
+                        fontSize: 24,
+                        fontFamily: font === 'RANDOM' ? fonts[Math.floor(Math.random() * fonts.length)] : font,
+                        lineHeight: 1.4,
+                        textAlign: 'center'
+                    });
+                } else {
+                    const asset = obj.data;
+                    const ext = asset.name.split('.').pop();
+                    const assetFilename = `${asset.id}.${ext}`;
+                    
+                    // Add to ZIP
+                    assetsFolder.file(assetFilename, asset.blob);
+                    
+                    objects.push({
+                        ...baseObj,
+                        type: asset.type === 'svg' ? 'SVG' : 'Image',
+                        assetId: asset.id,
+                        originalFilename: asset.name,
+                        isSvg: asset.type === 'svg',
+                        width: 100, // Default, main app will adjust
+                        height: 100
+                    });
+                }
+            }
+
+            // Generate Bookmarks (The path tour)
+            const bookmarks = this.nodes.map((node, i) => {
+                // Zoom level for bookmark: reciprocal of scale, plus some buffer
+                const zoom = new BigNumber(1).dividedBy(node.scale).dividedBy(5);
+                return {
+                    name: `Node ${i + 1}`,
+                    pos: { x: node.pos.x.toString(), y: node.pos.y.toString() },
+                    zoom: zoom.toString(),
+                    rot: node.rot - Math.PI/2 // Align with screen up
+                };
+            });
+
+            const projectData = {
+                version: '2.0',
+                objects: objects,
+                bookmarks: bookmarks,
+                camera: {
+                    pos: { x: "0", y: "0" },
+                    zoom: "1",
+                    rot: 0
+                }
+            };
+
+            zip.file('project.json', JSON.stringify(projectData, null, 2));
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `auto-layout-${Date.now()}.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    // Start App
+    const app = new AutomationApp();
+</script>
+</body>
+</html>
