@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MP ITI Training Officer Answer Key 2026 Analysis Pro</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel standalone for JSX parsing -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- HTML2PDF for PDF export functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        /* Essential print styles to mimic the original Tailwind print: modifiers */
+        @media print {
+            body { background-color: white !important; }
+            .print\:hidden { display: none !important; }
+            .print\:static { position: static !important; }
+            .print\:shadow-none { box-shadow: none !important; }
+            .print\:border-b-0 { border-bottom-width: 0 !important; }
+            .print\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+            .print\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            .print\:flex-row { flex-direction: row !important; }
+            #pdf-content { background-color: white !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS MAPPING ---
+        // Replacing lucide-react with inline SVG components to ensure it works strictly via CDN
+        const SvgIcon = ({ children, className = "w-5 h-5" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {children}
+            </svg>
+        );
+        
+        const Icons = {
+            Upload: ({className}) => <SvgIcon className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></SvgIcon>,
+            FileCode2: ({className}) => <SvgIcon className={className}><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></SvgIcon>,
+            AlertCircle: ({className}) => <SvgIcon className={className}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></SvgIcon>,
+            Trophy: ({className}) => <SvgIcon className={className}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></SvgIcon>,
+            CheckCircle2: ({className}) => <SvgIcon className={className}><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></SvgIcon>,
+            XCircle: ({className}) => <SvgIcon className={className}><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></SvgIcon>,
+            HelpCircle: ({className}) => <SvgIcon className={className}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></SvgIcon>,
+            User: ({className}) => <SvgIcon className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></SvgIcon>,
+            BookOpen: ({className}) => <SvgIcon className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></SvgIcon>,
+            Calendar: ({className}) => <SvgIcon className={className}><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></SvgIcon>,
+            Printer: ({className}) => <SvgIcon className={className}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></SvgIcon>,
+            Download: ({className}) => <SvgIcon className={className}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></SvgIcon>,
+            Loader2: ({className}) => <SvgIcon className={className}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></SvgIcon>,
+            Check: ({className}) => <SvgIcon className={className}><polyline points="20 6 9 17 4 12"/></SvgIcon>,
+            X: ({className}) => <SvgIcon className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></SvgIcon>,
+            Minus: ({className}) => <SvgIcon className={className}><line x1="5" x2="19" y1="12" y2="12"/></SvgIcon>
+        };
+
+        // --- PARSER UTILS ---
+        const BASE_URL = 'https://itito2026_15mars1.cbtexam.in';
+
+        function getFullUrl(src) {
+            if (!src) return '';
+            if (src.startsWith('http')) return src;
+            return BASE_URL + (src.startsWith('/') ? src : '/' + src);
+        }
+
+        function parseHTML(htmlString) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+            
+            const candidateInfo = {};
+            const tables = doc.querySelectorAll('table');
+            
+            let infoTable = null;
+            for (let i = 0; i < tables.length; i++) {
+                if (tables[i].textContent?.includes('Roll Number')) {
+                    infoTable = tables[i];
+                    break;
+                }
+            }
+
+            if (infoTable) {
+                const rows = infoTable.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length === 2) {
+                        const key = cells[0].textContent?.trim() || '';
+                        const value = cells[1].textContent?.trim() || '';
+                        if (key) candidateInfo[key] = value;
+                    }
+                });
+            }
+
+            const questions = [];
+            
+            let qTable = null;
+            for (let i = 0; i < tables.length; i++) {
+                if (tables[i].textContent?.includes('Question ID:-')) {
+                    qTable = tables[i];
+                    break;
+                }
+            }
+
+            if (qTable) {
+                const rows = qTable.querySelectorAll('tr');
+                
+                let currentQuestion = null;
+                let currentSection = '';
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const text = row.textContent?.trim() || '';
+                    
+                    if (text.startsWith('Section :')) {
+                        currentSection = text.replace('Section :', '').trim().replace(/,$/, '');
+                    } else if (text.startsWith('Question ID:-')) {
+                        if (currentQuestion && currentQuestion.id) {
+                            questions.push(currentQuestion);
+                        }
+                        currentQuestion = {
+                            id: text.replace('Question ID:-', '').trim(),
+                            section: currentSection,
+                            options: [],
+                            givenAnswer: null,
+                            correctAnswer: null,
+                            questionImage: ''
+                        };
+                    } else if (currentQuestion) {
+                        const img = row.querySelector('img');
+                        const imgSrc = img ? img.getAttribute('src') : null;
+
+                        if (!currentQuestion.questionImage && imgSrc && !text.startsWith('Options') && !text.includes('Option ID') && !text.includes('Answer Given') && !text.includes('Correct Answer')) {
+                            currentQuestion.questionImage = getFullUrl(imgSrc);
+                        }
+                        
+                        if (text.includes('Option ID') && !text.includes('Answer Given') && !text.includes('Correct Answer')) {
+                            const match = text.match(/Option ID\D*(\d+)/i);
+                            if (match) {
+                                currentQuestion.options.push({
+                                    id: match[1],
+                                    image: getFullUrl(imgSrc)
+                                });
+                            }
+                        }
+                        
+                        if (text.includes('Answer Given by Candidate')) {
+                            if (text.includes('Not Answered') || !text.includes('Option ID')) {
+                                currentQuestion.givenAnswer = null;
+                            } else {
+                                const match = text.match(/Option ID\D*(\d+)/i);
+                                if (match) {
+                                    currentQuestion.givenAnswer = {
+                                        id: match[1],
+                                        image: getFullUrl(imgSrc)
+                                    };
+                                }
+                            }
+                        }
+                        
+                        if (text.includes('Correct Answer')) {
+                            const match = text.match(/Option ID\D*(\d+)/i);
+                            if (match) {
+                                currentQuestion.correctAnswer = {
+                                    id: match[1],
+                                    image: getFullUrl(imgSrc)
+                                };
+                            }
+                        }
+                    }
+                }
+                if (currentQuestion && currentQuestion.id) {
+                    questions.push(currentQuestion);
+                }
+            }
+
+            let correct = 0;
+            let incorrect = 0;
+            let unanswered = 0;
+
+            questions.forEach(q => {
+                if (!q.givenAnswer) {
+                    unanswered++;
+                    q.status = 'UNANSWERED';
+                } else if (q.correctAnswer && q.givenAnswer.id === q.correctAnswer.id) {
+                    correct++;
+                    q.status = 'CORRECT';
+                } else {
+                    incorrect++;
+                    q.status = 'INCORRECT';
+                }
+            });
+
+            return {
+                candidateInfo,
+                questions,
+                stats: {
+                    total: questions.length,
+                    correct,
+                    incorrect,
+                    unanswered,
+                    score: correct
+                }
+            };
+        }
+
+        // --- COMPONENTS ---
+
+        // InputSection Component
+        function InputSection({ onDataParsed }) {
+            const [htmlInput, setHtmlInput] = useState('');
+            const [error, setError] = useState('');
+            const fileInputRef = useRef(null);
+
+            const handleAnalyze = () => {
+                try {
+                    setError('');
+                    if (!htmlInput.trim()) {
+                        setError('Please paste your HTML response sheet.');
+                        return;
+                    }
+                    const parsed = parseHTML(htmlInput);
+                    if (parsed.questions.length === 0) {
+                        setError('Could not find any questions. Please ensure you pasted the correct HTML.');
+                        return;
+                    }
+                    onDataParsed(parsed);
+                } catch (err) {
+                    setError('An error occurred while parsing the HTML.');
+                    console.error(err);
+                }
+            };
+
+            const handleFileUpload = (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const content = event.target?.result;
+                        if (file.name.endsWith('.json')) {
+                            const parsed = JSON.parse(content);
+                            if (parsed && parsed.questions) {
+                                onDataParsed(parsed);
+                            } else {
+                                setError('Invalid JSON format.');
+                            }
+                        } else if (file.name.endsWith('.html') || file.name.endsWith('.htm')) {
+                            setHtmlInput(content);
+                            const parsed = parseHTML(content);
+                            if (parsed.questions.length === 0) {
+                                setError('Could not find any questions in the HTML file.');
+                                return;
+                            }
+                            onDataParsed(parsed);
+                        }
+                    } catch (err) {
+                        setError('Failed to read file.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+
+            return (
+                <div className="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-6 sm:p-8">
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Analyze Your Response Sheet</h2>
+                        <p className="text-slate-600 mb-6">
+                            Paste the raw HTML of your exam response sheet below, or upload a previously saved JSON/HTML file to instantly get insights, score, and review your answers.
+                        </p>
+
+                        {error && (
+                            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-700">
+                                <Icons.AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                                <p className="text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="html-input" className="block text-sm font-medium text-slate-700 mb-2">
+                                    Paste Raw HTML
+                                </label>
+                                <textarea
+                                    id="html-input"
+                                    rows={10}
+                                    className="w-full rounded-xl border-slate-300 border shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm p-4 bg-slate-50 outline-none"
+                                    placeholder="<!DOCTYPE html><html>..."
+                                    value={htmlInput}
+                                    onChange={(e) => setHtmlInput(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-4">
+                                <button
+                                    onClick={handleAnalyze}
+                                    className="w-full sm:w-auto flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <Icons.FileCode2 className="w-5 h-5" />
+                                    Analyze HTML
+                                </button>
+                                
+                                <div className="w-full sm:w-auto flex items-center justify-center text-slate-400 font-medium">
+                                    OR
+                                </div>
+
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full sm:w-auto flex-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-6 py-3 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <Icons.Upload className="w-5 h-5" />
+                                    Upload File (.html, .json)
+                                </button>
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    className="hidden" 
+                                    accept=".html,.htm,.json"
+                                    onChange={handleFileUpload}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // QuestionCard Component
+        function QuestionCard({ question, index }) {
+            const isCorrect = question.status === 'CORRECT';
+            const isIncorrect = question.status === 'INCORRECT';
+            const isUnanswered = question.status === 'UNANSWERED';
+
+            return (
+                <div className={`bg-white rounded-2xl shadow-sm border overflow-hidden break-inside-avoid ${
+                    isCorrect ? 'border-emerald-200' : 
+                    isIncorrect ? 'border-red-200' : 'border-slate-200'
+                }`}>
+                    <div className={`px-6 py-3 border-b flex items-center justify-between ${
+                        isCorrect ? 'bg-emerald-50 border-emerald-100' : 
+                        isIncorrect ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-100'
+                    }`}>
+                        <div className="flex items-center gap-3">
+                            <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                                isCorrect ? 'bg-emerald-200 text-emerald-800' : 
+                                isIncorrect ? 'bg-red-200 text-red-800' : 'bg-slate-200 text-slate-800'
+                            }`}>
+                                Q{index}
+                            </span>
+                            <div>
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-2">ID: {question.id}</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Section: {question.section}</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {isCorrect && <span className="flex items-center gap-1 text-sm font-bold text-emerald-600"><Icons.Check className="w-4 h-4" /> Correct (+1)</span>}
+                            {isIncorrect && <span className="flex items-center gap-1 text-sm font-bold text-red-600"><Icons.X className="w-4 h-4" /> Incorrect (0)</span>}
+                            {isUnanswered && <span className="flex items-center gap-1 text-sm font-bold text-slate-500"><Icons.Minus className="w-4 h-4" /> Unanswered (0)</span>}
+                        </div>
+                    </div>
+
+                    <div className="p-6">
+                        {question.questionImage && (
+                            <div className="mb-6">
+                                <p className="text-sm font-medium text-slate-500 mb-2">Question:</p>
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 inline-block max-w-full overflow-auto">
+                                    <img src={question.questionImage} alt={`Question ${question.id}`} className="max-w-full h-auto" />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {question.options.map((opt, i) => {
+                                const isSelected = question.givenAnswer?.id === opt.id;
+                                const isActualCorrect = question.correctAnswer?.id === opt.id;
+                                
+                                let ringClass = "border-slate-200 hover:border-slate-300";
+                                let bgClass = "bg-white";
+                                let badge = null;
+
+                                if (isActualCorrect && isSelected) {
+                                    ringClass = "border-emerald-500 ring-1 ring-emerald-500";
+                                    bgClass = "bg-emerald-50";
+                                    badge = <span className="absolute top-2 right-2 bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1"><Icons.Check className="w-3 h-3"/> Your Answer</span>;
+                                } else if (isActualCorrect) {
+                                    ringClass = "border-emerald-500 ring-1 ring-emerald-500";
+                                    bgClass = "bg-emerald-50/50";
+                                    badge = <span className="absolute top-2 right-2 bg-emerald-100 text-emerald-700 text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1"><Icons.Check className="w-3 h-3"/> Correct Answer</span>;
+                                } else if (isSelected) {
+                                    ringClass = "border-red-500 ring-1 ring-red-500";
+                                    bgClass = "bg-red-50";
+                                    badge = <span className="absolute top-2 right-2 bg-red-100 text-red-700 text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1"><Icons.X className="w-3 h-3"/> Your Answer</span>;
+                                }
+
+                                return (
+                                    <div key={opt.id} className={`relative p-4 rounded-xl border transition-all ${ringClass} ${bgClass} flex flex-col items-center justify-center min-h-[120px]`}>
+                                        {badge}
+                                        <span className="absolute top-2 left-2 text-xs font-medium text-slate-400">Opt {i + 1}</span>
+                                        {opt.image ? (
+                                            <img src={opt.image} alt={`Option ${opt.id}`} className="max-w-full max-h-32 object-contain mt-4" />
+                                        ) : (
+                                            <span className="text-slate-400 italic mt-4">No image</span>
+                                        )}
+                                        <span className="text-[10px] text-slate-400 mt-2">ID: {opt.id}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Dashboard Component
+        function Dashboard({ data }) {
+            const [filter, setFilter] = useState('ALL');
+            const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+			const handlePrint = async () => {
+				if (isGeneratingPdf) return;
+				setIsGeneratingPdf(true);
+
+				try {
+					const element = document.getElementById('pdf-content');
+					if (!element) return;
+
+					const clone = element.cloneNode(true);
+					clone.querySelectorAll('[data-html2canvas-ignore]').forEach(el => el.remove());
+
+					// Inline all computed styles
+					const sourceElements = element.querySelectorAll('*');
+					const cloneElements = clone.querySelectorAll('*');
+
+					const rootStyle = window.getComputedStyle(element);
+					for (let i = 0; i < rootStyle.length; i++) {
+						const prop = rootStyle[i];
+						clone.style.setProperty(prop, rootStyle.getPropertyValue(prop));
+					}
+					clone.style.setProperty('background-color', 'white', 'important');
+
+					sourceElements.forEach((srcEl, idx) => {
+						if (cloneElements[idx]) {
+							const computed = window.getComputedStyle(srcEl);
+							for (let i = 0; i < computed.length; i++) {
+								const prop = computed[i];
+								try {
+									cloneElements[idx].style.setProperty(prop, computed.getPropertyValue(prop));
+								} catch (e) {}
+							}
+						}
+					});
+
+					// Offscreen container
+					const container = document.createElement('div');
+					container.style.cssText = 'position:fixed;left:-9999px;top:0;width:1200px;background:white;';
+					container.appendChild(clone);
+					document.body.appendChild(container);
+
+					// Convert all images to base64 via CORS proxy
+					await convertImagesToBase64(clone);
+
+					// Let browser paint
+					await new Promise(r => setTimeout(r, 500));
+
+					const opt = {
+						margin: 0.3,
+						filename: `exam-insight-${data.candidateInfo['Roll Number'] || 'export'}.pdf`,
+						image: { type: 'jpeg', quality: 0.95 },
+						html2canvas: {
+							scale: 2,
+							useCORS: false,
+							allowTaint: true,
+							width: 1200,
+							windowWidth: 1200,
+							logging: false,
+							backgroundColor: '#ffffff'
+						},
+						jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+						pagebreak: { mode: ['css', 'avoid-all'] }
+					};
+
+					await window.html2pdf().set(opt).from(clone).save();
+					document.body.removeChild(container);
+
+				} catch (error) {
+					console.error('PDF generation failed:', error);
+					alert('Failed to generate PDF. Please try again.');
+				} finally {
+					setIsGeneratingPdf(false);
+				}
+			};
+
+
+
+
+const convertImagesToBase64 = async (container) => {
+    const images = container.querySelectorAll('img');
+    const proxyUrl = 'https://corsproxy.io/?';
+
+    await Promise.all(
+        Array.from(images).map(async (img) => {
+            if (!img.src || img.src.startsWith('data:')) return;
+            try {
+                const response = await fetch(proxyUrl + encodeURIComponent(img.src));
+                if (!response.ok) throw new Error('Fetch failed');
+                const blob = await response.blob();
+                const reader = new FileReader();
+                const base64 = await new Promise((resolve, reject) => {
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+                img.src = base64;
+            } catch (e) {
+                console.warn('Could not convert image:', img.src, e);
+                // Replace broken image with a placeholder text
+                const placeholder = document.createElement('span');
+                placeholder.textContent = '[Image could not be loaded]';
+                placeholder.style.cssText = 'color:#94a3b8;font-style:italic;font-size:12px;display:inline-block;padding:8px;';
+                img.parentNode.replaceChild(placeholder, img);
+            }
+        })
+    );
+};
+
+
+
+            const filteredQuestions = data.questions.filter(q => {
+                if (filter === 'ALL') return true;
+                return q.status === filter;
+            });
+
+            const handleExport = () => {
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `exam-insight-${data.candidateInfo['Roll Number'] || 'export'}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            return (
+                <div id="pdf-content" className="space-y-8 bg-slate-50">
+                    {/* Header Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 print:grid-cols-4 gap-4">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                                <Icons.Trophy className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">Total Score</p>
+                                <p className="text-2xl font-bold text-slate-900">{data.stats.score} <span className="text-lg text-slate-400 font-medium">/ {data.stats.total}</span></p>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                                <Icons.CheckCircle2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">Correct</p>
+                                <p className="text-2xl font-bold text-slate-900">{data.stats.correct}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                                <Icons.XCircle className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">Incorrect</p>
+                                <p className="text-2xl font-bold text-slate-900">{data.stats.incorrect}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+                                <Icons.HelpCircle className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">Unanswered</p>
+                                <p className="text-2xl font-bold text-slate-900">{data.stats.unanswered}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Candidate Info & Actions */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-6 print:flex-row">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-x-8 gap-y-4 flex-1">
+                            <div className="flex items-center gap-3">
+                                <Icons.User className="w-5 h-5 text-slate-400" />
+                                <div>
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Candidate</p>
+                                    <p className="text-sm font-semibold text-slate-900">{data.candidateInfo['Name of the Candidate'] || 'N/A'} ({data.candidateInfo['Roll Number'] || 'N/A'})</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Icons.BookOpen className="w-5 h-5 text-slate-400" />
+                                <div>
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Exam</p>
+                                    <p className="text-sm font-semibold text-slate-900 truncate" title={data.candidateInfo['Examination Name']}>{data.candidateInfo['Examination Name'] || 'N/A'}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 sm:col-span-2">
+                                <Icons.Calendar className="w-5 h-5 text-slate-400" />
+                                <div>
+                                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Date & Time</p>
+                                    <p className="text-sm font-semibold text-slate-900">{data.candidateInfo['Exam Date & Time'] || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 print:hidden" data-html2canvas-ignore="true">
+                            <button
+                                onClick={handlePrint}
+                                disabled={isGeneratingPdf}
+                                className="shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                {isGeneratingPdf ? <Icons.Loader2 className="w-4 h-4 animate-spin" /> : <Icons.Printer className="w-4 h-4" />}
+                                {isGeneratingPdf ? 'Generating PDF...' : 'Save as PDF'}
+                            </button>
+                            <button
+                                onClick={handleExport}
+                                className="shrink-0 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                                <Icons.Download className="w-4 h-4" />
+                                Export JSON
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap gap-2 print:hidden" data-html2canvas-ignore="true">
+                        {['ALL', 'CORRECT', 'INCORRECT', 'UNANSWERED'].map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setFilter(f)}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors cursor-pointer ${
+                                    filter === f 
+                                        ? 'bg-indigo-600 text-white shadow-sm' 
+                                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                }`}
+                            >
+                                {f === 'ALL' ? 'All Questions' : f.charAt(0) + f.slice(1).toLowerCase()}
+                                <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                                    filter === f ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                    {f === 'ALL' ? data.stats.total : 
+                                    f === 'CORRECT' ? data.stats.correct : 
+                                    f === 'INCORRECT' ? data.stats.incorrect : 
+                                    data.stats.unanswered}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Questions List */}
+                    <div className="space-y-6">
+                        {filteredQuestions.length === 0 ? (
+                            <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 border-dashed">
+                                <p className="text-slate-500 font-medium">No questions found for this filter.</p>
+                            </div>
+                        ) : (
+                            filteredQuestions.map((q) => (
+                                <QuestionCard key={q.id} question={q} index={data.questions.findIndex(x => x.id === q.id) + 1} />
+                            ))
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App Component
+        function App() {
+            const [data, setData] = useState(() => {
+                try {
+                    const saved = localStorage.getItem('examData');
+                    if (saved) {
+                        return JSON.parse(saved);
+                    }
+                } catch (e) {
+                    console.error('Failed to load saved data', e);
+                }
+                return null;
+            });
+
+            const handleDataParsed = (parsedData) => {
+                try {
+                    localStorage.setItem('examData', JSON.stringify(parsedData));
+                } catch (e) {
+                    console.error('Failed to save data', e);
+                }
+                setData(parsedData);
+            };
+
+            const handleReset = () => {
+                try {
+                    localStorage.removeItem('examData');
+                } catch (e) {}
+                setData(null);
+            };
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+                    <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10 print:static print:shadow-none print:border-b-0">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                            <h1 className="text-xl font-bold text-indigo-600 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-bar-chart-2">
+                                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                    <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                    <path d="M8 18v-1"/>
+                                    <path d="M12 18v-6"/>
+                                    <path d="M16 18v-3"/>
+                                </svg>
+                                MP ITI Training Officer Answer Key 2026 Analysis Pro
+                            </h1>
+                            {data && (
+                                <button 
+                                    onClick={handleReset}
+                                    className="text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer print:hidden"
+                                >
+                                    Start Over
+                                </button>
+                            )}
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {!data ? (
+                            <InputSection onDataParsed={handleDataParsed} />
+                        ) : (
+                            <Dashboard data={data} />
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        // Render Application
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+	
+<!-- HELP BUTTON & GUIDE - Just paste this block anywhere in your page -->
+<script>
+(function() {
+  // Create styles
+  const style = document.createElement('style');
+  style.textContent = `
+    #help-btn {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      background: #4f46e5; color: #fff; border: none; border-radius: 50px;
+      padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(79,70,229,.4); display: flex; align-items: center; gap: 6px;
+      transition: background .2s;
+    }
+    #help-btn:hover { background: #4338ca; }
+    #help-overlay {
+      position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,.5);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    #help-overlay.open { display: flex; }
+    #help-modal {
+      background: #fff; border-radius: 16px; max-width: 600px; width: 100%;
+      max-height: 85vh; overflow-y: auto; padding: 28px 24px; position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2); font-family: system-ui, sans-serif;
+    }
+    #help-modal h2 { margin: 0 0 4px; font-size: 22px; color: #1e1b4b; }
+    #help-modal .sub { color: #64748b; font-size: 14px; margin-bottom: 20px; }
+    #help-modal h3 { font-size: 15px; color: #4f46e5; margin: 18px 0 8px; }
+    #help-modal ol, #help-modal ul { padding-left: 20px; margin: 0 0 8px; }
+    #help-modal li { margin-bottom: 8px; font-size: 14px; color: #334155; line-height: 1.6; }
+    #help-modal code {
+      background: #f1f5f9; padding: 2px 6px; border-radius: 4px;
+      font-size: 13px; color: #4f46e5; font-family: monospace;
+    }
+    #help-modal .tip {
+      background: #fef9c3; border-left: 4px solid #eab308; padding: 10px 14px;
+      border-radius: 8px; font-size: 13px; color: #713f12; margin: 14px 0;
+    }
+    #help-modal .step-img {
+      background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 14px; margin: 8px 0 12px; font-size: 13px; color: #475569; text-align: center;
+    }
+    #help-close {
+      position: absolute; top: 12px; right: 14px; background: #f1f5f9;
+      border: none; border-radius: 8px; width: 32px; height: 32px;
+      font-size: 18px; cursor: pointer; color: #475569; display: flex;
+      align-items: center; justify-content: center;
+    }
+    #help-close:hover { background: #e2e8f0; }
+    @media print { #help-btn, #help-overlay { display: none !important; } }
+  `;
+  document.head.appendChild(style);
+
+  // Create button
+  const btn = document.createElement('button');
+  btn.id = 'help-btn';
+  btn.innerHTML = '❓ Help';
+  document.body.appendChild(btn);
+
+  // Create overlay + modal
+  const overlay = document.createElement('div');
+  overlay.id = 'help-overlay';
+  overlay.innerHTML = `
+    <div id="help-modal">
+      <button id="help-close">✕</button>
+      <h2>📖 How to Use This App</h2>
+      <p class="sub">Analyze your CBT exam response sheet in 3 simple steps.</p>
+
+      <h3>Step 1 — Get Your Raw HTML</h3>
+      <ol>
+        <li>Open your <strong>exam response sheet</strong> link in any browser (Chrome, Edge, Firefox, etc.).</li>
+        <li>Once the page loads fully, <strong>right-click</strong> anywhere on the page.</li>
+        <li>Click <strong>"View Page Source"</strong> (or press <code>Ctrl + U</code> on Windows / <code>Cmd + Option + U</code> on Mac).</li>
+        <li>A new tab opens with raw HTML code. Press <code>Ctrl + A</code> to <strong>select all</strong>, then <code>Ctrl + C</code> to <strong>copy</strong>.</li>
+      </ol>
+      <div class="step-img">
+        🖥️ Right-click page → <strong>View Page Source</strong> → Select All → Copy
+      </div>
+
+      <div class="tip">
+        💡 <strong>Tip:</strong> The source page looks like code starting with <code>&lt;!DOCTYPE html&gt;</code> — that's exactly what you need! Copy <em>everything</em>.
+      </div>
+
+      <h3>Step 2 — Paste into the App</h3>
+      <ol>
+        <li>Come back to this app (MP ITI Training Officer Answer Key 2026 Analysis Pro).</li>
+        <li>Click inside the <strong>"Paste Raw HTML"</strong> text box.</li>
+        <li>Press <code>Ctrl + V</code> to <strong>paste</strong> the copied HTML.</li>
+        <li>Click the <strong>"Analyze HTML"</strong> button.</li>
+      </ol>
+
+      <h3>Step 3 — Review Your Results</h3>
+      <ul>
+        <li>✅ See your <strong>score, correct, incorrect & unanswered</strong> counts instantly.</li>
+        <li>🔍 <strong>Filter</strong> questions by status (Correct / Incorrect / Unanswered).</li>
+        <li>📄 Click <strong>"Save as PDF"</strong> to download a full report.</li>
+        <li>💾 Click <strong>"Export JSON"</strong> to save data &amp; reload later via the Upload button.</li>
+      </ul>
+
+      <div class="tip">
+        💡 <strong>Tip:</strong> Your data is auto-saved in the browser. Next time you open the app, it loads automatically. Click <strong>"Start Over"</strong> to clear and analyze a new sheet.
+      </div>
+
+      <h3>🔄 Alternative: Upload a File</h3>
+      <ul>
+        <li>If you saved the response page as an <code>.html</code> file, click <strong>"Upload File"</strong> and select it.</li>
+        <li>You can also upload a previously exported <code>.json</code> file to reload your results.</li>
+      </ul>
+
+      <h3>⚠️ Troubleshooting</h3>
+      <ul>
+        <li><strong>"Could not find any questions"</strong> — Make sure you copied the <em>full</em> page source, not just visible text.</li>
+        <li><strong>Images not showing</strong> — Images load from the exam server; they may expire after some time.</li>
+        <li><strong>PDF images missing</strong> — The app uses a proxy to fetch images; if the exam server is down, images won't appear in the PDF.</li>
+      </ul>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  // Events
+  btn.addEventListener('click', function() { overlay.classList.add('open'); });
+  overlay.querySelector('#help-close').addEventListener('click', function() { overlay.classList.remove('open'); });
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') overlay.classList.remove('open');
+  });
+})();
+</script>
+	
+</body>
+</html>
