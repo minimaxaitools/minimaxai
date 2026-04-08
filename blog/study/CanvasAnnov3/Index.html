@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canvas Annotation — Pro</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Hind:wght@400;600;700&family=Inter:wght@400;600;700&family=Lobster&family=Noto+Sans+Devanagari:wght@400;600;700&family=Outfit:wght@400;600;700&family=Pacifico&family=Poppins:wght@400;600;700&family=Satisfy&family=Caveat:wght@400;700&family=Kalam:wght@400;700&family=Martel:wght@400;700&family=Yantramanav:wght@400;700&family=Baloo+2:wght@400;700&family=Gajraj+One&family=Biryani:wght@400;700&family=Anek+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Supporting polish layer — load after main -->
+  <link rel="stylesheet" href="enhancements.css">
+
+  <!-- External Scripts (D3 + D3 Annotation) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
+</head>
+<body>
+
+<!-- Hidden File Inputs -->
+<input type="file" id="fileOpenProject" class="hidden-input" accept=".json" />
+<input type="file" id="fileImportObj" class="hidden-input" accept=".svg,.png,.jpg,.jpeg,.gif,.webp" />
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Canvas Annotation</h1>
+      <div class="subtitle">Click canvas to add · Click to select · Drag to move</div>
+    </div>
+    <div class="selection-info" id="selectionInfo"><span class="no-selection">No annotation selected</span></div>
+
+    <!-- Annotation Type Panel -->
+    <div class="panel">
+      <div class="panel-title">Annotation Type</div>
+      <div class="panel-body">
+        <div class="presets-grid" id="presetsGrid">
+          <button class="preset-btn active" data-type="annotationLabel" title="Label">📝</button>
+          <button class="preset-btn" data-type="annotationCallout" title="Callout">💬</button>
+          <button class="preset-btn" data-type="annotationCalloutElbow" title="Elbow">↳</button>
+          <button class="preset-btn" data-type="annotationCalloutCurve" title="Curve">⤴</button>
+          <button class="preset-btn" data-type="annotationCalloutCircle" title="Circle">⭕</button>
+          <button class="preset-btn" data-type="annotationCalloutRect" title="Rect">▭</button>
+          <button class="preset-btn" data-type="annotationXYThreshold" title="Threshold">⤓</button>
+          <button class="preset-btn" data-type="annotationBadge" title="Badge">📛</button>
+        </div>
+        <button class="btn-delete" id="btnDelete" style="display: none;">✕ Remove Selected</button>
+      </div>
+    </div>
+
+    <!-- Text Content Panel -->
+    <div class="panel" id="textPanel">
+      <div class="panel-title">Text Content</div>
+      <div class="panel-body">
+        <input class="text-input" id="editTitle" type="text" placeholder="Title text..." />
+        <input class="text-input" id="editLabel" type="text" placeholder="Label / description..." />
+        <div class="num-row">
+          <div class="field"><label>Wrap px</label><input id="textWrap" type="number" value="120" class="small-input" /></div>
+          <div class="field"><label>Padding</label><input id="padding" type="number" value="5" class="small-input" /></div>
+        </div>
+        <div class="checkbox-row" style="margin-top:5px;">
+          <label class="cb-label"><input type="checkbox" id="wrapSplitterEnabled" /> Respect line breaks (\n)</label>
+        </div>
+        <div class="num-row" style="margin-top:5px;">
+          <div class="field"><label>Bg Padding</label><input id="bgPadding" type="number" value="0" min="0" class="small-input" title="Background rect padding behind text" /></div>
+          <div class="field"><label>Bg Pad Top</label><input id="bgPaddingTop" type="number" value="0" min="0" class="small-input" /></div>
+          <div class="field"><label>Bg Pad Bottom</label><input id="bgPaddingBottom" type="number" value="0" min="0" class="small-input" /></div>
+        </div>
+        <div class="num-row" style="margin-top:3px;">
+          <div class="field"><label>Bg Pad Left</label><input id="bgPaddingLeft" type="number" value="0" min="0" class="small-input" /></div>
+          <div class="field"><label>Bg Pad Right</label><input id="bgPaddingRight" type="number" value="0" min="0" class="small-input" /></div>
+        </div>
+        <div class="field-label" style="margin-top:6px;">Global Overrides <button class="apply-all-btn" id="applyGlobalWrap">Apply Wrap to All</button> <button class="apply-all-btn" id="applyGlobalPadding" style="margin-left:4px;">Apply Padding to All</button></div>
+      </div>
+    </div>
+
+    <!-- Font Styling Panel -->
+    <div class="panel" id="fontPanel">
+      <div class="panel-title">Font Styling</div>
+      <div class="panel-body">
+        <div class="field-label">Title Font <button class="apply-all-btn" id="applyAllTitleFont">Apply to All</button></div>
+        <div class="num-row" style="margin-bottom: 6px;">
+          <div class="field" style="flex: 2;"><select class="select-input" id="titleFont"></select></div>
+          <div class="field"><input class="small-input" id="titleFontSize" type="number" value="13" min="8" max="96" /></div>
+          <div class="field">
+            <select class="select-input" id="titleFontWeight">
+              <option value="400">Regular</option>
+              <option value="600">Semi</option>
+              <option value="700" selected>Bold</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-label">Label Font <button class="apply-all-btn" id="applyAllLabelFont">Apply to All</button></div>
+        <div class="num-row">
+          <div class="field" style="flex: 2;"><select class="select-input" id="labelFont"></select></div>
+          <div class="field"><input class="small-input" id="labelFontSize" type="number" value="12" min="8" max="96" /></div>
+          <div class="field">
+            <select class="select-input" id="labelFontWeight">
+              <option value="400" selected>Regular</option>
+              <option value="600">Semi</option>
+              <option value="700">Bold</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color Panel -->
+    <div class="panel" id="colorPanel">
+      <div class="panel-title">Color</div>
+      <div class="panel-body">
+        <div class="color-row" id="colorSwatches">
+          <div class="color-swatch active" data-color="#E8336D" style="background: #E8336D;" title="Rose"></div>
+          <div class="color-swatch" data-color="#2196F3" style="background: #2196F3;" title="Ocean Blue"></div>
+          <div class="color-swatch" data-color="#10B981" style="background: #10B981;" title="Emerald"></div>
+          <div class="color-swatch" data-color="#F59E0B" style="background: #F59E0B;" title="Amber"></div>
+          <div class="color-swatch" data-color="#8B5CF6" style="background: #8B5CF6;" title="Violet"></div>
+          <div class="color-swatch" data-color="#FF6B35" style="background: #FF6B35;" title="Orange"></div>
+          <div class="color-picker-wrap" title="Custom color"><input type="color" id="customColor" value="#E8336D" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subject Fill Panel -->
+    <div class="panel" id="subjectFillPanel" style="display: none;">
+      <div class="panel-title">Subject Fill</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Fill Color</span>
+          <input type="color" id="subjectFillColor" value="#E8336D" style="width: 26px; height: 26px; border: none; cursor: pointer; border-radius: 4px;" />
+          <button class="btn-sm" id="subjectFillTransparent">Transparent</button>
+        </div>
+        <div class="slider-row">
+          <span class="option-label">Opacity</span>
+          <input type="range" id="subjectFillOpacity" min="0" max="1" step="0.05" value="0.1" />
+          <span class="slider-val" id="subjectFillOpacityVal">0.1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threshold Direction Panel -->
+    <div class="panel" id="thresholdPanel" style="display: none;">
+      <div class="panel-title">Threshold Direction</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Direction</span>
+          <div class="option-icons" data-group="thresholdDir">
+            <button class="opt-btn active thresh-dir-btn" data-val="horizontal" title="Horizontal — line spans full width">↔ H</button>
+            <button class="opt-btn thresh-dir-btn" data-val="vertical" title="Vertical — line spans full height">↕ V</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disable Parts Panel -->
+    <div class="panel" id="disablePanel">
+      <div class="panel-title">Visibility (Disable Parts)</div>
+      <div class="panel-body">
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="disableConnector" /> Hide Connector</label>
+        </div>
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="disableSubject" /> Hide Subject</label>
+        </div>
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="disableNote" /> Hide Note</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Positioning Panel -->
+    <div class="panel" id="notePositionPanel">
+      <div class="panel-title">Note Position Mode</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Mode</span>
+          <div class="option-icons" data-group="notePositionMode">
+            <button class="opt-btn active" data-val="offset" title="Offset (dx/dy)">dx/dy</button>
+            <button class="opt-btn" data-val="absolute" title="Absolute (nx/ny)">nx/ny</button>
+          </div>
+        </div>
+        <div class="num-row" id="offsetFields">
+          <div class="field"><label>dx</label><input id="annDx" type="number" value="80" class="small-input" /></div>
+          <div class="field"><label>dy</label><input id="annDy" type="number" value="-60" class="small-input" /></div>
+        </div>
+        <div class="num-row" id="absoluteFields" style="display:none;">
+          <div class="field"><label>nx</label><input id="annNx" type="number" value="200" class="small-input" /></div>
+          <div class="field"><label>ny</label><input id="annNy" type="number" value="100" class="small-input" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Options Panel -->
+    <div class="panel">
+      <div class="panel-title">Note Options</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Line Type</span>
+          <div class="option-icons" data-group="noteLineType">
+            <button class="opt-btn active" data-val="none" title="None">∅</button>
+            <button class="opt-btn" data-val="vertical" title="Vertical">|</button>
+            <button class="opt-btn" data-val="horizontal" title="Horizontal">—</button>
+          </div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Orientation</span>
+          <div class="option-icons" data-group="noteOrientation">
+            <button class="opt-btn active" data-val="topBottom" title="Top/Bottom">↕</button>
+            <button class="opt-btn" data-val="leftRight" title="Left/Right">↔</button>
+          </div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Align</span>
+          <div class="option-icons" data-group="noteAlign">
+            <button class="opt-btn" data-val="dynamic" title="Dynamic">🔄</button>
+            <button class="opt-btn active" data-val="middle" title="Middle">⇼</button>
+            <button class="opt-btn" data-val="left" title="Left">⇤</button>
+            <button class="opt-btn" data-val="right" title="Right">⇥</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector Options Panel -->
+    <div class="panel">
+      <div class="panel-title">Connector Options</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Type</span>
+          <div class="option-icons" data-group="connectorType">
+            <button class="opt-btn" data-val="none" title="None">∅</button>
+            <button class="opt-btn active" data-val="line" title="Line">＼</button>
+            <button class="opt-btn" data-val="elbow" title="Elbow">↳</button>
+            <button class="opt-btn" data-val="curve" title="Curve">⤴</button>
+          </div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">End</span>
+          <div class="option-icons" data-group="connectorEnd">
+            <button class="opt-btn active" data-val="none" title="None">∅</button>
+            <button class="opt-btn" data-val="arrow" title="Arrow">↘</button>
+            <button class="opt-btn" data-val="dot" title="Dot">•</button>
+          </div>
+        </div>
+        <div class="slider-row" style="margin-top:5px;">
+          <span class="option-label">End Scale</span>
+          <input type="range" id="connectorEndScale" min="0.5" max="5" step="0.25" value="1" />
+          <span class="slider-val" id="connectorEndScaleVal">1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Curve Options Panel -->
+    <div class="panel" id="curvePanel" style="display: none;">
+      <div class="panel-title">Curve Options</div>
+      <div class="panel-body">
+        <div class="curve-row">
+          <label>Curve</label>
+          <select class="select-input" id="curveType" style="flex: 1; margin-bottom: 0;">
+            <option value="curveBasis">Basis (smooth)</option>
+            <option value="curveCatmullRom" selected>CatmullRom (cardinal)</option>
+            <option value="curveLinear">Linear (straight)</option>
+            <option value="curveStep">Step</option>
+          </select>
+        </div>
+        <div class="curve-row">
+          <label>Points</label>
+          <input type="number" id="curvePoints" value="2" min="1" max="6" class="small-input" style="width: 60px;" />
+          <span style="font-size: .62rem; color: var(--text-dim); flex: 1;">control points (1–6)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subject Size Panel -->
+    <div class="panel" id="subjectSizePanel">
+      <div class="panel-title">Subject Size</div>
+      <div class="panel-body">
+        <div class="num-row">
+          <div class="field"><label>Radius</label><input id="subjectRadius" type="number" value="50" class="small-input" /></div>
+          <div class="field"><label>Width</label><input id="subjectWidth" type="number" value="100" class="small-input" /></div>
+          <div class="field"><label>Height</label><input id="subjectHeight" type="number" value="60" class="small-input" /></div>
+        </div>
+        <div class="num-row" style="margin-top: 4px;">
+          <div class="field"><label>Z-Index</label><input id="annZIndex" type="number" value="10" class="small-input" /></div>
+          <div class="field"><label>Badge Txt</label><input id="badgeText" type="text" value="A" class="small-input" /></div>
+          <div class="field"><label>Badge R</label><input id="badgeRadius" type="number" value="14" min="8" class="small-input" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Canvas Settings Panel -->
+    <div class="panel" id="canvasSettingsPanel">
+      <div class="panel-title">Canvas Settings</div>
+      <div class="panel-body">
+        <div class="num-row" style="margin-bottom:5px;">
+          <div class="field"><label>Width</label><input id="canvasWidth" type="number" value="800" class="small-input" /></div>
+          <div class="field"><label>Height</label><input id="canvasHeight" type="number" value="500" class="small-input" /></div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Background</span>
+          <input type="color" id="canvasBgColor" value="#faf9f7" style="width: 22px; height: 22px; border: none; cursor: pointer; border-radius: 4px;" />
+          <button class="btn-sm" id="canvasBgWhite">White</button>
+          <button class="btn-sm" id="canvasBgTransparent">None</button>
+        </div>
+        <div class="checkbox-row" style="margin-top:5px;">
+          <label class="cb-label"><input type="checkbox" id="snapGridEnabled" /> Show Snap Grid</label>
+        </div>
+        <div class="num-row" id="snapGridOptions" style="margin-top:4px; display:none;">
+          <div class="field"><label>Grid Size</label><input id="snapGridSize" type="number" value="20" min="5" max="100" class="small-input" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Objects & Layers Panel -->
+    <div class="panel" id="objectsPanel">
+      <div class="panel-title">Objects & Layers</div>
+      <div class="panel-body">
+        <div style="display: flex; gap: 4px; margin-bottom: 7px; flex-wrap: wrap;">
+          <button class="btn-sm" id="btnImportSvg">📎 Import SVG/Image</button>
+          <button class="btn-sm" id="btnAddRect">▭ Rect</button>
+          <button class="btn-sm" id="btnAddCircle">○ Circle</button>
+        </div>
+        <div id="objectsList"></div>
+
+        <div id="objPropsPanel" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);">
+          <div class="field-label" style="margin-bottom: 5px;">Selected Object</div>
+          <div class="num-row" style="margin-bottom: 4px;">
+            <div class="field"><label>X</label><input class="small-input" id="objX" type="number" value="0" /></div>
+            <div class="field"><label>Y</label><input class="small-input" id="objY" type="number" value="0" /></div>
+            <div class="field"><label>W</label><input class="small-input" id="objW" type="number" value="200" /></div>
+            <div class="field"><label>H</label><input class="small-input" id="objH" type="number" value="150" /></div>
+          </div>
+          <div class="slider-row" style="margin-bottom: 5px;">
+            <span class="option-label">Opacity</span>
+            <input type="range" id="objOpacity" min="0" max="1" step="0.05" value="1" />
+            <span class="slider-val" id="objOpacityVal">1</span>
+          </div>
+          <div class="option-row">
+            <span class="option-label">Background</span>
+            <input type="color" id="objBg" value="#ffffff" style="width: 22px; height: 22px; border: none; cursor: pointer; border-radius: 4px;" />
+            <button class="btn-sm" id="objBgTransparent">None</button>
+          </div>
+          <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+            <button class="btn-sm" id="objToFront">↑ Front</button>
+            <button class="btn-sm" id="objToBack">↓ Back</button>
+            <button class="btn-sm" id="objLock" title="Lock/Unlock object">🔒 Lock</button>
+            <button class="btn-sm" id="objResetSize" title="Reset to original size">↺ Size</button>
+            <button class="btn-sm" id="objRemove" style="color: #ff6b6b; border-color: rgba(255,107,107,.3);">✕ Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Canvas Area -->
+  <div class="canvas-area">
+    <div class="canvas-toolbar">
+      <button class="tb-btn" id="tbSave" title="Save project as JSON">💾 Save</button>
+      <button class="tb-btn" id="tbOpen" title="Open saved JSON project">📂 Open</button>
+      <button class="tb-btn" id="tbExportSvg" title="Export canvas as vector SVG">📤 SVG</button>
+      <button class="tb-btn" id="tbExportPng" title="Export canvas as PNG image">🖼️ PNG</button>
+      <button class="tb-btn" id="tbExportD3Json" title="Copy d3-annotation compatible JSON">📋 d3 JSON</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" id="tbUndo" title="Undo (Ctrl+Z)">↩ Undo</button>
+      <button class="tb-btn" id="tbRedo" title="Redo (Ctrl+Y)">↪ Redo</button>
+      <div class="tb-sep"></div>
+      <span>Annotations: <span class="count" id="annCount">0</span></span>
+      <span>Objects: <span class="count" id="objCount">0</span></span>
+      <div style="flex: 1;"></div>
+      <span class="shortcut-hint">Ctrl+Z Undo · Ctrl+Y Redo · Del Remove · ←→↑↓ Nudge</span>
+    </div>
+    <div class="canvas-wrapper">
+      <svg id="canvas"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- App Logic -->
+<script src="fixed_script.js"></script>
+</body>
+</html>
