@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canvas Annotation — Pro</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Hind:wght@400;600;700&family=Inter:wght@400;600;700&family=Lobster&family=Noto+Sans+Devanagari:wght@400;600;700&family=Outfit:wght@400;600;700&family=Pacifico&family=Poppins:wght@400;600;700&family=Satisfy&family=Caveat:wght@400;700&family=Kalam:wght@400;700&family=Martel:wght@400;700&family=Yantramanav:wght@400;700&family=Baloo+2:wght@400;700&family=Gajraj+One&family=Biryani:wght@400;700&family=Anek+Devanagari:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Supporting polish layer — load after main -->
+  <link rel="stylesheet" href="enhancements.css">
+
+  <!-- External Scripts (D3 + D3 Annotation) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.min.js"></script>
+</head>
+<body>
+
+<!-- Hidden File Inputs -->
+<input type="file" id="fileOpenProject" class="hidden-input" accept=".json" />
+<input type="file" id="fileImportObj" class="hidden-input" accept=".svg,.png,.jpg,.jpeg,.gif,.webp" />
+
+<div class="app-layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>Canvas Annotation</h1>
+      <div class="subtitle">Click canvas to add · Click to select · Drag to move</div>
+    </div>
+    <div class="selection-info" id="selectionInfo"><span class="no-selection">No annotation selected</span></div>
+
+    <!-- Multi-Select Control Bar -->
+    <div style="display:flex; gap:4px; padding:4px 8px; background:rgba(139,92,246,0.08); border-bottom:1px solid rgba(139,92,246,0.15); flex-wrap:wrap; align-items:center;">
+      <button class="btn-sm" id="btnSelectAll" title="Select all annotations (shows selection ring)" style="font-size:10px; padding:2px 6px;">☰ Select All</button>
+      <button class="btn-sm" id="btnDeselectAll" title="Deselect everything" style="font-size:10px; padding:2px 6px;">✕ Deselect</button>
+      <button class="btn-sm" id="btnRearrangeSelected" title="Rearrange selected/all in chosen pattern" style="font-size:10px; padding:2px 6px; background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.35);">⟳ Rearrange → Pattern</button>
+      <span style="font-size:9px; opacity:0.55; margin-left:2px;">Shift+Click to multi-select</span>
+    </div>
+
+    <!-- Annotation Type Panel -->
+    <div class="panel">
+      <div class="panel-title">Annotation Type
+        <label style="float: right; font-size: 10px; font-weight: normal; color: #ffeb3b; background: rgba(0,0,0,0.6); padding: 2px 4px; border-radius: 4px; cursor: pointer; margin-top:2px;">
+            <input type="checkbox" id="broadcastModeToggle" style="width: 10px; height: 10px; margin: 0; vertical-align: middle;">
+            GLOBAL BROADCAST
+        </label>
+      </div>
+      <div class="panel-body">
+        <div class="presets-grid" id="presetsGrid">
+          <button class="preset-btn active" data-type="annotationLabel" title="Label">📝</button>
+          <button class="preset-btn" data-type="annotationCallout" title="Callout">💬</button>
+          <button class="preset-btn" data-type="annotationCalloutElbow" title="Elbow">↳</button>
+          <button class="preset-btn" data-type="annotationCalloutCurve" title="Curve">⤴</button>
+          <button class="preset-btn" data-type="annotationCalloutCircle" title="Circle">⭕</button>
+          <button class="preset-btn" data-type="annotationCalloutRect" title="Rect">▭</button>
+          <button class="preset-btn" data-type="annotationXYThreshold" title="Threshold">⤓</button>
+          <button class="preset-btn" data-type="annotationBadge" title="Badge">📛</button>
+        </div>
+        <!-- Bulk Type Change (visible when multi-selected) -->
+        <div id="bulkTypePanel" style="margin-top:6px; padding:5px; background:rgba(139,92,246,0.07); border-radius:5px; border:1px solid rgba(139,92,246,0.2); display:none;">
+          <div class="field-label" style="margin-bottom:3px; color:#8B5CF6;">⚡ Bulk Type Change</div>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <select id="bulkTypeSelect" class="select-input" style="flex:1; font-size:10px;">
+              <option value="annotationLabel">📝 Label</option>
+              <option value="annotationCallout">💬 Callout</option>
+              <option value="annotationCalloutElbow">↳ Elbow</option>
+              <option value="annotationCalloutCurve">⤴ Curve</option>
+              <option value="annotationCalloutCircle">⭕ Circle</option>
+              <option value="annotationCalloutRect">▭ Rect</option>
+              <option value="annotationXYThreshold">⤓ Threshold</option>
+              <option value="annotationBadge">📛 Badge</option>
+            </select>
+            <button class="btn-sm" id="btnBulkTypeChange" style="background:rgba(139,92,246,0.2); border-color:rgba(139,92,246,0.4); padding:2px 8px;">Apply</button>
+          </div>
+          <div style="font-size:9px; opacity:0.6; margin-top:3px;">Applies to all multi-selected, or ALL if none selected</div>
+        </div>
+        <button class="btn-delete" id="btnDelete" style="display: none;">✕ Remove Selected</button>
+      </div>
+    </div>
+
+    <!-- Text Content Panel -->
+    <div class="panel" id="textPanel">
+      <div class="panel-title">Text Content</div>
+      <div class="panel-body">
+        <input class="text-input" id="editTitle" type="text" placeholder="Title text..." />
+        <input class="text-input" id="editLabel" type="text" placeholder="Label / description..." />
+        <div class="num-row">
+          <div class="field"><label>Wrap px</label><input id="textWrap" type="number" value="120" class="small-input" /></div>
+          <div class="field"><label>Padding</label><input id="padding" type="number" value="5" class="small-input" /></div>
+        </div>
+        <div class="checkbox-row" style="margin-top:5px;">
+          <label class="cb-label"><input type="checkbox" id="wrapSplitterEnabled" /> Respect line breaks (\n)</label>
+        </div>
+        <div class="num-row" style="margin-top:5px;">
+          <div class="field"><label>Bg Padding</label><input id="bgPadding" type="number" value="0" min="0" class="small-input" title="Background rect padding behind text" /></div>
+          <div class="field"><label>Bg Pad Top</label><input id="bgPaddingTop" type="number" value="0" min="0" class="small-input" /></div>
+          <div class="field"><label>Bg Pad Bottom</label><input id="bgPaddingBottom" type="number" value="0" min="0" class="small-input" /></div>
+        </div>
+        <div class="num-row" style="margin-top:3px;">
+          <div class="field"><label>Bg Pad Left</label><input id="bgPaddingLeft" type="number" value="0" min="0" class="small-input" /></div>
+          <div class="field"><label>Bg Pad Right</label><input id="bgPaddingRight" type="number" value="0" min="0" class="small-input" /></div>
+        </div>
+        <div class="field-label" style="margin-top:6px;">Global Overrides <button class="apply-all-btn" id="applyGlobalWrap">Apply Wrap to All</button> <button class="apply-all-btn" id="applyGlobalPadding" style="margin-left:4px;">Apply Padding to All</button></div>
+      </div>
+    </div>
+
+    <!-- Font Styling Panel -->
+    <div class="panel" id="fontPanel">
+      <div class="panel-title">Font Styling</div>
+      <div class="panel-body">
+        <div class="field-label">Title Font <button class="apply-all-btn" id="applyAllTitleFont">Apply to All</button></div>
+        <div class="num-row" style="margin-bottom: 6px;">
+          <div class="field" style="flex: 2;"><select class="select-input" id="titleFont"></select></div>
+          <div class="field"><input class="small-input" id="titleFontSize" type="number" value="13" min="8" max="96" /></div>
+          <div class="field">
+            <select class="select-input" id="titleFontWeight">
+              <option value="400">Regular</option>
+              <option value="600">Semi</option>
+              <option value="700" selected>Bold</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-label">Label Font <button class="apply-all-btn" id="applyAllLabelFont">Apply to All</button></div>
+        <div class="num-row">
+          <div class="field" style="flex: 2;"><select class="select-input" id="labelFont"></select></div>
+          <div class="field"><input class="small-input" id="labelFontSize" type="number" value="12" min="8" max="96" /></div>
+          <div class="field">
+            <select class="select-input" id="labelFontWeight">
+              <option value="400" selected>Regular</option>
+              <option value="600">Semi</option>
+              <option value="700">Bold</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color Panel -->
+    <div class="panel" id="colorPanel">
+      <div class="panel-title">Color</div>
+      <div class="panel-body">
+        <div class="color-row" id="colorSwatches">
+          <div class="color-swatch active" data-color="#E8336D" style="background: #E8336D;" title="Rose"></div>
+          <div class="color-swatch" data-color="#2196F3" style="background: #2196F3;" title="Ocean Blue"></div>
+          <div class="color-swatch" data-color="#10B981" style="background: #10B981;" title="Emerald"></div>
+          <div class="color-swatch" data-color="#F59E0B" style="background: #F59E0B;" title="Amber"></div>
+          <div class="color-swatch" data-color="#8B5CF6" style="background: #8B5CF6;" title="Violet"></div>
+          <div class="color-swatch" data-color="#FF6B35" style="background: #FF6B35;" title="Orange"></div>
+          <div class="color-picker-wrap" title="Custom color"><input type="color" id="customColor" value="#E8336D" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subject Fill Panel -->
+    <div class="panel" id="subjectFillPanel" style="display: none;">
+      <div class="panel-title">Subject Fill</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Fill Color</span>
+          <input type="color" id="subjectFillColor" value="#E8336D" style="width: 26px; height: 26px; border: none; cursor: pointer; border-radius: 4px;" />
+          <button class="btn-sm" id="subjectFillTransparent">Transparent</button>
+        </div>
+        <div class="slider-row">
+          <span class="option-label">Opacity</span>
+          <input type="range" id="subjectFillOpacity" min="0" max="1" step="0.05" value="0.1" />
+          <span class="slider-val" id="subjectFillOpacityVal">0.1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Threshold Direction Panel -->
+    <div class="panel" id="thresholdPanel" style="display: none;">
+      <div class="panel-title">Threshold Direction</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Direction</span>
+          <div class="option-icons" data-group="thresholdDir">
+            <button class="opt-btn active thresh-dir-btn" data-val="horizontal" title="Horizontal — line spans full width">↔ H</button>
+            <button class="opt-btn thresh-dir-btn" data-val="vertical" title="Vertical — line spans full height">↕ V</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disable Parts Panel -->
+    <div class="panel" id="disablePanel">
+      <div class="panel-title">Visibility (Disable Parts)</div>
+      <div class="panel-body">
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="disableConnector" /> Hide Connector</label>
+        </div>
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="disableSubject" /> Hide Subject</label>
+        </div>
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="disableNote" /> Hide Note</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Positioning Panel -->
+    <div class="panel" id="notePositionPanel">
+      <div class="panel-title">Note Position Mode</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Mode</span>
+          <div class="option-icons" data-group="notePositionMode">
+            <button class="opt-btn active" data-val="offset" title="Offset (dx/dy)">dx/dy</button>
+            <button class="opt-btn" data-val="absolute" title="Absolute (nx/ny)">nx/ny</button>
+          </div>
+        </div>
+        <div class="num-row" id="offsetFields">
+          <div class="field"><label>dx</label><input id="annDx" type="number" value="80" class="small-input" /></div>
+          <div class="field"><label>dy</label><input id="annDy" type="number" value="-60" class="small-input" /></div>
+        </div>
+        <div class="num-row" id="absoluteFields" style="display:none;">
+          <div class="field"><label>nx</label><input id="annNx" type="number" value="200" class="small-input" /></div>
+          <div class="field"><label>ny</label><input id="annNy" type="number" value="100" class="small-input" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Options Panel -->
+    <div class="panel">
+      <div class="panel-title">Note Options</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Line Type</span>
+          <div class="option-icons" data-group="noteLineType">
+            <button class="opt-btn active" data-val="none" title="None">∅</button>
+            <button class="opt-btn" data-val="vertical" title="Vertical">|</button>
+            <button class="opt-btn" data-val="horizontal" title="Horizontal">—</button>
+          </div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Orientation</span>
+          <div class="option-icons" data-group="noteOrientation">
+            <button class="opt-btn active" data-val="topBottom" title="Top/Bottom">↕</button>
+            <button class="opt-btn" data-val="leftRight" title="Left/Right">↔</button>
+          </div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Align</span>
+          <div class="option-icons" data-group="noteAlign">
+            <button class="opt-btn" data-val="dynamic" title="Dynamic">🔄</button>
+            <button class="opt-btn active" data-val="middle" title="Middle">⇼</button>
+            <button class="opt-btn" data-val="left" title="Left">⇤</button>
+            <button class="opt-btn" data-val="right" title="Right">⇥</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connector Options Panel -->
+    <div class="panel">
+      <div class="panel-title">Connector Options</div>
+      <div class="panel-body">
+        <div class="option-row">
+          <span class="option-label">Type</span>
+          <div class="option-icons" data-group="connectorType">
+            <button class="opt-btn" data-val="none" title="None">∅</button>
+            <button class="opt-btn active" data-val="line" title="Line">＼</button>
+            <button class="opt-btn" data-val="elbow" title="Elbow">↳</button>
+            <button class="opt-btn" data-val="curve" title="Curve">⤴</button>
+          </div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">End</span>
+          <div class="option-icons" data-group="connectorEnd">
+            <button class="opt-btn active" data-val="none" title="None">∅</button>
+            <button class="opt-btn" data-val="arrow" title="Arrow">↘</button>
+            <button class="opt-btn" data-val="dot" title="Dot">•</button>
+          </div>
+        </div>
+        <div class="slider-row" style="margin-top:5px;">
+          <span class="option-label">End Scale</span>
+          <input type="range" id="connectorEndScale" min="0.5" max="5" step="0.25" value="1" />
+          <span class="slider-val" id="connectorEndScaleVal">1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Curve Options Panel -->
+    <div class="panel" id="curvePanel" style="display: none;">
+      <div class="panel-title">Curve Options</div>
+      <div class="panel-body">
+        <div class="curve-row">
+          <label>Curve</label>
+          <select class="select-input" id="curveType" style="flex: 1; margin-bottom: 0;">
+            <option value="curveBasis">Basis (smooth)</option>
+            <option value="curveCatmullRom" selected>CatmullRom (cardinal)</option>
+            <option value="curveLinear">Linear (straight)</option>
+            <option value="curveStep">Step</option>
+          </select>
+        </div>
+        <div class="curve-row">
+          <label>Points</label>
+          <input type="number" id="curvePoints" value="2" min="1" max="6" class="small-input" style="width: 60px;" />
+          <span style="font-size: .62rem; color: var(--text-dim); flex: 1;">control points (1–6)</span>
+        </div>
+        <button class="btn-sm" id="applyGlobalCurve" style="margin-top: 6px; width: 100%;">Apply Curve to ALL (bulk)</button>
+      </div>
+    </div>
+
+    <!-- Subject Size & Badge Panel -->
+    <div class="panel" id="subjectSizePanel">
+      <div class="panel-title">Subject & Badge</div>
+      <div class="panel-body">
+        <div class="num-row" style="margin-bottom: 4px;">
+          <div class="field"><label>Radius</label><input id="subjectRadius" type="number" value="50" class="small-input" /></div>
+          <div class="field"><label>Width</label><input id="subjectWidth" type="number" value="100" class="small-input" /></div>
+          <div class="field"><label>Height</label><input id="subjectHeight" type="number" value="60" class="small-input" /></div>
+        </div>
+        
+        <div class="num-row" style="margin-bottom: 4px;">
+          <div class="field"><label>Z-Index</label><input id="annZIndex" type="number" value="10" class="small-input" /></div>
+          <div class="field"><label>Badge Txt</label><input id="badgeText" type="text" value="A" class="small-input" /></div>
+          <div class="field"><label>Badge R</label><input id="badgeRadius" type="number" value="14" min="8" class="small-input" /></div>
+        </div>
+
+        <div class="card" style="margin-top: 4px; padding: 4px; background: rgba(0,0,0,0.02); display: flex; gap: 4px; align-items: flex-end;">
+          <div style="flex:1;"><label style="font-size:10px; color:var(--text-dim);">Badge Font</label><input id="badgeFont" type="text" value="Inter" class="small-input" placeholder="Font" /></div>
+          <div style="width: 45px;"><label style="font-size:10px; color:var(--text-dim);">Size</label><input id="badgeFontSize" type="number" value="12" class="small-input" /></div>
+        </div>
+        <button class="btn-sm" id="applyGlobalBadge" style="margin-top: 6px; width: 100%;">Apply Badge Radius & Font to ALL</button>
+      </div>
+    </div>
+
+    <!-- Canvas Settings Panel -->
+    <div class="panel" id="canvasSettingsPanel">
+      <div class="panel-title">Canvas Settings</div>
+      <div class="panel-body">
+        <div class="num-row" style="margin-bottom:5px;">
+          <div class="field"><label>Width</label><input id="canvasWidth" type="number" value="800" class="small-input" /></div>
+          <div class="field"><label>Height</label><input id="canvasHeight" type="number" value="500" class="small-input" /></div>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Background</span>
+          <input type="color" id="canvasBgColor" value="#faf9f7" style="width: 22px; height: 22px; border: none; cursor: pointer; border-radius: 4px;" />
+          <button class="btn-sm" id="canvasBgWhite">White</button>
+          <button class="btn-sm" id="canvasBgTransparent">None</button>
+        </div>
+        <div class="option-row">
+          <span class="option-label">Auto-Repel</span>
+          <select id="autoRepelMode" class="select-input" style="flex: 1; margin-bottom: 0;">
+            <option value="none" selected>Disabled</option>
+            <option value="compact">Compact (Tight)</option>
+            <option value="medium">Medium (Standard)</option>
+            <option value="loose">Free-form (Loose)</option>
+          </select>
+        </div>
+        <div class="checkbox-row" style="margin-top:5px;">
+          <label class="cb-label"><input type="checkbox" id="snapGridEnabled" /> Show Snap Grid</label>
+        </div>
+        <div class="num-row" id="snapGridOptions" style="margin-top:4px; display:none;">
+          <div class="field"><label>Grid Size</label><input id="snapGridSize" type="number" value="20" min="5" max="100" class="small-input" /></div>
+        </div>
+        <div class="field-label" style="margin-top: 10px; margin-bottom: 5px; font-weight: 600; font-size: 11px;">Extend Canvas</div>
+        <div class="num-row" style="margin-bottom: 5px;">
+          <div class="field"><label>Amount (px)</label><input id="extendAmount" type="number" value="100" min="10" step="10" class="small-input" /></div>
+        </div>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+          <button class="btn-sm" id="extendTop">↑ Top</button>
+          <button class="btn-sm" id="extendBottom">↓ Bottom</button>
+          <button class="btn-sm" id="extendLeft">← Left</button>
+          <button class="btn-sm" id="extendRight">→ Right</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pattern Generator Section -->
+    <div class="panel" id="patterns-section">
+        <div class="panel-title">Pattern Engine</div>
+        <div class="panel-body">
+            <div class="control-group">
+                <div class="field-label" style="margin-bottom: 2px;">Pattern Type</div>
+                <select id="pattern-type" class="select-input" style="width: 100%; margin-bottom: 5px;">
+                <!-- ═══ EXISTING PATTERNS ═══ -->
+                <optgroup label="── Geometric Patterns ──">
+                    <option value="grid">Grid Pattern (NxN)</option>
+                    <option value="clock">Clock Pattern (12 Points)</option>
+                    <option value="circle">Circular Pattern</option>
+                    <option value="spiral">Spiral Pattern</option>
+                    <option value="fibonacci">Fibonacci Spiral</option>
+                    <option value="hexagonal">Hexagonal Grid</option>
+                    <option value="voronoi">Voronoi Pattern</option>
+                    <option value="mandala">Mandala Pattern</option>
+                    <option value="molecular">Molecular Structure</option>
+                    <option value="radial">Radial Hub Pattern</option>
+                    <option value="tree">TreeMap Pattern</option>
+                    <option value="concentric">Concentric Pattern</option>
+                    <option value="archSpiral">Archimedes Spiral</option>
+                    <option value="solarSystem">Solar System Pattern</option>
+                </optgroup>
+
+                <!-- ═══ NEW: TIMELINE & CHRONOLOGICAL ═══ -->
+                <optgroup label="── Timeline & Chronological ──">
+                    <option value="timelineHorizontal">Timeline → Horizontal (Left to Right)</option>
+                    <option value="timelineVertical">Timeline ↓ Vertical (Top to Bottom)</option>
+                    <option value="timelineZigzag">Timeline ⟿ Zigzag (Alternating)</option>
+                    <option value="timelineSnake">Timeline Snake (Boustrophedon)</option>
+                    <option value="timelineCascade">Timeline Cascade (Waterfall Down)</option>
+                    <option value="timelineRiver">Timeline River (Flowing Curves)</option>
+                    <option value="timelineDNA">DNA Helix Timeline (Double Strand)</option>
+                </optgroup>
+
+                <!-- ═══ NEW: STUDY & NOTE STRUCTURES ═══ -->
+                <optgroup label="── Study & Note Structures ──">
+                    <option value="cornellNotes">Cornell Notes Layout (3 Zones)</option>
+                    <option value="mindmapRadial">Mind Map (Central → Branches)</option>
+                    <option value="outlineIndent">Outline / Indent Hierarchy</option>
+                    <option value="flashcardGrid">Flashcard Grid (Q&A Pairs)</option>
+                    <option value="kwlChart">KWL Chart (Know/Want/Learned)</option>
+                    <option value="sqr3Method">SQ3R Method Layout</option>
+                    <option value="conceptMap">Concept Map (Linked Clusters)</option>
+                </optgroup>
+
+                <!-- ═══ NEW: INFORMATION HIERARCHY ═══ -->
+                <optgroup label="── Information Hierarchy ──">
+                    <option value="pyramidTop">Pyramid ▲ (Top-Down Importance)</option>
+                    <option value="invertedPyramid">Inverted Pyramid ▽ (News Style)</option>
+                    <option value="funnelLayout">Funnel Layout (Wide→Narrow)</option>
+                    <option value="diamondRank">Diamond Ranking (Priority)</option>
+                    <option value="staircase">Staircase Steps (Escalating)</option>
+                    <option value="waterfallTier">Waterfall Tiers (Descending)</option>
+                    <option value="orgChart">Org Chart / Tree Hierarchy</option>
+                </optgroup>
+
+                <!-- ═══ NEW: COMPARISON & ANALYSIS ═══ -->
+                <optgroup label="── Comparison & Analysis ──">
+                    <option value="vennDual">Venn Diagram (2 Circles)</option>
+                    <option value="vennTriple">Venn Diagram (3 Circles)</option>
+                    <option value="tChart">T-Chart (Pros vs Cons)</option>
+                    <option value="comparisonColumns">Comparison Columns (Side by Side)</option>
+                    <option value="swotGrid">SWOT Analysis (2×2 Quadrant)</option>
+                    <option value="forceField">Force Field Analysis (← Push | Pull →)</option>
+                    <option value="matrixQuadrant">Matrix Quadrant (4 Zones + Axes)</option>
+                </optgroup>
+
+                <!-- ═══ NEW: FLOW & PROCESS ═══ -->
+                <optgroup label="── Flow & Process ──">
+                    <option value="flowchartLinear">Flowchart → Linear Steps</option>
+                    <option value="flowchartBranch">Flowchart Branching (Decision Tree)</option>
+                    <option value="swimlane">Swimlane Layout (Parallel Tracks)</option>
+                    <option value="cyclicLoop">Cyclic Loop (Repeating Process)</option>
+                    <option value="convergeDiverge">Converge ↔ Diverge (Fanning)</option>
+                    <option value="pipelineStages">Pipeline Stages (Kanban-like)</option>
+                    <option value="causeEffect">Cause → Effect Chain</option>
+                </optgroup>
+
+                <!-- ═══ NEW: READING & ARTICLE LAYOUTS ═══ -->
+                <optgroup label="── Reading & Article Layouts ──">
+                    <option value="newspaperColumn">Newspaper Columns</option>
+                    <option value="magazineSpread">Magazine Spread (Mixed Sizes)</option>
+                    <option value="bookSpine">Book Spine (Chapter Sequence)</option>
+                    <option value="marginNotes">Margin Notes (Main + Side Annotations)</option>
+                    <option value="annotatedParagraph">Annotated Paragraph (Inline Callouts)</option>
+                    <option value="headlineDrill">Headline Drilldown (H1→H2→H3→Body)</option>
+                    <option value="pullQuoteLayout">Pull-Quote Feature Layout</option>
+                </optgroup>
+
+                <!-- ═══ NEW: SPATIAL & VISUAL MEMORY ═══ -->
+                <optgroup label="── Spatial & Visual Memory ──">
+                    <option value="memoryPalace">Memory Palace (Room Layout)</option>
+                    <option value="isometricShelves">Isometric Shelves (3D Bookshelf)</option>
+                    <option value="galaxyCluster">Galaxy Cluster (Weighted Gravity)</option>
+                    <option value="archipelago">Archipelago (Island Groups)</option>
+                    <option value="metroMap">Metro Map (Station Lines)</option>
+                    <option value="chessboard">Chessboard Placement</option>
+                    <option value="brickWall">Brick Wall (Offset Rows)</option>
+                </optgroup>
+
+                <!-- ═══ NEW: DATA & CHART-LIKE ═══ -->
+                <optgroup label="── Data & Chart-Like ──">
+                    <option value="barChartLayout">Bar Chart Layout (Varying Heights)</option>
+                    <option value="bubbleChart">Bubble Chart (Sized Clusters)</option>
+                    <option value="scatterPlot">Scatter Plot Distribution</option>
+                    <option value="radarWeb">Radar / Spider Web</option>
+                    <option value="sankeyFlow">Sankey Flow (Weighted Paths)</option>
+                    <option value="treemapNested">Nested Treemap (Area-Based)</option>
+                    <option value="gaugeArc">Gauge Arc (Progress Meter)</option>
+                </optgroup>
+                </select>
+
+                <div class="pattern-params" style="display:flex; gap: 4px; flex-wrap: wrap;">
+                    <div class="field" style="width: 48%;"><label>Items</label><input type="number" id="pattern-count" value="12" class="small-input"></div>
+                    <div class="field" style="width: 48%;"><label>Spacing</label><input type="number" id="pattern-spacing" value="80" class="small-input"></div>
+                </div>
+
+                <div class="field-label" style="margin-top: 5px;">Advanced Mapping</div>
+                <div class="slider-row">
+                    <span class="option-label">Rotation</span>
+                    <input type="range" id="pattern-rotation" min="0" max="360" value="0">
+                    <span class="slider-val" id="pattern-rotation-val">0</span>
+                </div>
+                <div class="slider-row">
+                    <span class="option-label">Randomize</span>
+                    <input type="range" id="pattern-randomness" min="0" max="100" value="0">
+                </div>
+                <div style="display:flex; gap: 4px; margin-top: 5px;">
+                    <button class="btn-sm" id="btnGeneratePattern" style="flex:1; background: #6b7280; color: white;">Generate Layout</button>
+                    <button class="btn-sm" id="btnResolveCollide" style="flex:1; background: #e8336d; color: white;" title="Push overlapping annotations apart">⟳ Resolve Collide</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Objects & Layers Panel -->
+    <div class="panel" id="objectsPanel">
+      <div class="panel-title">Objects & Layers</div>
+      <div class="panel-body">
+        <div style="display: flex; gap: 4px; margin-bottom: 7px; flex-wrap: wrap;">
+          <button class="btn-sm" id="btnImportSvg">📎 Import SVG/Image</button>
+          <button class="btn-sm" id="btnAddRect">▭ Rect</button>
+          <button class="btn-sm" id="btnAddCircle">○ Circle</button>
+        </div>
+        <div id="objectsList"></div>
+
+        <div id="objPropsPanel" style="display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);">
+          <div class="field-label" style="margin-bottom: 5px;">Selected Object</div>
+          <div class="num-row" style="margin-bottom: 4px;">
+            <div class="field"><label>X</label><input class="small-input" id="objX" type="number" value="0" /></div>
+            <div class="field"><label>Y</label><input class="small-input" id="objY" type="number" value="0" /></div>
+            <div class="field"><label>W</label><input class="small-input" id="objW" type="number" value="200" /></div>
+            <div class="field"><label>H</label><input class="small-input" id="objH" type="number" value="150" /></div>
+          </div>
+          <div class="slider-row" style="margin-bottom: 5px;">
+            <span class="option-label">Opacity</span>
+            <input type="range" id="objOpacity" min="0" max="1" step="0.05" value="1" />
+            <span class="slider-val" id="objOpacityVal">1</span>
+          </div>
+          <div class="option-row">
+            <span class="option-label">Background</span>
+            <input type="color" id="objBg" value="#ffffff" style="width: 22px; height: 22px; border: none; cursor: pointer; border-radius: 4px;" />
+            <button class="btn-sm" id="objBgTransparent">None</button>
+          </div>
+          <div style="display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap;">
+            <button class="btn-sm" id="objToFront">↑ Front</button>
+            <button class="btn-sm" id="objToBack">↓ Back</button>
+            <button class="btn-sm" id="objLock" title="Lock/Unlock object">🔒 Lock</button>
+            <button class="btn-sm" id="objResetSize" title="Reset to original size">↺ Size</button>
+            <button class="btn-sm" id="objRemove" style="color: #ff6b6b; border-color: rgba(255,107,107,.3);">✕ Remove</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Background Canvas Engine (standalone, always accessible) -->
+    <div class="panel" id="bgEnginePanel">
+      <div class="panel-title">🎨 Canvas Background</div>
+      <div class="panel-body">
+        <select class="select-input" id="canvasBgPattern" style="width: 100%; margin-bottom:5px;">
+          <option value="none">⬜ Solid Color</option>
+          <option value="dot-grid">· · Dot Grid</option>
+          <option value="blueprint">▦ Blueprint Matrix</option>
+          <option value="lines">≡ Fine Lines</option>
+          <option value="crosshatch">⊞ Crosshatch</option>
+        </select>
+        <div class="num-row" style="margin-bottom:4px;">
+          <div class="field"><label>Grid Size</label><input type="number" id="bgPatternSize" value="20" min="5" max="100" class="small-input" title="Pattern cell size in px"/></div>
+          <div class="field"><label>Color</label><input type="color" id="bgPatternColor" value="#d1d5db" style="width:26px;height:22px;border:none;cursor:pointer;"/></div>
+        </div>
+        <div class="slider-row">
+          <span class="option-label">Opacity</span>
+          <input type="range" id="bgPatternOpacity" min="0.02" max="1" step="0.02" value="0.4"/>
+          <span class="slider-val" id="bgPatternOpacityVal">0.40</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- X Features & Export Panel -->
+    <div class="panel" id="xFeaturesPanel" style="border: 1px solid #1da1f2;">
+      <div class="panel-title" style="background-color: #f5f8fa; color: #1da1f2;">High-Res & X Features</div>
+      <div class="panel-body">
+        <div class="field-label" style="margin-bottom:4px;">📥 Bulk Data Import</div>
+        <textarea id="bulkCsvInput" rows="3" style="width: 100%; font-size: 11px; padding: 4px; box-sizing: border-box; font-family:monospace; resize:vertical;" placeholder="CSV: Title,Label,importance,color,key=value&#10;e.g. Node 1, The label, high, #f00, curvePoints=4, typeKey=annotationBadge&#10;Supports arbitrary properties as key=value"></textarea>
+        <div style="display:flex; gap:4px; margin-top:4px; flex-wrap:wrap;">
+          <button class="btn-sm" id="btnBulkImport" style="flex:1;">📥 Import &amp; Place</button>
+          <button class="btn-sm" id="btnBulkImportPattern" style="flex:1; background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.35);">📥 Import → Pattern</button>
+        </div>
+        <button class="btn-sm" id="btnCopyAIPrompt" style="width: 100%; margin-top: 4px; background: rgba(16,185,129,0.1); color: var(--accent); border-color: rgba(16,185,129,0.3);">📋 Copy AI Prompt Template</button>
+        <div style="font-size:9px; opacity:0.55; margin-top:3px;">Tip: After import, use Pattern Engine above to rearrange. Or use 'Import → Pattern' to auto-apply layout.</div>
+        
+        <div class="field-label" style="margin-top:10px; margin-bottom:4px;">Advanced View Modes</div>
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="watermarkToggle" /> Embed Watermark</label>
+        </div>
+        <!-- Watermark customization -->
+        <div id="watermarkSettings" style="background:rgba(29,161,242,0.06); border:1px solid rgba(29,161,242,0.18); border-radius:5px; padding:6px; margin-bottom:8px;">
+          <input type="text" id="watermarkText" placeholder="Watermark text..." value="Created with D3 Annotation Studio PRO" style="width: 100%; font-size: 11px; padding: 4px; margin-bottom: 5px; box-sizing: border-box;" />
+          <div class="num-row" style="margin-bottom:4px;">
+            <div class="field"><label>Color</label><input type="color" id="watermarkColor" value="#1da1f2" style="width:26px;height:22px;border:none;cursor:pointer;"/></div>
+            <div class="field"><label>Size px</label><input type="number" id="watermarkFontSize" value="42" min="8" max="200" class="small-input"/></div>
+          </div>
+          <div class="slider-row" style="margin-bottom:4px;">
+            <span class="option-label">Opacity</span>
+            <input type="range" id="watermarkOpacity" min="0.02" max="1" step="0.02" value="0.18"/>
+            <span class="slider-val" id="watermarkOpacityVal">0.18</span>
+          </div>
+          <div class="num-row">
+            <div class="field">
+              <label>Position</label>
+              <select id="watermarkPosition" class="select-input" style="font-size:10px;">
+                <option value="bottom-right" selected>↘ Bottom-Right</option>
+                <option value="bottom-left">↙ Bottom-Left</option>
+                <option value="top-right">↗ Top-Right</option>
+                <option value="top-left">↖ Top-Left</option>
+                <option value="center">⊕ Center</option>
+              </select>
+            </div>
+            <div class="field"><label>Angle°</label><input type="number" id="watermarkAngle" value="0" min="-360" max="360" class="small-input" title="Rotate watermark text"/></div>
+          </div>
+        </div>
+
+        <div class="checkbox-row">
+          <label class="cb-label"><input type="checkbox" id="spotlightToggle" /> Spotlight Mode (Dim Non-Selected)</label>
+        </div>
+
+        <div class="field-label" style="margin-top:10px; margin-bottom:4px;">Professional Export Presets</div>
+        <select class="select-input" id="proExportPreset" style="width: 100%; margin-bottom: 4px;">
+          <option value="4k">4K Ultra-Res (PNG)</option>
+          <option value="8k">8K Maximum (PNG)</option>
+          <option value="pdf">A3 Print (PDF)</option>
+          <option value="thread">✂ X Thread Slicer</option>
+        </select>
+        
+        <div id="threadSlicerControls" style="display:none; background:rgba(29,161,242,0.05); border:1px solid rgba(29,161,242,0.2); padding:6px; border-radius:5px; margin-bottom:6px;">
+          <div class="field-label" style="font-size:10px; color:#1da1f2; margin-bottom:4px;">✂ Thread Slicer — Visual Builder</div>
+          <!-- Visual slice height builder -->
+          <div id="sliceVisualBuilder" style="margin-bottom:6px;"></div>
+          <div class="num-row" style="margin-bottom:3px;">
+            <div class="field"><label>Slices</label><input type="number" id="threadSliceCount" value="3" min="2" max="10" class="small-input" title="Number of output images"/></div>
+            <div class="field"><label>Global Y±</label><input type="number" id="threadSliceOffsetY" value="0" class="small-input" title="Shift ALL seams up(−) or down(+)"/></div>
+          </div>
+          <!-- Per-seam offsets built dynamically -->
+          <div id="threadSeamOffsets"></div>
+          <div class="checkbox-row">
+            <label class="cb-label" style="font-size:10px;"><input type="checkbox" id="threadEqualSlices" checked/> Equal heights</label>
+            <label class="cb-label" style="font-size:10px; margin-left:8px;"><input type="checkbox" id="threadShowPreview"/> Preview seams on canvas</label>
+          </div>
+          <div id="threadCustomRatios" style="display:none; margin-top:4px;">
+            <div class="field-label" style="font-size:10px;">Custom height ratios (e.g. 1:2:1)</div>
+            <input type="text" id="threadRatioInput" value="1:1:1" style="width:100%;font-size:11px;padding:3px;box-sizing:border-box;"/>
+            <div style="font-size:9px;opacity:0.5;margin-top:2px;">Numbers separated by colon. e.g. 2:3:1 = 33%/50%/17%</div>
+          </div>
+          <button class="btn-sm" id="btnPreviewSeams" style="width:100%; margin-top:4px; font-size:10px;">👁 Toggle Seam Preview on Canvas</button>
+        </div>
+
+        <button class="btn-sm" id="btnProExport" style="width: 100%; background: #1da1f2; color: white; border-color: #1da1f2;">🚀 Execute Pro Export</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Canvas Area -->
+  <div class="canvas-area">
+    <div class="canvas-toolbar">
+      <button class="tb-btn" id="tbSave" title="Save project as JSON">💾 Save</button>
+      <button class="tb-btn" id="tbOpen" title="Open saved JSON project">📂 Open</button>
+      <button class="tb-btn" id="tbExportSvg" title="Export canvas as vector SVG">📤 SVG</button>
+      <button class="tb-btn" id="tbExportPng" title="Export canvas as PNG image">🖼️ PNG</button>
+      <button class="tb-btn" id="tbExportD3Json" title="Copy d3-annotation compatible JSON">📋 d3 JSON</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" id="tbUndo" title="Undo (Ctrl+Z)">↩ Undo</button>
+      <button class="tb-btn" id="tbRedo" title="Redo (Ctrl+Y)">↪ Redo</button>
+      <div class="tb-sep"></div>
+      <span>Annotations: <span class="count" id="annCount">0</span></span>
+      <span>Objects: <span class="count" id="objCount">0</span></span>
+      <div style="flex: 1;"></div>
+      <span class="shortcut-hint">Ctrl+Z Undo · Ctrl+Y Redo · Del Remove · ←→↑↓ Nudge</span>
+    </div>
+    <div class="canvas-wrapper">
+      <svg id="canvas"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Inline UI Helpers (no dependency on AppStore) -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // ── Watermark opacity live display ─────────────────────────────────────
+    const wmOpacity = document.getElementById('watermarkOpacity');
+    const wmOpacityVal = document.getElementById('watermarkOpacityVal');
+    if (wmOpacity && wmOpacityVal) {
+      wmOpacity.addEventListener('input', () => wmOpacityVal.textContent = parseFloat(wmOpacity.value).toFixed(2));
+    }
+
+    // ── Thread slicer show/hide on preset select ───────────────────────────
+    const proExportPreset = document.getElementById('proExportPreset');
+    const threadSlicerControls = document.getElementById('threadSlicerControls');
+    if (proExportPreset && threadSlicerControls) {
+      function toggleSlicerPanel() {
+        threadSlicerControls.style.display = proExportPreset.value === 'thread' ? 'block' : 'none';
+      }
+      proExportPreset.addEventListener('change', toggleSlicerPanel);
+      toggleSlicerPanel();
+    }
+
+    // ── Thread equal/custom ratio toggle ──────────────────────────────────
+    const threadEqualSlices = document.getElementById('threadEqualSlices');
+    const threadCustomRatios = document.getElementById('threadCustomRatios');
+    if (threadEqualSlices && threadCustomRatios) {
+      threadEqualSlices.addEventListener('change', function() {
+        threadCustomRatios.style.display = this.checked ? 'none' : 'block';
+      });
+    }
+
+    // ── Watermark settings collapse when unchecked ─────────────────────────
+    const wmToggle = document.getElementById('watermarkToggle');
+    const wmSettings = document.getElementById('watermarkSettings');
+    if (wmToggle && wmSettings) {
+      function toggleWmSettings() {
+        wmSettings.style.opacity = wmToggle.checked ? '1' : '0.35';
+        wmSettings.style.pointerEvents = wmToggle.checked ? '' : 'none';
+      }
+      wmToggle.addEventListener('change', toggleWmSettings);
+      toggleWmSettings();
+    }
+  });
+</script>
+
+<!-- App Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="fixed_script.js"></script>
+<script src="pattern_engine.js"></script>
+<script src="x_monetization_features.js"></script>
+</body>
+</html>
