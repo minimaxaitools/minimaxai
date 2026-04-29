@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased text-gray-900 bg-gray-50 dark:bg-gray-950 dark:text-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Info</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Custom Scrollbar for a premium look */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Supplementary Modules -->
+    <script type="text/babel" src="content-slicer.js"></script>
+    <script type="text/babel" src="master-style.js"></script>
+    <script type="text/babel" src="prompt-generator.js"></script>
+    <script type="text/babel" src="project-manager.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // --- ICON SYSTEM ---
+        const Icons = {
+            Search: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+            Save: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
+            Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+            Upload: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>,
+            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
+            Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+            ChevronDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+            ChevronRight: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>,
+            History: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
+            Check: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+            Wand: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8l1.4 1.4"/><path d="M10.6 6.2l-1.4-1.4"/><path d="M17.8 6.2l1.4-1.4"/><path d="M10.6 11.8l-1.4 1.4"/><path d="m3 21 9-9"/><path d="M12.2 6.2 10.8 4.8"/></svg>,
+            Moon: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+            Sun: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>,
+            X: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>,
+            Edit: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        };
+        // Make Icons globally available for supplementary modules
+        window.Icons = Icons;
+
+        // --- INITIAL DATA ---
+        const INITIAL_CATEGORIES = [
+            {
+                id: "layout", title: "📐 Layout & Structure",
+                subcategories: [
+                    { name: "Layout Type", keywords: ["infographic", "vertical infographic", "horizontal infographic", "one-page infographic", "long-form infographic", "scrollable", "multi-section", "modular layout", "grid layout", "split layout", "zigzag layout", "timeline layout", "flowchart layout", "single-column", "two-column", "multi-panel"] },
+                    { name: "Sections", keywords: ["header", "footer", "title banner", "section divider", "numbered sections", "content blocks", "sidebar", "call-out box", "pull quote", "caption area", "legend box"] },
+                    { name: "Sizing", keywords: ["Pinterest-size", "A4", "letter size", "800x2000px", "tall format", "wide format", "square format", "social media size", "poster size", "presentation slide"] }
+                ]
+            },
+            {
+                id: "visual", title: "🎨 Visual Style & Aesthetics",
+                subcategories: [
+                    { name: "Style", keywords: ["flat design", "minimalist", "modern", "corporate", "playful", "retro", "vintage", "hand-drawn", "sketch style", "3D isometric", "isometric icons", "geometric", "abstract", "glassmorphism", "neumorphism", "material design", "paper cut-out", "watercolor", "grunge", "neon", "cyberpunk", "futuristic", "clean", "elegant", "bold", "professional", "editorial", "magazine-style", "cartoonish", "doodle style", "line art", "duotone", "gradient-heavy", "pastel", "monochromatic", "high-contrast"] },
+                    { name: "Color", keywords: ["color palette", "brand colors", "warm tones", "cool tones", "earth tones", "neon colors", "pastel palette", "dark mode", "light mode", "vibrant", "muted", "complementary colors", "analogous colors", "triadic colors", "gradient background", "color-coded sections", "rainbow spectrum", "black and white", "gold accents", "metallic"] },
+                    { name: "Background", keywords: ["solid background", "gradient background", "textured background", "patterned background", "transparent background", "dark background", "white background", "blurred background", "geometric pattern background", "subtle noise texture", "paper texture"] }
+                ]
+            },
+            {
+                id: "data_viz", title: "📊 Data Visualization",
+                subcategories: [
+                    { name: "Charts", keywords: ["bar chart", "horizontal bar chart", "stacked bar chart", "pie chart", "donut chart", "line chart", "area chart", "scatter plot", "bubble chart", "radar chart", "gauge chart", "funnel chart", "waterfall chart", "treemap", "heatmap", "histogram", "Gantt chart", "candlestick chart", "Sankey diagram", "Venn diagram"] },
+                    { name: "Data Elements", keywords: ["statistics", "percentages", "data points", "metrics", "KPIs", "comparison", "ranking", "growth rate", "trend line", "benchmark", "ratio", "index", "figures", "numbers", "big numbers", "data highlight", "bold stats"] },
+                    { name: "Data Display", keywords: ["progress bar", "meter", "thermometer chart", "speedometer", "rating stars", "score card", "data table", "matrix", "data card", "counter", "ticker", "number callout"] }
+                ]
+            },
+            {
+                id: "icons", title: "🖼️ Icons & Illustrations",
+                subcategories: [
+                    { name: "Icon Style", keywords: ["flat icons", "line icons", "filled icons", "outlined icons", "glyph icons", "rounded icons", "square icons", "circular icons", "badge icons", "emoji icons", "pictograms", "symbol set", "icon grid", "duotone icons", "3D icons", "animated icons"] },
+                    { name: "Illustration", keywords: ["vector illustration", "character illustration", "scene illustration", "spot illustration", "hero image", "mascot", "avatar", "people illustration", "diverse characters", "business illustration", "tech illustration", "nature illustration", "medical illustration", "food illustration"] },
+                    { name: "Imagery", keywords: ["stock photo", "photo cutout", "photo collage", "image mask", "circular image crop", "rounded image frame", "photo overlay", "blended photo", "silhouette", "shadow", "image with text overlay"] }
+                ]
+            },
+            {
+                id: "typography", title: "✏️ Typography",
+                subcategories: [
+                    { name: "Font Style", keywords: ["sans-serif", "serif", "bold heading", "thin font", "display font", "handwritten font", "monospace", "slab serif", "condensed font", "uppercase", "title case", "decorative font", "modern typography", "classic typography", "mixed fonts"] },
+                    { name: "Text Elements", keywords: ["headline", "subheadline", "body text", "bullet points", "numbered list", "callout text", "quote text", "label", "annotation", "footnote", "caption", "tag", "badge text", "tooltip text", "highlighted text", "underlined", "strikethrough", "text box", "text bubble"] },
+                    { name: "Hierarchy", keywords: ["large title", "medium subtitle", "small body", "emphasis bold", "italic accent", "color-coded text", "font size contrast", "weight contrast", "leading/line spacing", "kerning"] }
+                ]
+            },
+            {
+                id: "types", title: "📑 Infographic Types",
+                subcategories: [
+                    { name: "Common Types", keywords: ["statistical infographic", "informational infographic", "timeline infographic", "process infographic", "comparison infographic", "geographic/map infographic", "hierarchical infographic", "list infographic", "resume infographic", "how-to infographic", "anatomy infographic", "flowchart infographic", "interactive infographic"] },
+                    { name: "Industry-Specific", keywords: ["marketing infographic", "health infographic", "education infographic", "technology infographic", "finance infographic", "real estate infographic", "HR infographic", "environmental infographic", "food/nutrition infographic", "travel infographic", "sports infographic", "science infographic", "legal infographic", "e-commerce infographic", "SaaS infographic", "nonprofit infographic"] }
+                ]
+            },
+            {
+                id: "flow", title: "🔄 Flow & Connections",
+                subcategories: [
+                    { name: "Connectors", keywords: ["arrows", "curved arrows", "dotted lines", "dashed lines", "connector lines", "flow lines", "directional arrows", "branching paths", "decision tree", "mind map branches", "node connections", "pathway"] },
+                    { name: "Flow Types", keywords: ["step-by-step", "sequential", "cyclical", "circular flow", "linear flow", "branching flow", "parallel process", "decision flow", "top-down", "left-to-right", "convergent", "divergent", "loop", "feedback loop"] },
+                    { name: "Grouping", keywords: ["categories", "clusters", "segments", "tiers", "levels", "layers", "phases", "stages", "milestones", "chapters", "zones"] }
+                ]
+            },
+            {
+                id: "maps", title: "🗺️ Maps & Geography",
+                subcategories: [
+                    { name: "Map Types", keywords: ["world map", "country map", "continent map", "state map", "city map", "regional map", "choropleth map", "dot distribution map", "pin map", "route map", "heat map overlay", "cartogram"] },
+                    { name: "Map Elements", keywords: ["map pins", "location markers", "territory shading", "border lines", "legend", "compass rose", "scale bar", "labels", "highlighted regions", "zoom inset"] }
+                ]
+            },
+            {
+                id: "special", title: "🧩 Special Elements",
+                subcategories: [
+                    { name: "Interactive", keywords: ["clickable", "hover effect", "animated", "scrollytelling", "expandable", "collapsible", "toggle", "tab", "carousel", "zoom", "pop-up", "tooltip"] },
+                    { name: "Decorative", keywords: ["border", "frame", "divider line", "ornament", "ribbon banner", "badge", "seal", "stamp", "sticker", "confetti", "sparkle", "shadow", "glow", "drop shadow", "emboss", "highlight marker", "brush stroke", "tape", "pin", "clip"] },
+                    { name: "Branding", keywords: ["logo placement", "brand watermark", "brand color scheme", "brand fonts", "company tagline", "URL/website", "social media handles", "QR code", "CTA button", "contact info block"] }
+                ]
+            },
+            {
+                id: "platform", title: "📱 Platform & Format",
+                subcategories: [
+                    { name: "Platform", keywords: ["Instagram infographic", "Pinterest infographic", "LinkedIn infographic", "Twitter/X infographic", "Facebook infographic", "blog infographic", "email infographic", "presentation infographic", "print infographic", "poster infographic"] },
+                    { name: "File Format", keywords: ["PNG", "JPG", "SVG", "PDF", "AI file", "editable", "layered", "high-resolution", "300 DPI", "web-optimized", "transparent PNG", "vector format", "animated GIF", "MP4 infographic video"] }
+                ]
+            },
+            {
+                id: "content", title: "💡 Content & Tone",
+                subcategories: [
+                    { name: "Tone", keywords: ["professional", "casual", "friendly", "authoritative", "educational", "persuasive", "inspirational", "humorous", "serious", "urgent", "empowering", "data-driven", "storytelling", "narrative"] },
+                    { name: "Content Focus", keywords: ["facts", "tips", "how-to", "did you know", "myth vs fact", "pros and cons", "before and after", "cause and effect", "problem and solution", "checklist", "top 10", "trends", "predictions", "year in review", "survey results", "case study", "roadmap", "strategy", "guide", "overview", "summary", "breakdown", "deep dive"] }
+                ]
+            },
+            {
+                id: "modifiers", title: "🛠️ Prompt Modifiers",
+                subcategories: [
+                    { name: "Quality", keywords: ["high quality", "detailed", "polished", "pixel-perfect", "publication-ready", "print-ready", "crisp", "sharp", "HD", "4K", "ultra-detailed"] },
+                    { name: "Composition", keywords: ["well-organized", "balanced", "symmetrical", "asymmetrical", "white space", "breathing room", "visual hierarchy", "focal point", "eye-flow", "alignment", "centered", "left-aligned", "justified"] },
+                    { name: "Mood", keywords: ["bright", "dark", "warm", "cold", "energetic", "calm", "dynamic", "static", "luxurious", "corporate", "techy", "organic", "natural", "urban", "whimsical", "dramatic"] },
+                    { name: "AI-Specific", keywords: ["generate infographic", "create infographic", "design infographic", "infographic template", "editable infographic", "customizable", "AI-generated", "auto-layout", "smart design", "data-to-visual", "text-to-infographic"] }
+                ]
+            }
+        ];
+
+        const FORMULA_TEMPLATE = `Create a [TYPE] infographic about [TOPIC] in a [STYLE] style using a [COLOR PALETTE] color scheme. Include [DATA ELEMENTS] with [CHART TYPES].
+Use [ICON STYLE] icons, [FONT STYLE] typography, and a [LAYOUT] layout.
+The tone should be [TONE]. Optimize for [PLATFORM] at [SIZE/RESOLUTION].
+Add [SPECIAL ELEMENTS] and ensure [BRANDING] elements are included.
+Output as [FILE FORMAT].`;
+
+        // --- MAIN APP COMPONENT ---
+        function App() {
+            // State
+            const [promptText, setPromptText] = useState("");
+            const [history, setHistory] = useState([]);
+            const [customKeywords, setCustomKeywords] = useState({});
+            const [searchQuery, setSearchQuery] = useState("");
+            const [expandedCategories, setExpandedCategories] = useState(["layout"]); 
+            const [darkMode, setDarkMode] = useState(true);
+            const [notification, setNotification] = useState("");
+            const [activeTab, setActiveTab] = useState("slicer"); // 'slicer' | 'masterStyle' | 'generated' | 'editor' | 'history'
+
+            // NEW: Content Slicer state
+            const [sourceText, setSourceText] = useState("");
+            const [slices, setSlices] = useState([]);
+            const [commonTexts, setCommonTexts] = useState([]);
+
+            // NEW: Master Style state
+            const [masterStyles, setMasterStyles] = useState([]);
+            const [activeMasterStyleId, setActiveMasterStyleId] = useState(null);
+            const [activeTarget, setActiveTarget] = useState('editor'); // 'editor' | 'masterStyle'
+
+            // NEW: Prompt Generation state
+            const [generatedPrompts, setGeneratedPrompts] = useState([]);
+            const [wrapMode, setWrapMode] = useState('backticks');
+
+            // NEW: Projects state
+            const [projects, setProjects] = useState([]);
+
+            const textareaRef = useRef(null);
+            const masterStyleRef = useRef(null);
+
+            // Load data from LocalStorage on mount
+            useEffect(() => {
+                const savedHistory = localStorage.getItem("infographic_prompt_history");
+                const savedCustoms = localStorage.getItem("infographic_custom_keywords");
+                const savedTheme = localStorage.getItem("infographic_theme");
+
+                if (savedHistory) setHistory(JSON.parse(savedHistory));
+                if (savedCustoms) setCustomKeywords(JSON.parse(savedCustoms));
+                
+                if (savedTheme === 'light') {
+                    setDarkMode(false);
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    document.documentElement.classList.add('dark');
+                }
+
+                // Load new state
+                try {
+                    const st = localStorage.getItem("infographic_source_text"); if (st) setSourceText(st);
+                    const sl = localStorage.getItem("infographic_slices"); if (sl) setSlices(JSON.parse(sl));
+                    const ct = localStorage.getItem("infographic_common_texts"); if (ct) setCommonTexts(JSON.parse(ct));
+                    const ms = localStorage.getItem("infographic_master_styles"); if (ms) setMasterStyles(JSON.parse(ms));
+                    const asi = localStorage.getItem("infographic_active_style_id"); if (asi) setActiveMasterStyleId(asi);
+                    const at = localStorage.getItem("infographic_active_target"); if (at) setActiveTarget(at);
+                    const pj = localStorage.getItem("infographic_projects"); if (pj) setProjects(JSON.parse(pj));
+                    const wm = localStorage.getItem("infographic_wrap_mode"); if (wm) setWrapMode(wm);
+                } catch(e) { console.warn('Error loading saved state:', e); }
+            }, []);
+
+            // Save state to LocalStorage
+            useEffect(() => {
+                localStorage.setItem("infographic_prompt_history", JSON.stringify(history));
+            }, [history]);
+
+            useEffect(() => {
+                localStorage.setItem("infographic_custom_keywords", JSON.stringify(customKeywords));
+            }, [customKeywords]);
+
+            // Persist new state
+            useEffect(() => { localStorage.setItem("infographic_source_text", sourceText); }, [sourceText]);
+            useEffect(() => { localStorage.setItem("infographic_slices", JSON.stringify(slices)); }, [slices]);
+            useEffect(() => { localStorage.setItem("infographic_common_texts", JSON.stringify(commonTexts)); }, [commonTexts]);
+            useEffect(() => { localStorage.setItem("infographic_master_styles", JSON.stringify(masterStyles)); }, [masterStyles]);
+            useEffect(() => { localStorage.setItem("infographic_active_style_id", activeMasterStyleId || ''); }, [activeMasterStyleId]);
+            useEffect(() => { localStorage.setItem("infographic_active_target", activeTarget); }, [activeTarget]);
+            useEffect(() => { localStorage.setItem("infographic_projects", JSON.stringify(projects)); }, [projects]);
+            useEffect(() => { localStorage.setItem("infographic_wrap_mode", wrapMode); }, [wrapMode]);
+
+            const toggleDarkMode = () => {
+                const newMode = !darkMode;
+                setDarkMode(newMode);
+                if (newMode) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem("infographic_theme", 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem("infographic_theme", 'light');
+                }
+            };
+
+            const showNotification = (msg) => {
+                setNotification(msg);
+                setTimeout(() => setNotification(""), 3000);
+            };
+
+            // Merge Default and Custom Keywords
+            const data = useMemo(() => {
+                return INITIAL_CATEGORIES.map(cat => {
+                    const mappedSubs = cat.subcategories.map(sub => {
+                        const custom = customKeywords[`${cat.id}_${sub.name}`] || [];
+                        return { ...sub, keywords: [...sub.keywords, ...custom] };
+                    });
+                    return { ...cat, subcategories: mappedSubs };
+                });
+            }, [customKeywords]);
+
+            // Filter data based on search and auto-expand matches
+            const filteredData = useMemo(() => {
+                if (!searchQuery.trim()) return data;
+                
+                const query = searchQuery.toLowerCase();
+                const newExpanded = new Set(expandedCategories);
+                
+                const filtered = data.map(cat => {
+                    let catHasMatch = false;
+                    const subcategories = cat.subcategories.map(sub => {
+                        const keywords = sub.keywords.filter(k => k.toLowerCase().includes(query));
+                        if (keywords.length > 0) catHasMatch = true;
+                        return { ...sub, keywords };
+                    }).filter(sub => sub.keywords.length > 0);
+                    
+                    if (catHasMatch || cat.title.toLowerCase().includes(query)) {
+                        newExpanded.add(cat.id);
+                        return { ...cat, subcategories };
+                    }
+                    return null;
+                }).filter(Boolean);
+
+                setExpandedCategories(Array.from(newExpanded));
+                return filtered;
+            }, [data, searchQuery]);
+
+            const toggleCategory = (id) => {
+                setExpandedCategories(prev => 
+                    prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+                );
+            };
+
+            const toggleAllCategories = (expand) => {
+                if (expand) {
+                    setExpandedCategories(data.map(c => c.id));
+                } else {
+                    setExpandedCategories([]);
+                }
+            };
+
+            // Generic cursor-position insertion for any textarea ref
+            const insertTextIntoRef = (ref, text, setter) => {
+                const textarea = ref.current;
+                if (!textarea) return;
+
+                const startPos = textarea.selectionStart;
+                const endPos = textarea.selectionEnd;
+                const currentVal = textarea.value;
+
+                let prefix = "";
+                if (startPos > 0 && currentVal.charAt(startPos - 1) !== " " && currentVal.charAt(startPos - 1) !== "\n") {
+                    prefix = " ";
+                }
+
+                const newVal = currentVal.substring(0, startPos) + prefix + text + ", " + currentVal.substring(endPos);
+                setter(newVal);
+
+                setTimeout(() => {
+                    textarea.focus();
+                    textarea.selectionStart = startPos + prefix.length + text.length + 2;
+                    textarea.selectionEnd = startPos + prefix.length + text.length + 2;
+                }, 0);
+            };
+
+            const insertTextAtCursor = (text) => {
+                insertTextIntoRef(textareaRef, text, setPromptText);
+            };
+
+            const handleKeywordClick = (keyword) => {
+                if (activeTarget === 'masterStyle' && masterStyleRef.current) {
+                    // Need to get the current content from the master style ref
+                    const textarea = masterStyleRef.current;
+                    const startPos = textarea.selectionStart;
+                    const endPos = textarea.selectionEnd;
+                    const currentVal = textarea.value;
+                    let prefix = "";
+                    if (startPos > 0 && currentVal.charAt(startPos - 1) !== " " && currentVal.charAt(startPos - 1) !== "\n") prefix = " ";
+                    const newVal = currentVal.substring(0, startPos) + prefix + keyword + ", " + currentVal.substring(endPos);
+                    // Dispatch input event so React picks up the change
+                    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+                    nativeInputValueSetter.call(textarea, newVal);
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    setTimeout(() => {
+                        textarea.focus();
+                        textarea.selectionStart = startPos + prefix.length + keyword.length + 2;
+                        textarea.selectionEnd = startPos + prefix.length + keyword.length + 2;
+                    }, 0);
+                    showNotification('Added to Master Style: ' + keyword);
+                } else {
+                    insertTextAtCursor(keyword);
+                }
+            };
+
+            const handleAddCustomWord = (catId, subName) => {
+                const word = prompt(`Add a custom keyword for ${subName}:`);
+                if (word && word.trim() !== "") {
+                    const key = `${catId}_${subName}`;
+                    setCustomKeywords(prev => ({
+                        ...prev,
+                        [key]: [...(prev[key] || []), word.trim()]
+                    }));
+                }
+            };
+
+            const handleRemoveCustomWord = (catId, subName, wordToRemove) => {
+                const key = `${catId}_${subName}`;
+                setCustomKeywords(prev => ({
+                    ...prev,
+                    [key]: prev[key].filter(w => w !== wordToRemove)
+                }));
+            };
+
+            const loadTemplate = () => {
+                if (promptText && !confirm("Overwrite current prompt with the template?")) return;
+                setPromptText(FORMULA_TEMPLATE);
+                setActiveTab('editor');
+            };
+
+            const saveCurrentPrompt = () => {
+                if (!promptText.trim()) {
+                    showNotification("Prompt is empty!");
+                    return;
+                }
+                const newHistory = [{
+                    id: Date.now().toString(),
+                    text: promptText,
+                    date: new Date().toLocaleString()
+                }, ...history];
+                setHistory(newHistory);
+                showNotification("Prompt saved to history!");
+            };
+
+            const copyPrompt = () => {
+                navigator.clipboard.writeText(promptText);
+                showNotification("Copied to clipboard!");
+            };
+
+            const clearPrompt = () => {
+                if(confirm("Are you sure you want to clear the prompt?")) {
+                    setPromptText("");
+                }
+            };
+
+            const deleteHistoryItem = (id) => {
+                if(confirm("Delete this saved prompt?")) {
+                    setHistory(history.filter(h => h.id !== id));
+                }
+            };
+
+            const loadHistoryItem = (text) => {
+                setPromptText(text);
+                setActiveTab('editor');
+                showNotification("Prompt loaded!");
+            };
+
+            const exportData = () => {
+                const dataToExport = {
+                    history,
+                    customKeywords,
+                    exportDate: new Date().toISOString()
+                };
+                const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `infographic_prompt_data_${new Date().getTime()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showNotification("Data exported successfully!");
+            };
+
+            const importData = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        if (importedData.history) setHistory(importedData.history);
+                        if (importedData.customKeywords) setCustomKeywords(importedData.customKeywords);
+                        showNotification("Data imported successfully!");
+                    } catch (err) {
+                        alert("Invalid JSON file format.");
+                    }
+                };
+                reader.readAsText(file);
+                // Reset file input
+                event.target.value = '';
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col h-screen overflow-hidden">
+                    {/* TOP NAVBAR */}
+                    <header className="glass-panel border-b border-gray-200 dark:border-gray-800 z-10 flex items-center justify-between px-6 py-3 flex-shrink-0 transition-colors duration-200">
+                        <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-primary-500 rounded-lg text-white">
+                                <Icons.Wand />
+                            </div>
+                            <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400">
+                                InfoGr
+                            </h1>
+                            <span className="hidden sm:inline-block px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-400">
+                                Infographics Edition
+                            </span>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2 sm:space-x-4">
+                            {/* Search Bar */}
+                            <div className="relative hidden md:block">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                    <Icons.Search />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Search keywords..."
+                                    className="pl-10 pr-4 py-2 w-64 rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm transition-all"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+
+                            <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors" title="Toggle Theme">
+                                {darkMode ? <Icons.Sun /> : <Icons.Moon />}
+                            </button>
+                            
+                            <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-2"></div>
+                            
+                            <button onClick={exportData} className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors" title="Export to JSON">
+                                <Icons.Download /> <span className="hidden sm:inline">Export</span>
+                            </button>
+                            
+                            <label className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-800 cursor-pointer transition-colors" title="Import from JSON">
+                                <Icons.Upload /> <span className="hidden sm:inline">Import</span>
+                                <input type="file" accept=".json" className="hidden" onChange={importData} />
+                            </label>
+                        </div>
+                    </header>
+
+                    {/* MAIN CONTENT SPLIT */}
+                    <main className="flex-1 flex overflow-hidden">
+                        
+                        {/* LEFT PANEL: Keywords Directory */}
+                        <div className="w-full md:w-1/2 lg:w-7/12 border-r border-gray-200 dark:border-gray-800 flex flex-col bg-white dark:bg-gray-900 transition-colors duration-200">
+                            <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="font-semibold text-lg flex items-center space-x-2">
+                                        <span>Keywords Library</span>
+                                    </h2>
+                                    <div className="flex space-x-2">
+                                        <button onClick={() => toggleAllCategories(true)} className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-800 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">Expand All</button>
+                                        <button onClick={() => toggleAllCategories(false)} className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-800 rounded hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">Collapse All</button>
+                                    </div>
+                                </div>
+                                {/* Active Target Selector */}
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">Inject into:</span>
+                                    <div className="flex bg-gray-200 dark:bg-gray-800 rounded-md p-0.5 flex-1">
+                                        <button
+                                            onClick={() => setActiveTarget('editor')}
+                                            className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors ${activeTarget === 'editor' ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                                        >✏️ Live Editor</button>
+                                        <button
+                                            onClick={() => setActiveTarget('masterStyle')}
+                                            className={`flex-1 px-2 py-1 text-xs font-medium rounded transition-colors ${activeTarget === 'masterStyle' ? 'bg-white dark:bg-gray-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                                        >🎨 Master Style</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Mobile Search */}
+                            <div className="p-4 md:hidden border-b border-gray-200 dark:border-gray-800">
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                        <Icons.Search />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search keywords..."
+                                        className="pl-10 pr-4 py-2 w-full rounded-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+                                {filteredData.length === 0 ? (
+                                    <div className="text-center py-10 text-gray-500">No keywords found for "{searchQuery}"</div>
+                                ) : (
+                                    filteredData.map(category => (
+                                        <div key={category.id} className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-900 shadow-sm transition-colors duration-200">
+                                            <button 
+                                                className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700/80 transition-colors text-left"
+                                                onClick={() => toggleCategory(category.id)}
+                                            >
+                                                <span className="font-semibold text-gray-800 dark:text-gray-200">{category.title}</span>
+                                                <span className="text-gray-400 transition-transform duration-200">
+                                                    {expandedCategories.includes(category.id) ? <Icons.ChevronDown /> : <Icons.ChevronRight />}
+                                                </span>
+                                            </button>
+                                            
+                                            {expandedCategories.includes(category.id) && (
+                                                <div className="p-4 space-y-5">
+                                                    {category.subcategories.map((sub, idx) => (
+                                                        <div key={idx} className="space-y-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{sub.name}</h3>
+                                                                <button 
+                                                                    onClick={() => handleAddCustomWord(category.id, sub.name)}
+                                                                    className="p-1 text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-full transition-colors"
+                                                                    title="Add custom keyword"
+                                                                >
+                                                                    <Icons.Plus />
+                                                                </button>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {sub.keywords.map((kw, i) => {
+                                                                    // Check if it's a custom keyword
+                                                                    const isCustom = customKeywords[`${category.id}_${sub.name}`]?.includes(kw);
+                                                                    return (
+                                                                        <div key={i} className="group relative">
+                                                                            <button
+                                                                                onClick={() => handleKeywordClick(kw)}
+                                                                                className={`px-3 py-1.5 text-sm rounded-md border transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                                                                                    isCustom 
+                                                                                    ? 'border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/20'
+                                                                                    : 'border-gray-200 bg-white text-gray-700 hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-primary-700 dark:hover:bg-primary-900/30'
+                                                                                }`}
+                                                                            >
+                                                                                {kw}
+                                                                            </button>
+                                                                            {isCustom && (
+                                                                                <button 
+                                                                                    onClick={(e) => { e.stopPropagation(); handleRemoveCustomWord(category.id, sub.name, kw); }}
+                                                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                                    title="Remove custom word"
+                                                                                >
+                                                                                    <Icons.X />
+                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* RIGHT PANEL: Multi-Tab Workspace */}
+                        <div className="hidden md:flex flex-col w-1/2 lg:w-5/12 bg-gray-100 dark:bg-gray-950 transition-colors duration-200">
+                            
+                            {/* Tabs */}
+                            <div className="flex border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-x-auto flex-shrink-0">
+                                {[
+                                    { id: 'slicer', icon: '✂️', label: 'Slicer', badge: slices.length > 0 ? slices.length : null },
+                                    { id: 'masterStyle', icon: '🎨', label: 'Style', badge: null },
+                                    { id: 'generated', icon: '🚀', label: 'Prompts', badge: generatedPrompts.length > 0 ? generatedPrompts.length : null },
+                                    { id: 'editor', icon: '✏️', label: 'Editor', badge: null },
+                                    { id: 'history', icon: '📂', label: 'History', badge: (history.length + projects.length) > 0 ? history.length + projects.length : null },
+                                ].map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        className={`flex-1 py-2.5 px-2 font-medium text-xs flex items-center justify-center gap-1.5 border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                                        onClick={() => setActiveTab(tab.id)}
+                                    >
+                                        <span>{tab.icon}</span>
+                                        <span>{tab.label}</span>
+                                        {tab.badge && <span className="bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 px-1.5 py-0 rounded-full text-[10px] font-bold">{tab.badge}</span>}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Save Project button bar */}
+                            {(activeTab === 'slicer' || activeTab === 'generated') && window.SaveProjectButton && (
+                                <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex justify-end">
+                                    <window.SaveProjectButton
+                                        sourceText={sourceText} slices={slices} commonTexts={commonTexts}
+                                        masterStyles={masterStyles} activeMasterStyleId={activeMasterStyleId}
+                                        generatedPrompts={generatedPrompts} promptText={promptText}
+                                        projects={projects} setProjects={setProjects}
+                                        showNotification={showNotification}
+                                    />
+                                </div>
+                            )}
+
+                            {/* TAB: Content Slicer */}
+                            {activeTab === 'slicer' && window.ContentSlicerTab && (
+                                <window.ContentSlicerTab
+                                    sourceText={sourceText} setSourceText={setSourceText}
+                                    slices={slices} setSlices={setSlices}
+                                    commonTexts={commonTexts} setCommonTexts={setCommonTexts}
+                                    showNotification={showNotification}
+                                />
+                            )}
+
+                            {/* TAB: Master Style */}
+                            {activeTab === 'masterStyle' && window.MasterStyleTab && (
+                                <window.MasterStyleTab
+                                    masterStyles={masterStyles} setMasterStyles={setMasterStyles}
+                                    activeMasterStyleId={activeMasterStyleId} setActiveMasterStyleId={setActiveMasterStyleId}
+                                    masterStyleRef={masterStyleRef}
+                                    showNotification={showNotification}
+                                />
+                            )}
+
+                            {/* TAB: Generated Prompts */}
+                            {activeTab === 'generated' && window.GeneratedPromptsTab && (
+                                <window.GeneratedPromptsTab
+                                    slices={slices} commonTexts={commonTexts}
+                                    masterStyles={masterStyles} activeMasterStyleId={activeMasterStyleId}
+                                    generatedPrompts={generatedPrompts} setGeneratedPrompts={setGeneratedPrompts}
+                                    wrapMode={wrapMode} setWrapMode={setWrapMode}
+                                    showNotification={showNotification}
+                                />
+                            )}
+
+                            {/* TAB: Live Editor (existing) */}
+                            {activeTab === 'editor' && (
+                                <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Mega Prompt Construction</h2>
+                                        <button 
+                                            onClick={loadTemplate}
+                                            className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-medium rounded-md shadow-sm transition-all"
+                                        >
+                                            Load Formula Template
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="flex-1 relative flex flex-col bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-inner overflow-hidden transition-colors duration-200">
+                                        <textarea
+                                            ref={textareaRef}
+                                            value={promptText}
+                                            onChange={(e) => setPromptText(e.target.value)}
+                                            className="flex-1 w-full p-4 md:p-6 bg-transparent border-none resize-none focus:ring-0 text-gray-800 dark:text-gray-200 leading-relaxed font-mono text-sm"
+                                            placeholder="Click keywords on the left to inject them here, or start typing..."
+                                        ></textarea>
+                                        
+                                        <div className="bg-gray-50 dark:bg-gray-800/80 p-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                            <button 
+                                                onClick={clearPrompt}
+                                                className="text-sm text-gray-500 hover:text-red-500 transition-colors px-2 py-1"
+                                            >
+                                                Clear
+                                            </button>
+                                            <div className="flex space-x-3">
+                                                <button 
+                                                    onClick={saveCurrentPrompt}
+                                                    className="flex items-center space-x-1.5 px-4 py-2 bg-gray-800 dark:bg-gray-700 hover:bg-gray-700 dark:hover:bg-gray-600 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                                                >
+                                                    <Icons.Save /> <span>Save</span>
+                                                </button>
+                                                <button 
+                                                    onClick={copyPrompt}
+                                                    className="flex items-center space-x-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+                                                >
+                                                    <Icons.Copy /> <span>Copy</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* TAB: History (enhanced with projects) */}
+                            {activeTab === 'history' && window.EnhancedHistoryTab && (
+                                <window.EnhancedHistoryTab
+                                    history={history} setHistory={setHistory}
+                                    projects={projects} setProjects={setProjects}
+                                    loadHistoryItem={loadHistoryItem}
+                                    deleteHistoryItem={deleteHistoryItem}
+                                    setSourceText={setSourceText} setSlices={setSlices}
+                                    setCommonTexts={setCommonTexts} setMasterStyles={setMasterStyles}
+                                    setActiveMasterStyleId={setActiveMasterStyleId}
+                                    setGeneratedPrompts={setGeneratedPrompts} setPromptText={setPromptText}
+                                    setActiveTab={setActiveTab}
+                                    showNotification={showNotification}
+                                />
+                            )}
+                        </div>
+                    </main>
+
+                    {/* Notification Toast */}
+                    {notification && (
+                        <div className="fixed bottom-6 right-6 bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-4 py-3 rounded-lg shadow-xl flex items-center space-x-3 z-50 animate-bounce">
+                            <Icons.Check />
+                            <span className="font-medium">{notification}</span>
+                        </div>
+                    )}
+                    
+                    {/* Mobile View Toggle (Floating Action Button) */}
+                    <div className="md:hidden fixed bottom-6 right-6 z-40">
+                        <button 
+                            onClick={() => setActiveTab(activeTab === 'editor' ? 'history' : 'editor')}
+                            className="bg-primary-600 text-white p-4 rounded-full shadow-lg hover:bg-primary-700 transition-colors"
+                        >
+                            {activeTab === 'editor' ? <Icons.History /> : <Icons.Edit />}
+                        </button>
+                    </div>
+                    
+                    {/* Mobile Editor Overlay (If on mobile and editor is open) */}
+                    {activeTab === 'editor' && (
+                        <div className="md:hidden fixed inset-0 z-30 bg-white dark:bg-gray-950 flex flex-col pt-16">
+                           <div className="flex-1 flex flex-col p-4 overflow-hidden">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Editor</h2>
+                                    <button onClick={() => setActiveTab('keywords')} className="text-sm text-primary-600 dark:text-primary-400 font-medium">Close</button>
+                                </div>
+                                <textarea
+                                    ref={textareaRef}
+                                    value={promptText}
+                                    onChange={(e) => setPromptText(e.target.value)}
+                                    className="flex-1 w-full p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg resize-none focus:ring-2 focus:ring-primary-500 text-gray-800 dark:text-gray-200 font-mono text-sm"
+                                    placeholder="Type or click keywords from the list..."
+                                ></textarea>
+                                <div className="mt-4 flex flex-col gap-2">
+                                    <button onClick={loadTemplate} className="w-full py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-medium">Load Template</button>
+                                    <div className="flex gap-2">
+                                        <button onClick={saveCurrentPrompt} className="flex-1 py-2 bg-gray-800 dark:bg-gray-700 text-white rounded-lg font-medium flex justify-center items-center gap-2"><Icons.Save /> Save</button>
+                                        <button onClick={copyPrompt} className="flex-1 py-2 bg-primary-600 text-white rounded-lg font-medium flex justify-center items-center gap-2"><Icons.Copy /> Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                     {/* Mobile History Overlay */}
+                     {activeTab === 'history' && (
+                        <div className="md:hidden fixed inset-0 z-30 bg-white dark:bg-gray-950 flex flex-col pt-16">
+                           <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-800">
+                                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">History</h2>
+                                <button onClick={() => setActiveTab('keywords')} className="text-sm text-primary-600 dark:text-primary-400 font-medium">Close</button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {history.map(item => (
+                                    <div key={item.id} className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-xs text-gray-400">{item.date}</span>
+                                            <div className="flex space-x-2">
+                                                <button onClick={() => loadHistoryItem(item.text)} className="p-1 text-gray-500"><Icons.Edit /></button>
+                                                <button onClick={() => deleteHistoryItem(item.id)} className="p-1 text-red-500"><Icons.Trash /></button>
+                                            </div>
+                                        </div>
+                                        <div className="text-sm font-mono text-gray-700 dark:text-gray-300 line-clamp-3 mb-2">{item.text}</div>
+                                        <button onClick={() => { navigator.clipboard.writeText(item.text); showNotification("Copied!"); }} className="text-sm text-primary-600 font-medium flex items-center space-x-1"><Icons.Copy /> <span>Copy</span></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
