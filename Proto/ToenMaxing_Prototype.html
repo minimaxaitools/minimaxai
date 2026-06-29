@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROT - Return on Tokens Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#070b19',
+                        darkCard: '#0d1527',
+                        darkBorder: '#1e293b',
+                        accentGreen: '#10b981',
+                        accentBlue: '#3b82f6',
+                        accentPurple: '#8b5cf6',
+                        accentOrange: '#f59e0b',
+                        accentTeal: '#14b8a6',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glow-green {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.15);
+        }
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.15);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.3);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-[#070b19] text-slate-100 min-h-screen flex transition-colors duration-300 dark:bg-[#070b19] dark:text-slate-100 light:bg-slate-50 light:text-slate-900">
+
+    <!-- Left Sidebar -->
+    <aside class="w-64 border-r border-slate-800 bg-[#0d1527] flex flex-col justify-between shrink-0 hidden md:flex">
+        <div>
+            <!-- Logo / Brand Header -->
+            <div class="p-6 flex items-center gap-3 border-b border-slate-800">
+                <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-extrabold text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">ROT</div>
+                    <div class="text-[10px] text-slate-400 font-medium tracking-widest uppercase">Return on Tokens</div>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="p-4 space-y-1.5">
+                <button onclick="switchScreen('overview')" id="nav-overview" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i>
+                        <span>Overview</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-4 h-4 opacity-80"></i>
+                </button>
+
+                <button onclick="switchScreen('projects')" id="nav-projects" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="folder-kanban" class="w-4.5 h-4.5"></i>
+                        <span>Projects</span>
+                    </div>
+                </button>
+
+                <button onclick="switchScreen('experiments')" id="nav-experiments" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="beaker" class="w-4.5 h-4.5"></i>
+                        <span>Experiments</span>
+                    </div>
+                </button>
+
+                <button onclick="switchScreen('theory')" id="nav-theory" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="graduation-cap" class="w-4.5 h-4.5"></i>
+                        <span>ROT Theory</span>
+                    </div>
+                </button>
+
+                <div class="pt-4 pb-2 px-4 text-[11px] font-bold text-slate-500 tracking-wider uppercase">Management</div>
+
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all">
+                    <i data-lucide="terminal" class="w-4.5 h-4.5"></i>
+                    <span>Outputs</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all">
+                    <i data-lucide="coins" class="w-4.5 h-4.5"></i>
+                    <span>Token Usage</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all">
+                    <i data-lucide="bar-chart-3" class="w-4.5 h-4.5"></i>
+                    <span>Benchmarks</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all">
+                    <i data-lucide="bell" class="w-4.5 h-4.5"></i>
+                    <span>Alerts</span>
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all">
+                    <i data-lucide="settings" class="w-4.5 h-4.5"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer Action & Profile -->
+        <div class="p-4 border-t border-slate-800 space-y-4">
+            <!-- Optimize Callout Card -->
+            <div class="bg-gradient-to-br from-slate-900 to-indigo-950/40 p-4 rounded-xl border border-indigo-500/20 relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 w-20 h-20 bg-indigo-500/10 rounded-full blur-xl"></div>
+                <div class="flex items-center gap-2 text-indigo-400 font-semibold text-xs mb-1">
+                    <i data-lucide="sparkles" class="w-4 h-4 animate-pulse"></i>
+                    <span>Optimize Smarter</span>
+                </div>
+                <p class="text-[11px] text-slate-400 leading-relaxed mb-3">Run experiments to find the perfect balance of value and token cost.</p>
+                <button onclick="openModal('experimentModal')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-lg shadow-indigo-600/20 transition-all">
+                    Create Experiment
+                </button>
+            </div>
+
+            <!-- Plan Progress -->
+            <div class="space-y-1.5 px-1">
+                <div class="flex items-center justify-between text-[11px] font-medium text-slate-400">
+                    <span class="flex items-center gap-1"><i data-lucide="crown" class="w-3 h-3 text-amber-500"></i> Pro Plan</span>
+                    <span>123 / 250 Exp.</span>
+                </div>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full" style="width: 49.2%"></div>
+                </div>
+            </div>
+
+            <!-- Theme Toggle & Profile -->
+            <div class="flex items-center justify-between pt-2">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xs shadow-md">
+                        AM
+                    </div>
+                    <div>
+                        <div class="text-xs font-semibold text-slate-200">Alex Morgan</div>
+                        <div class="text-[10px] text-slate-400">Pro Plan</div>
+                    </div>
+                </div>
+                <button onclick="toggleTheme()" class="p-2 rounded-lg bg-slate-800/80 text-slate-400 hover:text-white transition-all">
+                    <i id="theme-icon" data-lucide="moon" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-y-auto min-w-0">
+        
+        <!-- Main Top Navigation/Header -->
+        <header class="border-b border-slate-800 bg-[#0d1527]/80 backdrop-blur-md px-6 py-4 flex flex-col sm:flex-row gap-4 items-center justify-between sticky top-0 z-30">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 id="screen-title" class="text-xl font-bold text-white tracking-tight">AI Performance Overview</h1>
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live
+                    </span>
+                </div>
+                <p id="screen-subtitle" class="text-xs text-slate-400 mt-0.5">Track, analyze and optimize your Return on Tokens</p>
+            </div>
+
+            <!-- Controls / Filters -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <!-- Date Picker -->
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/50 text-xs text-slate-300">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-400"></i>
+                    <span>May 1 – May 31, 2024</span>
+                </div>
+
+                <!-- Project Select -->
+                <select id="projectFilter" onchange="handleProjectFilterChange()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/50 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    <option value="all">All Projects</option>
+                    <option value="content">Content Generator</option>
+                    <option value="assistant">Research Assistant</option>
+                    <option value="analyzer">Code Analyzer</option>
+                    <option value="marketing">Marketing Copy</option>
+                </select>
+
+                <!-- Filter Action Buttons -->
+                <button class="p-1.5 rounded-lg bg-slate-800/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Notification Bell with Badge -->
+                <div class="relative">
+                    <button onclick="toggleNotificationDropdown()" class="p-1.5 rounded-lg bg-slate-800/80 border border-slate-700/50 text-slate-400 hover:text-white transition-all">
+                        <i data-lucide="bell" class="w-4 h-4"></i>
+                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 text-[9px] font-bold text-white rounded-full flex items-center justify-center">3</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-800 rounded-xl shadow-xl overflow-hidden z-50">
+                        <div class="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
+                            <span class="text-xs font-bold text-white">Notifications</span>
+                            <button class="text-[10px] text-indigo-400 hover:underline">Mark all read</button>
+                        </div>
+                        <div class="divide-y divide-slate-800/50 max-h-60 overflow-y-auto">
+                            <div class="p-3 hover:bg-slate-800/30 transition-all flex gap-2.5">
+                                <div class="w-2 h-2 rounded-full bg-emerald-400 mt-1.5 shrink-0"></div>
+                                <div>
+                                    <p class="text-xs text-slate-200 font-medium">Content Generator ROT increased by <span class="text-emerald-400 font-semibold">+12%</span></p>
+                                    <span class="text-[10px] text-slate-500">10 mins ago</span>
+                                </div>
+                            </div>
+                            <div class="p-3 hover:bg-slate-800/30 transition-all flex gap-2.5">
+                                <div class="w-2 h-2 rounded-full bg-amber-400 mt-1.5 shrink-0"></div>
+                                <div>
+                                    <p class="text-xs text-slate-200 font-medium">Cost threshold warning on <span class="text-amber-400 font-semibold">Research Assistant</span></p>
+                                    <span class="text-[10px] text-slate-500">2 hours ago</span>
+                                </div>
+                            </div>
+                            <div class="p-3 hover:bg-slate-800/30 transition-all flex gap-2.5">
+                                <div class="w-2 h-2 rounded-full bg-indigo-400 mt-1.5 shrink-0"></div>
+                                <div>
+                                    <p class="text-xs text-slate-200 font-medium">New optimization recommendation available</p>
+                                    <span class="text-[10px] text-slate-500">Yesterday</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Screens Container -->
+        <div class="p-6 space-y-6 flex-1">
+
+            <!-- SCREEN 1: OVERVIEW DASHBOARD -->
+            <div id="screen-overview" class="space-y-6">
+                <!-- KPI Dashboard Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- ROT Card -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Return on Tokens (ROT)</span>
+                            <span class="p-1 rounded-md bg-emerald-500/10 text-emerald-400"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i></span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="kpi-rot" class="text-2xl font-extrabold text-emerald-400 tracking-tight">245.6%</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                            <span class="text-emerald-400 font-medium"><i data-lucide="arrow-up-right" class="w-3 h-3 inline"></i> 18.7%</span> vs Apr 1 - Apr 30
+                        </div>
+                        <div class="mt-3 h-8">
+                            <canvas id="sparkline-rot"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Value of Output Card -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 hover:border-blue-500/30 transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Value of Output</span>
+                            <span class="p-1 rounded-md bg-blue-500/10 text-blue-400"><i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i></span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="kpi-value" class="text-2xl font-extrabold text-blue-400 tracking-tight">$12,450.00</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                            <span class="text-blue-400 font-medium"><i data-lucide="arrow-up-right" class="w-3 h-3 inline"></i> 22.4%</span> vs Apr 1 - Apr 30
+                        </div>
+                        <div class="mt-3 h-8">
+                            <canvas id="sparkline-value"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Cost of Tokens Card -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 hover:border-purple-500/30 transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Cost of Tokens</span>
+                            <span class="p-1 rounded-md bg-purple-500/10 text-purple-400"><i data-lucide="coins" class="w-3.5 h-3.5"></i></span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="kpi-cost" class="text-2xl font-extrabold text-purple-400 tracking-tight">$3,580.00</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                            <span class="text-purple-400 font-medium"><i data-lucide="arrow-down-left" class="w-3 h-3 inline"></i> -8.1%</span> vs Apr 1 - Apr 30
+                        </div>
+                        <div class="mt-3 h-8">
+                            <canvas id="sparkline-cost"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Tokens Used Card -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 hover:border-amber-500/30 transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tokens Used</span>
+                            <span class="p-1 rounded-md bg-amber-500/10 text-amber-400"><i data-lucide="database" class="w-3.5 h-3.5"></i></span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="kpi-tokens" class="text-2xl font-extrabold text-amber-400 tracking-tight">8.45M</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                            <span class="text-amber-400 font-medium"><i data-lucide="arrow-down-left" class="w-3 h-3 inline"></i> -6.3%</span> vs Apr 1 - Apr 30
+                        </div>
+                        <div class="mt-3 h-8">
+                            <canvas id="sparkline-tokens"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Avg Cost Card -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 hover:border-teal-500/30 transition-all shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Avg. Cost / 1K Tokens</span>
+                            <span class="p-1 rounded-md bg-teal-500/10 text-teal-400"><i data-lucide="activity" class="w-3.5 h-3.5"></i></span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="kpi-avg-cost" class="text-2xl font-extrabold text-teal-400 tracking-tight">$0.42</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                            <span class="text-teal-400 font-medium"><i data-lucide="arrow-down-left" class="w-3 h-3 inline"></i> -7.4%</span> vs Apr 1 - Apr 30
+                        </div>
+                        <div class="mt-3 h-8">
+                            <canvas id="sparkline-avg"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Grid: Formula, Two Ways, Insights -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Column 1: Formula Sandbox -->
+                    <div class="lg:col-span-5 bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Return on Tokens Formula</h3>
+                                <button onclick="toggleCalculator()" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+                                    <i data-lucide="calculator" class="w-3.5 h-3.5"></i> Sandbox Calculator
+                                </button>
+                            </div>
+
+                            <!-- Interactive ROT Calculator Sandbox -->
+                            <div id="calculator-panel" class="hidden bg-slate-950/80 p-4 rounded-lg border border-slate-800 mb-4 space-y-3">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Value of Output ($)</label>
+                                        <input type="number" id="calc-value" value="12450" oninput="runSandboxCalculation()" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cost of Tokens ($)</label>
+                                        <input type="number" id="calc-cost" value="3580" oninput="runSandboxCalculation()" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                                    </div>
+                                </div>
+                                <div class="bg-indigo-950/40 p-2 rounded border border-indigo-500/20 flex justify-between items-center">
+                                    <span class="text-[11px] text-indigo-300 font-medium">Calculated ROT:</span>
+                                    <span id="calc-result" class="text-sm font-extrabold text-emerald-400">247.77%</span>
+                                </div>
+                            </div>
+
+                            <!-- Visual Math Equation -->
+                            <div class="bg-slate-950/50 p-6 rounded-xl border border-slate-800/80 flex flex-col items-center justify-center text-center py-8">
+                                <div class="text-[11px] text-slate-400 mb-4 font-mono">
+                                    Return on Tokens (ROT) = 
+                                </div>
+                                <div class="flex items-center gap-3 font-mono">
+                                    <div class="text-xl text-slate-200">(</div>
+                                    <div class="flex flex-col items-center">
+                                        <span class="text-xs text-indigo-300 pb-1.5 border-b border-slate-700 px-2">Value of Output &minus; Cost of Tokens</span>
+                                        <span class="text-xs text-purple-300 pt-1.5">Cost of Tokens</span>
+                                    </div>
+                                    <div class="text-xl text-slate-200">)</div>
+                                    <span class="text-xs text-slate-400">&times; 100</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-800/60 flex items-start gap-2.5">
+                            <i data-lucide="info" class="w-4 h-4 text-indigo-400 shrink-0 mt-0.5"></i>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">Tokens need to be held to the same standard. Ideally, you spend less to create more value.</p>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Two Ways to Increase ROT -->
+                    <div class="lg:col-span-4 bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-3">Two Ways to Increase Your ROT</h3>
+                            
+                            <div class="space-y-3">
+                                <!-- Card 1: Create More Value -->
+                                <div class="p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/20 to-slate-900 border border-emerald-500/20 flex items-start gap-3">
+                                    <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-emerald-400">Create More Value</h4>
+                                        <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Use tokens to generate more valuable, impactful, or monetizable outputs.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Card 2: Spend Less -->
+                                <div class="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/20 to-slate-900 border border-purple-500/20 flex items-start gap-3">
+                                    <div class="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+                                        <i data-lucide="zap-off" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-purple-400">Spend Less</h4>
+                                        <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Reduce token consumption and optimize prompt structures for efficiency.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quote Banner -->
+                        <div class="mt-4 p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-center text-[11px] text-indigo-300 font-medium">
+                            <i data-lucide="lightbulb" class="w-3.5 h-3.5 inline mr-1 text-amber-400"></i> Ideally, you spend less to create more value.
+                        </div>
+                    </div>
+
+                    <!-- Column 3: Insights -->
+                    <div class="lg:col-span-3 bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Insights</h3>
+                                <button class="text-[10px] text-slate-400 hover:text-white uppercase font-bold tracking-wider">View All</button>
+                            </div>
+
+                            <div class="space-y-3">
+                                <!-- Insight 1 -->
+                                <div class="p-3 rounded-lg bg-slate-950/50 border border-slate-800 hover:border-slate-700 transition-all">
+                                    <div class="flex items-center gap-2 text-[11px] font-bold text-emerald-400 mb-1">
+                                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> High Impact Opportunity
+                                    </div>
+                                    <p class="text-[11px] text-slate-300 leading-relaxed">"Content Generator" can improve ROT by <span class="text-emerald-400 font-semibold">32.4%</span> by reducing prompt length.</p>
+                                </div>
+
+                                <!-- Insight 2 -->
+                                <div class="p-3 rounded-lg bg-slate-950/50 border border-slate-800 hover:border-slate-700 transition-all">
+                                    <div class="flex items-center gap-2 text-[11px] font-bold text-purple-400 mb-1">
+                                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Cost Optimization
+                                    </div>
+                                    <p class="text-[11px] text-slate-300 leading-relaxed">You could save <span class="text-purple-400 font-semibold">$1,240</span> this month by caching system prompts.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mini Trend Summary -->
+                        <div class="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-[11px]">
+                            <span class="text-slate-400">Performance Trend</span>
+                            <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                                <i data-lucide="trending-up" class="w-3 h-3"></i> +18.7% this month
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Third Row: ROT Trend Chart, ROT Breakdown, Top Performing Projects -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- ROT Trend Line Chart -->
+                    <div class="lg:col-span-5 bg-slate-900/60 p-5 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">ROT Trend</h3>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Daily return on token trajectory</p>
+                            </div>
+                            <select class="bg-slate-800 border border-slate-700 text-[10px] text-slate-300 rounded px-2 py-1">
+                                <option>Daily</option>
+                                <option>Weekly</option>
+                            </select>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="chart-rot-trend"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- ROT Breakdown Donut Chart -->
+                    <div class="lg:col-span-3 bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-4">ROT Breakdown</h3>
+                            <div class="h-44 relative flex items-center justify-center">
+                                <canvas id="chart-rot-breakdown"></canvas>
+                                <!-- Center Text overlay -->
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span class="text-xl font-extrabold text-white">245.6%</span>
+                                    <span class="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Total ROT</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Legend Details -->
+                        <div class="space-y-2 mt-4">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="flex items-center gap-2 text-slate-400">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Value of Output
+                                </span>
+                                <span class="font-semibold text-slate-200">66.5%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="flex items-center gap-2 text-slate-400">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span> Cost of Tokens
+                                </span>
+                                <span class="font-semibold text-slate-200">19.1%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="flex items-center gap-2 text-slate-400">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Optimization Gains
+                                </span>
+                                <span class="font-semibold text-slate-200">14.4%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Performing Projects -->
+                    <div class="lg:col-span-4 bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Top Performing Projects</h3>
+                                <button onclick="switchScreen('projects')" class="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider">View All</button>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-slate-800 text-[10px] uppercase font-bold text-slate-400">
+                                            <th class="pb-2">Project</th>
+                                            <th class="pb-2 text-right">ROT</th>
+                                            <th class="pb-2 text-right">Value</th>
+                                            <th class="pb-2 text-right">Cost</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-800/50 text-xs">
+                                        <tr class="hover:bg-slate-850/30 transition-all">
+                                            <td class="py-2.5 font-medium text-slate-200">Content Generator</td>
+                                            <td class="py-2.5 text-right font-bold text-emerald-400">312.4%</td>
+                                            <td class="py-2.5 text-right text-slate-300">$5,240.00</td>
+                                            <td class="py-2.5 text-right text-slate-400">$1,260.00</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-850/30 transition-all">
+                                            <td class="py-2.5 font-medium text-slate-200">Research Assistant</td>
+                                            <td class="py-2.5 text-right font-bold text-emerald-400">278.1%</td>
+                                            <td class="py-2.5 text-right text-slate-300">$3,890.00</td>
+                                            <td class="py-2.5 text-right text-slate-400">$1,400.00</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-850/30 transition-all">
+                                            <td class="py-2.5 font-medium text-slate-200">Code Analyzer</td>
+                                            <td class="py-2.5 text-right font-bold text-emerald-400">198.7%</td>
+                                            <td class="py-2.5 text-right text-slate-300">$2,120.00</td>
+                                            <td class="py-2.5 text-right text-slate-400">$1,065.00</td>
+                                        </tr>
+                                        <tr class="hover:bg-slate-850/30 transition-all">
+                                            <td class="py-2.5 font-medium text-slate-200">Marketing Copy</td>
+                                            <td class="py-2.5 text-right font-bold text-emerald-400">145.2%</td>
+                                            <td class="py-2.5 text-right text-slate-300">$1,200.00</td>
+                                            <td class="py-2.5 text-right text-slate-400">$825.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-800/60 text-center">
+                            <span class="text-[10px] text-slate-500">Data updated hourly. All values are estimates.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fourth Row: Token Usage Overview, Recent Outputs, Optimization Recommendations -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Token Usage Overview (Bar Chart) -->
+                    <div class="lg:col-span-5 bg-slate-900/60 p-5 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Token Usage Overview</h3>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Input vs Output token balance</p>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2 text-[10px]">
+                                    <span class="w-2.5 h-2.5 rounded bg-blue-500"></span> <span class="text-slate-400">Input</span>
+                                    <span class="w-2.5 h-2.5 rounded bg-purple-500"></span> <span class="text-slate-400">Output</span>
+                                </div>
+                                <select class="bg-slate-800 border border-slate-700 text-[10px] text-slate-300 rounded px-2 py-1">
+                                    <option>Daily</option>
+                                    <option>Weekly</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="chart-token-usage"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent Outputs -->
+                    <div class="lg:col-span-4 bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">Recent Outputs</h3>
+                                <button class="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold uppercase tracking-wider">View All</button>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="p-3 bg-slate-950/40 rounded-lg border border-slate-800 flex justify-between items-center hover:border-slate-700 transition-all">
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-slate-200">AI Market Analysis Report</h4>
+                                        <p class="text-[10px] text-slate-500 mt-0.5">Research Assistant &bull; 2m ago</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-bold text-emerald-400">37,547% ROT</span>
+                                        <p class="text-[10px] text-slate-500 mt-0.5">$320.00 value &bull; $0.85 cost</p>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-slate-950/40 rounded-lg border border-slate-800 flex justify-between items-center hover:border-slate-700 transition-all">
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-slate-200">Competitive Landscape</h4>
+                                        <p class="text-[10px] text-slate-500 mt-0.5">Research Assistant &bull; 15m ago</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-bold text-emerald-400">37,400% ROT</span>
+                                        <p class="text-[10px] text-slate-500 mt-0.5">$210.00 value &bull; $0.56 cost</p>
+                                    </div>
+                                </div>
+
+                                <div class="p-3 bg-slate-950/40 rounded-lg border border-slate-800 flex justify-between items-center hover:border-slate-700 transition-all">
+                                    <div>
+                                        <h4 class="text-xs font-semibold text-slate-200">Blog Post: AI Trends 2024</h4>
+                                        <p class="text-[10px] text-slate-500 mt-0.5">Content Generator &bull; 32m ago</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs font-bold text-emerald-400">37,400% ROT</span>
+                                        <p class="text-[10px] text-slate-500 mt-0.5">$180.00 value &bull; $0.48 cost</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-800/60 text-center">
+                            <span class="text-[10px] text-slate-500">Showing 3 of 1,420 recent outputs</span>
+                        </div>
+                    </div>
+
+                    <!-- Optimization Recommendations -->
+                    <div class="lg:col-span-3 bg-slate-900/60 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-4">Optimization Recommendations</h3>
+                            
+                            <div class="space-y-3">
+                                <!-- Rec 1 -->
+                                <div class="p-3 bg-slate-950/40 rounded-lg border border-slate-800 flex items-start gap-2.5 hover:border-slate-700 transition-all">
+                                    <div class="p-1.5 rounded bg-rose-500/10 text-rose-400 mt-0.5">
+                                        <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <h4 class="text-xs font-semibold text-slate-200">Reduce Verbosity</h4>
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400">High</span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Shorten prompts to reduce token usage by up to 18%.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Rec 2 -->
+                                <div class="p-3 bg-slate-950/40 rounded-lg border border-slate-800 flex items-start gap-2.5 hover:border-slate-700 transition-all">
+                                    <div class="p-1.5 rounded bg-amber-500/10 text-amber-400 mt-0.5">
+                                        <i data-lucide="layout" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <h4 class="text-xs font-semibold text-slate-200">Use Structured Output</h4>
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400">Medium</span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Use JSON or structured formats to reduce unnecessary tokens.</p>
+                                    </div>
+                                </div>
+
+                                <!-- Rec 3 -->
+                                <div class="p-3 bg-slate-950/40 rounded-lg border border-slate-800 flex items-start gap-2.5 hover:border-slate-700 transition-all">
+                                    <div class="p-1.5 rounded bg-blue-500/10 text-blue-400 mt-0.5">
+                                        <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between">
+                                            <h4 class="text-xs font-semibold text-slate-200">Batch Similar Requests</h4>
+                                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">Low</span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Group similar requests to reduce prompt setup overhead.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2 rounded-lg transition-all">
+                            View All Recommendations
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 2: PROJECTS MANAGEMENT -->
+            <div id="screen-projects" class="hidden space-y-6">
+                <!-- Header Actions -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Project Performance Matrix</h2>
+                        <p class="text-xs text-slate-400">Manage and analyze individual performance criteria for all projects</p>
+                    </div>
+                    <button onclick="openModal('projectModal')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 px-4 rounded-lg shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i> New Project
+                    </button>
+                </div>
+
+                <!-- Projects Table Grid -->
+                <div class="bg-slate-900/60 rounded-xl border border-slate-800 overflow-hidden">
+                    <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-950/40">
+                        <div class="relative w-full sm:w-72">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                            <input type="text" placeholder="Search projects..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Report
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-xs uppercase font-bold text-slate-400 bg-slate-950/20">
+                                    <th class="p-4">Project Name</th>
+                                    <th class="p-4 text-right">ROT</th>
+                                    <th class="p-4 text-right">Value Generated</th>
+                                    <th class="p-4 text-right">Token Cost</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projects-table-body" class="divide-y divide-slate-800/50 text-xs">
+                                <!-- Project Row 1 -->
+                                <tr class="hover:bg-slate-850/30 transition-all">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="p-2 rounded bg-indigo-500/10 text-indigo-400">
+                                                <i data-lucide="file-text" class="w-4.5 h-4.5"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold text-slate-200">Content Generator</div>
+                                                <div class="text-[10px] text-slate-500">Last run 5 mins ago</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <span class="font-bold text-emerald-400 text-sm">312.4%</span>
+                                        <div class="text-[9px] text-emerald-500/80 font-medium">+14.2% this week</div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-semibold text-slate-200">$5,240.00</div>
+                                        <div class="text-[9px] text-slate-500">12.4M output tokens</div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-semibold text-slate-200">$1,260.00</div>
+                                        <div class="text-[9px] text-slate-500">4.1M input tokens</div>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button onclick="switchScreen('experiments')" class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs">Analyze Details</button>
+                                    </td>
+                                </tr>
+
+                                <!-- Project Row 2 -->
+                                <tr class="hover:bg-slate-850/30 transition-all">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="p-2 rounded bg-purple-500/10 text-purple-400">
+                                                <i data-lucide="search-code" class="w-4.5 h-4.5"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold text-slate-200">Research Assistant</div>
+                                                <div class="text-[10px] text-slate-500">Last run 2 hours ago</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <span class="font-bold text-emerald-400 text-sm">278.1%</span>
+                                        <div class="text-[9px] text-emerald-500/80 font-medium">+8.5% this week</div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-semibold text-slate-200">$3,890.00</div>
+                                        <div class="text-[9px] text-slate-500">9.2M output tokens</div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-semibold text-slate-200">$1,400.00</div>
+                                        <div class="text-[9px] text-slate-500">3.8M input tokens</div>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button onclick="switchScreen('experiments')" class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs">Analyze Details</button>
+                                    </td>
+                                </tr>
+
+                                <!-- Project Row 3 -->
+                                <tr class="hover:bg-slate-850/30 transition-all">
+                                    <td class="p-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="p-2 rounded bg-blue-500/10 text-blue-400">
+                                                <i data-lucide="terminal" class="w-4.5 h-4.5"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-semibold text-slate-200">Code Analyzer</div>
+                                                <div class="text-[10px] text-slate-500">Last run Yesterday</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <span class="font-bold text-emerald-400 text-sm">198.7%</span>
+                                        <div class="text-[9px] text-rose-500/80 font-medium">-2.1% this week</div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-semibold text-slate-200">$2,120.00</div>
+                                        <div class="text-[9px] text-slate-500">5.1M output tokens</div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-semibold text-slate-200">$1,065.00</div>
+                                        <div class="text-[9px] text-slate-500">2.2M input tokens</div>
+                                    </td>
+                                    <td class="p-4 text-center">
+                                        <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">Review Needed</span>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <button onclick="switchScreen('experiments')" class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs">Analyze Details</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 3: EXPERIMENTS & A/B TESTING -->
+            <div id="screen-experiments" class="hidden space-y-6">
+                <!-- Header Actions -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Experiment: Content v2</h2>
+                        <p class="text-xs text-slate-400">Compare prompt templates, models, and temperature configurations to optimize output value relative to cost.</p>
+                    </div>
+                    <button onclick="openModal('experimentModal')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 px-4 rounded-lg shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Run New Experiment
+                    </button>
+                </div>
+
+                <!-- Comparison Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Version A (Control) -->
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 relative overflow-hidden">
+                        <div class="absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Version A (Control)</div>
+                        <h3 class="text-sm font-bold text-white mb-4">Standard Prompt</h3>
+                        
+                        <div class="space-y-3 mb-6">
+                            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-500 block mb-1">Model</span>
+                                <span class="text-xs font-semibold text-slate-200">GPT-4o</span>
+                            </div>
+                            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-500 block mb-1">Temperature</span>
+                                <span class="text-xs font-semibold text-slate-200">0.7</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-4 border-t border-slate-800">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Avg ROT</span>
+                                <span class="font-bold text-slate-200">185.4%</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Value of Output</span>
+                                <span class="font-semibold text-slate-200">$1.20 / run</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Cost of Tokens</span>
+                                <span class="font-semibold text-slate-200">$0.42 / run</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Version B (System Prompt Cached) -->
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-indigo-500/30 relative overflow-hidden shadow-lg shadow-indigo-500/5">
+                        <div class="absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Version B (Cached)</div>
+                        <h3 class="text-sm font-bold text-white mb-4">Prompt Caching Enabled</h3>
+                        
+                        <div class="space-y-3 mb-6">
+                            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-500 block mb-1">Model</span>
+                                <span class="text-xs font-semibold text-slate-200">GPT-4o (with Cache)</span>
+                            </div>
+                            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-500 block mb-1">Temperature</span>
+                                <span class="text-xs font-semibold text-slate-200">0.7</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-4 border-t border-slate-800">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Avg ROT</span>
+                                <span class="font-bold text-emerald-400">256.7%</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Value of Output</span>
+                                <span class="font-semibold text-slate-200">$1.20 / run</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Cost of Tokens</span>
+                                <span class="font-semibold text-purple-400">$0.33 / run</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Version C (Few-Shot Optimised) -->
+                    <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800 relative overflow-hidden">
+                        <div class="absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Version C</div>
+                        <h3 class="text-sm font-bold text-white mb-4">Few-Shot Optimized</h3>
+                        
+                        <div class="space-y-3 mb-6">
+                            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-500 block mb-1">Model</span>
+                                <span class="text-xs font-semibold text-slate-200">GPT-4o (Optimized)</span>
+                            </div>
+                            <div class="bg-slate-950/50 p-3 rounded-lg border border-slate-800">
+                                <span class="text-[10px] text-slate-500 block mb-1">Temperature</span>
+                                <span class="text-xs font-semibold text-slate-200">0.5</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-4 border-t border-slate-800">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Avg ROT</span>
+                                <span class="font-bold text-slate-200">210.5%</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Value of Output</span>
+                                <span class="font-semibold text-slate-200">$1.18 / run</span>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-400">Cost of Tokens</span>
+                                <span class="font-semibold text-slate-200">$0.38 / run</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Run Comparison Sandbox Chart -->
+                <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800">
+                    <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-4">Performance Comparison Over Time</h3>
+                    <div class="h-64 relative">
+                        <canvas id="chart-experiment-comparison"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SCREEN 4: ROT THEORY PLAYGROUND -->
+            <div id="screen-theory" class="hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Theory Explanation -->
+                    <div class="lg:col-span-7 bg-white text-slate-900 p-8 rounded-2xl shadow-xl flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-3 mb-6">
+                                <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white">
+                                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-xl font-extrabold tracking-tight text-slate-950">Maximize Every Token.</h2>
+                                    <h2 class="text-xl font-extrabold tracking-tight text-slate-950">Maximize Every Outcome.</h2>
+                                </div>
+                            </div>
+
+                            <p class="text-sm text-slate-600 leading-relaxed mb-6">Tokens need to be held to the same standard. Return on Tokens is calculated by translating single-channel distance values (typically grayscale) into a visible color spectrum. There are two ways, then, to increase your ROT. You can create more valuable things with them, or you can spend less on them.</p>
+
+                            <!-- Theory Formula Block -->
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200/80 mb-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Return on Tokens Formula</span>
+                                    <span class="text-xs font-semibold text-emerald-600">&times; 100</span>
+                                </div>
+                                <div class="flex items-center justify-center gap-3 font-mono text-slate-800 py-4">
+                                    <span class="text-lg text-slate-400">(</span>
+                                    <div class="flex flex-col items-center">
+                                        <span class="text-xs font-semibold pb-1.5 border-b border-slate-300 px-2 text-slate-900">Value of Output &minus; Cost of Tokens</span>
+                                        <span class="text-xs font-semibold pt-1.5 text-slate-500">Cost of Tokens</span>
+                                    </div>
+                                    <span class="text-lg text-slate-400">)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs text-emerald-800 font-semibold">
+                            Ideally, you spend less to create more value.
+                        </div>
+                    </div>
+
+                    <!-- Core Principles & Guidelines -->
+                    <div class="lg:col-span-5 space-y-4">
+                        <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800">
+                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-4">Core Principles</h3>
+                            
+                            <div class="space-y-4">
+                                <div class="flex gap-3">
+                                    <div class="p-2 rounded bg-indigo-500/10 text-indigo-400 shrink-0">
+                                        <i data-lucide="compass" class="w-4.5 h-4.5"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-200">Make Smarter Decisions</h4>
+                                        <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Understand what drives value and optimize your AI investments.</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    <div class="p-2 rounded bg-purple-500/10 text-purple-400 shrink-0">
+                                        <i data-lucide="bar-chart-2" class="w-4.5 h-4.5"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-200">Track What Matters</h4>
+                                        <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Measure value, cost, and efficiency in one unified dashboard.</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    <div class="p-2 rounded bg-emerald-500/10 text-emerald-400 shrink-0">
+                                        <i data-lucide="refresh-cw" class="w-4.5 h-4.5"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-slate-200">Optimize Continuously</h4>
+                                        <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">Run experiments, compare results, and keep improving.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/60 p-5 rounded-xl border border-slate-800">
+                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-2">Depth Map Colorization</h3>
+                            <p class="text-[11px] text-slate-400 leading-relaxed mb-4">Converting single-channel distance values (grayscale) into a visible color spectrum mapping helps identify dominant shapes or objects inside token structures.</p>
+                            <div class="h-3 bg-gradient-to-r from-blue-500 via-purple-500 via-pink-500 via-orange-500 to-yellow-500 rounded-full"></div>
+                            <div class="flex justify-between text-[9px] text-slate-500 mt-1 font-mono">
+                                <span>Far (Low Cost)</span>
+                                <span>Near (High Cost)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- CREATE EXPERIMENT MODAL -->
+    <div id="experimentModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="beaker" class="w-4 h-4 text-indigo-400"></i> New ROT Experiment</h3>
+                <button onclick="closeModal('experimentModal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form onsubmit="handleCreateExperiment(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Experiment Name</label>
+                    <input type="text" required placeholder="e.g. Content v3 (Optimized Prompt)" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Project</label>
+                    <select class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <option>Content Generator</option>
+                        <option>Research Assistant</option>
+                        <option>Code Analyzer</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Model Selection</label>
+                        <select class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <option>GPT-4o</option>
+                            <option>Claude 3.5 Sonnet</option>
+                            <option>Llama 3.1 70B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Temperature</label>
+                        <input type="number" step="0.1" min="0" max="2" value="0.7" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 rounded-lg shadow-lg shadow-indigo-600/20 transition-all">
+                        Launch Experiment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- CREATE PROJECT MODAL -->
+    <div id="projectModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="folder-kanban" class="w-4 h-4 text-indigo-400"></i> Create New Project</h3>
+                <button onclick="closeModal('projectModal')" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <form onsubmit="handleCreateProject(event)" class="p-5 space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Project Name</label>
+                    <input type="text" id="new-project-name" required placeholder="e.g. Customer Support Bot" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estimated Value / Run ($)</label>
+                        <input type="number" id="new-project-value" step="0.01" value="1.50" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Estimated Cost / Run ($)</label>
+                        <input type="number" id="new-project-cost" step="0.01" value="0.50" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-2 rounded-lg shadow-lg shadow-indigo-600/20 transition-all">
+                        Create Project
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript logic -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Screen Navigation State
+        let currentScreen = 'overview';
+
+        function switchScreen(screenId) {
+            // Hide all screens
+            document.getElementById('screen-overview').classList.add('hidden');
+            document.getElementById('screen-projects').classList.add('hidden');
+            document.getElementById('screen-experiments').classList.add('hidden');
+            document.getElementById('screen-theory').classList.add('hidden');
+
+            // Show target screen
+            document.getElementById(`screen-${screenId}`).classList.remove('hidden');
+
+            // Reset navigation styles
+            const navs = ['overview', 'projects', 'experiments', 'theory'];
+            navs.forEach(nav => {
+                const navBtn = document.getElementById(`nav-${nav}`);
+                if (navBtn) {
+                    navBtn.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200";
+                }
+            });
+
+            // Set active navigation style
+            const activeNav = document.getElementById(`nav-${screenId}`);
+            if (activeNav) {
+                activeNav.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 shadow-sm";
+            }
+
+            // Update Header Text
+            const screenTitle = document.getElementById('screen-title');
+            const screenSubtitle = document.getElementById('screen-subtitle');
+
+            if (screenId === 'overview') {
+                screenTitle.innerText = "AI Performance Overview";
+                screenSubtitle.innerText = "Track, analyze and optimize your Return on Tokens";
+            } else if (screenId === 'projects') {
+                screenTitle.innerText = "Project Management Matrix";
+                screenSubtitle.innerText = "Evaluate performance thresholds across all projects";
+            } else if (screenId === 'experiments') {
+                screenTitle.innerText = "A/B Experiment Matrix";
+                screenSubtitle.innerText = "Compare prompts and parameters to maximize ROT";
+            } else if (screenId === 'theory') {
+                screenTitle.innerText = "ROT Theory & Depth Map";
+                screenSubtitle.innerText = "Deep dive into token economics and depth mappings";
+            }
+
+            currentScreen = screenId;
+        }
+
+        // Toggle Calculator Panel
+        function toggleCalculator() {
+            const panel = document.getElementById('calculator-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        // Sandbox ROT Calculator
+        function runSandboxCalculation() {
+            const val = parseFloat(document.getElementById('calc-value').value) || 0;
+            const cost = parseFloat(document.getElementById('calc-cost').value) || 1;
+            const rot = ((val - cost) / cost) * 100;
+            document.getElementById('calc-result').innerText = `${rot.toFixed(2)}%`;
+        }
+
+        // Theme Toggle (Dark / Light Mode)
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('theme-icon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                themeIcon.setAttribute('data-lucide', 'sun');
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                themeIcon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+        }
+
+        // Notification Dropdown Toggle
+        function toggleNotificationDropdown() {
+            const dropdown = document.getElementById('notificationDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Modals Management
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function handleCreateExperiment(e) {
+            e.preventDefault();
+            closeModal('experimentModal');
+            alert("New A/B experiment launched successfully! Check the Performance Comparison Chart.");
+        }
+
+        function handleCreateProject(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-project-name').value;
+            const val = parseFloat(document.getElementById('new-project-value').value);
+            const cost = parseFloat(document.getElementById('new-project-cost').value);
+            const rot = (((val - cost) / cost) * 100).toFixed(1);
+
+            // Add row to projects table
+            const tbody = document.getElementById('projects-table-body');
+            const tr = document.createElement('tr');
+            tr.className = "hover:bg-slate-850/30 transition-all";
+            tr.innerHTML = `
+                <td class="p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded bg-indigo-500/10 text-indigo-400">
+                            <i data-lucide="file-text" class="w-4.5 h-4.5"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold text-slate-200">${name}</div>
+                            <div class="text-[10px] text-slate-500">Just created</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="p-4 text-right">
+                    <span class="font-bold text-emerald-400 text-sm">${rot}%</span>
+                    <div class="text-[9px] text-emerald-500/80 font-medium">New</div>
+                </td>
+                <td class="p-4 text-right">
+                    <div class="font-semibold text-slate-200">$${val.toFixed(2)}</div>
+                    <div class="text-[9px] text-slate-500">0 output tokens</div>
+                </td>
+                <td class="p-4 text-right">
+                    <div class="font-semibold text-slate-200">$${cost.toFixed(2)}</div>
+                    <div class="text-[9px] text-slate-500">0 input tokens</div>
+                </td>
+                <td class="p-4 text-center">
+                    <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+                </td>
+                <td class="p-4 text-right">
+                    <button onclick="switchScreen('experiments')" class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs">Analyze Details</button>
+                </td>
+            `;
+            tbody.prepend(tr);
+            lucide.createIcons();
+            closeModal('projectModal');
+        }
+
+        // Project Filter Change Handler
+        function handleProjectFilterChange() {
+            const filterValue = document.getElementById('projectFilter').value;
+            const rotKpi = document.getElementById('kpi-rot');
+            const valueKpi = document.getElementById('kpi-value');
+            const costKpi = document.getElementById('kpi-cost');
+            const tokensKpi = document.getElementById('kpi-tokens');
+
+            if (filterValue === 'content') {
+                rotKpi.innerText = "312.4%";
+                valueKpi.innerText = "$5,240.00";
+                costKpi.innerText = "$1,260.00";
+                tokensKpi.innerText = "4.15M";
+            } else if (filterValue === 'assistant') {
+                rotKpi.innerText = "278.1%";
+                valueKpi.innerText = "$3,890.00";
+                costKpi.innerText = "$1,400.00";
+                tokensKpi.innerText = "2.85M";
+            } else if (filterValue === 'analyzer') {
+                rotKpi.innerText = "198.7%";
+                valueKpi.innerText = "$2,120.00";
+                costKpi.innerText = "$1,065.00";
+                tokensKpi.innerText = "1.12M";
+            } else {
+                rotKpi.innerText = "245.6%";
+                valueKpi.innerText = "$12,450.00";
+                costKpi.innerText = "$3,580.00";
+                tokensKpi.innerText = "8.45M";
+            }
+        }
+
+        // Initialize Sparklines & Charts with Chart.js
+        window.addEventListener('load', () => {
+            // Helper for sparklines
+            function createSparkline(elementId, color, dataPoints) {
+                const ctx = document.getElementById(elementId).getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dataPoints.map((_, i) => i),
+                        datasets: [{
+                            data: dataPoints,
+                            borderColor: color,
+                            borderWidth: 1.5,
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: { x: { display: false }, y: { display: false } },
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+
+            // Create Sparklines
+            createSparkline('sparkline-rot', '#10b981', [210, 220, 215, 230, 240, 235, 245.6]);
+            createSparkline('sparkline-value', '#3b82f6', [10500, 11000, 10800, 11500, 12000, 11800, 12450]);
+            createSparkline('sparkline-cost', '#8b5cf6', [3900, 3800, 3750, 3700, 3650, 3600, 3580]);
+            createSparkline('sparkline-tokens', '#f59e0b', [9.1, 8.9, 8.8, 8.7, 8.6, 8.5, 8.45]);
+            createSparkline('sparkline-avg', '#14b8a6', [0.45, 0.44, 0.44, 0.43, 0.43, 0.42, 0.42]);
+
+            // ROT Trend Main Line Chart
+            const rotTrendCtx = document.getElementById('chart-rot-trend').getContext('2d');
+            new Chart(rotTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['May 1', 'May 6', 'May 11', 'May 16', 'May 21', 'May 26', 'May 31'],
+                    datasets: [{
+                        label: 'ROT Trend',
+                        data: [180, 210, 195, 232.4, 215, 240, 245.6],
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#10b981',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // ROT Breakdown Donut Chart
+            const rotBreakdownCtx = document.getElementById('chart-rot-breakdown').getContext('2d');
+            new Chart(rotBreakdownCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Value of Output', 'Cost of Tokens', 'Optimization Gains'],
+                    datasets: [{
+                        data: [66.5, 19.1, 14.4],
+                        backgroundColor: ['#3b82f6', '#8b5cf6', '#10b981'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    cutout: '75%',
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Token Usage Bar Chart
+            const tokenUsageCtx = document.getElementById('chart-token-usage').getContext('2d');
+            new Chart(tokenUsageCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['May 1', 'May 6', 'May 11', 'May 16', 'May 21', 'May 26', 'May 31'],
+                    datasets: [
+                        {
+                            label: 'Input Tokens',
+                            data: [1.2, 1.4, 1.1, 1.5, 1.3, 1.6, 1.45],
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Output Tokens',
+                            data: [3.4, 3.8, 3.2, 4.1, 3.6, 4.2, 3.9],
+                            backgroundColor: '#8b5cf6',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Experiment Comparison Line Chart
+            const expCtx = document.getElementById('chart-experiment-comparison').getContext('2d');
+            new Chart(expCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Run 1', 'Run 2', 'Run 3', 'Run 4', 'Run 5', 'Run 6', 'Run 7'],
+                    datasets: [
+                        {
+                            label: 'Version A (Control)',
+                            data: [170, 185, 180, 190, 182, 188, 185.4],
+                            borderColor: '#64748b',
+                            borderWidth: 1.5,
+                            fill: false,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Version B (Cached)',
+                            data: [210, 230, 245, 250, 248, 255, 256.7],
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Version C (Few-Shot)',
+                            data: [190, 205, 200, 215, 210, 208, 210.5],
+                            borderColor: '#3b82f6',
+                            borderWidth: 1.5,
+                            fill: false,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    plugins: { legend: { display: true, labels: { color: '#94a3b8', font: { size: 10 } } } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        });
+    </script>
+</body>
+</html>
