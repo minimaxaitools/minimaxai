@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Household Budget & Grocery Planner</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- SheetJS Excel Library -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-section">
+        <div class="brand-logo">🍳</div>
+        <div class="brand-name">HomeBudget</div>
+      </div>
+      <nav class="nav-menu">
+        <li class="nav-item active" data-tab="dashboard">
+          <span class="nav-icon">📊</span>
+          <span>Overview Dashboard</span>
+        </li>
+        <li class="nav-item" data-tab="inventory">
+          <span class="nav-icon">📦</span>
+          <span>Stock & Inventory</span>
+        </li>
+        <li class="nav-item" data-tab="sheet">
+          <span class="nav-icon">📝</span>
+          <span>Live Excel Editor</span>
+        </li>
+        <li class="nav-item" data-tab="purchases">
+          <span class="nav-icon">🧾</span>
+          <span>Purchases & Logs</span>
+        </li>
+        <li class="nav-item" data-tab="monthly">
+          <span class="nav-icon">📅</span>
+          <span>Monthly Bulk Planner</span>
+        </li>
+        <li class="nav-item" data-tab="items">
+          <span class="nav-icon">✏️</span>
+          <span>Manage Items</span>
+        </li>
+        <li class="nav-item" data-tab="planner">
+          <span class="nav-icon">🛡️</span>
+          <span>Salary Delay Planner</span>
+        </li>
+        <li class="nav-item" data-tab="bank">
+          <span class="nav-icon">🏦</span>
+          <span>Bank & Ledger</span>
+        </li>
+        <li class="nav-item" data-tab="reports">
+          <span class="nav-icon">💰</span>
+          <span>Financial Reports</span>
+        </li>
+      </nav>
+      <div class="sidebar-footer">
+        <div style="font-size: 11px; color: var(--text-dark); margin-bottom: 2px; font-weight: bold; text-transform: uppercase;">JSON Database</div>
+        <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+          <button class="btn btn-secondary btn-sm" id="btn-export-backup" style="flex: 1; padding: 6px;">💾 Export</button>
+          <button class="btn btn-secondary btn-sm" id="btn-trigger-import" style="flex: 1; padding: 6px;">📂 Import</button>
+          <input type="file" id="file-import-input" style="display: none;" accept=".json">
+        </div>
+        <div style="font-size: 11px; color: var(--text-dark); margin-bottom: 2px; font-weight: bold; text-transform: uppercase;">Excel Spreadsheet</div>
+        <div style="display: flex; gap: 5px; margin-bottom: 8px;">
+          <button class="btn btn-secondary btn-sm" id="btn-export-excel" style="flex: 1; padding: 6px; border-color: rgba(16, 185, 129, 0.3);">🟢 Export</button>
+          <button class="btn btn-secondary btn-sm" id="btn-trigger-excel-import" style="flex: 1; padding: 6px; border-color: rgba(16, 185, 129, 0.3);">🟢 Import</button>
+          <input type="file" id="file-excel-import-input" style="display: none;" accept=".xlsx,.xls">
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-download-template" style="width: 100%; margin-bottom: 8px; border-color: rgba(99, 102, 241, 0.3);">📋 Excel Template</button>
+        <button class="btn btn-secondary btn-sm" id="btn-trigger-cloud-sync" style="width: 100%; margin-bottom: 8px; border-color: rgba(52, 211, 153, 0.3);">☁️ Cloud Sync (Google Drive)</button>
+        <div id="cloud-sync-status" style="font-size: 11px; margin-top: -4px; margin-bottom: 8px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 5px;">⚫ Local Only</div>
+        <button class="btn btn-secondary btn-sm" id="btn-reset-presets" style="margin-top: 5px; width: 100%; font-size: 11px;">⚠️ Reset Presets</button>
+        <button class="btn btn-danger btn-sm" id="btn-flush-data" style="margin-top: 5px; width: 100%; font-size: 11px; background: #dc2626; border-color: #dc2626;">💥 Flush Data (Start Fresh)</button>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="main-content">
+      <!-- DASHBOARD TAB -->
+      <section id="tab-dashboard" class="tab-content active">
+        <div class="action-header">
+          <div>
+            <h1>Household Cockpit</h1>
+            <p class="subtitle">Real-time status of your groceries, stock depletion dates, and family budget.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" id="btn-add-purchase-shortcut">🛒 Record Purchase</button>
+          </div>
+        </div>
+
+        <!-- Alert Notification Bar -->
+        <div id="dashboard-alert-container"></div>
+
+        <!-- Statistics Overview Grid -->
+        <div class="summary-grid">
+          <div class="stat-card success" id="card-cash-on-hand">
+            <span class="stat-label">Cash On Hand</span>
+            <span class="stat-val">₹<span id="stat-cash-val">8,000</span></span>
+            <span class="stat-desc">Monthly Income: <strong>₹<span id="stat-salary-val">20,000</span></strong></span>
+          </div>
+          <div class="stat-card" id="card-survival-duration">
+            <span class="stat-label">Survival Outlook</span>
+            <span class="stat-val"><span id="stat-survival-days">45</span> <span class="stat-unit">Days</span></span>
+            <span class="stat-desc">Stock lasts <strong id="stat-stock-lasts-val">15 days</strong> + cash buys <strong id="stat-cash-lasts-val">30 days</strong></span>
+          </div>
+          <div class="stat-card" id="card-monthly-grocery-spend">
+            <span class="stat-label">Normal Monthly Budget</span>
+            <span class="stat-val">₹<span id="stat-monthly-spend">4,200</span></span>
+            <span class="stat-desc">Survival Minimum: <strong>₹<span id="stat-survival-spend">1,850</span></strong></span>
+          </div>
+          <div class="stat-card alert" id="card-out-of-stock">
+            <span class="stat-label">Critical Alerts</span>
+            <span class="stat-val"><span id="stat-critical-count">3</span> <span class="stat-unit">Items</span></span>
+            <span class="stat-desc"><strong id="stat-out-of-stock-count">1</strong> Out of Stock, <strong id="stat-low-stock-count">2</strong> Low Stock</span>
+          </div>
+        </div>
+
+        <!-- Split Grid (Left: Low Stock, Right: Quick Actions / Tips) -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-top: 30px;">
+          <!-- Low Stock Items List -->
+          <div class="glass-panel" style="min-height: 300px;">
+            <h2>⚠️ Critical & Low Stock Items</h2>
+            <div class="report-table-wrapper">
+              <table class="report-table">
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>Remaining Stock</th>
+                    <th>Days Left</th>
+                    <th>Status</th>
+                    <th>Quick Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-critical-tbody">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Quick Household Tips -->
+          <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h2 style="color: var(--primary);">💡 Smart Planning Tip</h2>
+              <div id="dashboard-tip-box" style="font-size: 14px; line-height: 1.6; color: var(--text-muted); margin-top: 15px;">
+                "Your Atta stock is safe, but Mustard Oil is running low. Since Mustard Oil is a survival essential, consider purchasing it in bulk (5L) next time. You can save up to 12% per liter compared to small packets."
+              </div>
+            </div>
+            <div style="border-top: 1px solid var(--border-light); padding-top: 20px; margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: var(--text-dark);">Adaptive Learning Active</span>
+              <span style="font-size: 16px;">🧠⚙️</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- INVENTORY TAB -->
+      <section id="tab-inventory" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Stock & Inventory</h1>
+            <p class="subtitle">Real-time stock estimation with scientific, package, and custom household units.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-purchase-inventory">🛒 Log New Purchase</button>
+        </div>
+
+        <!-- Filters Bar -->
+        <div class="glass-panel" style="padding: 20px; margin-bottom: 30px;">
+          <div class="search-filter-bar">
+            <div class="input-group">
+              <span class="input-icon">🔍</span>
+              <input type="text" id="inventory-search" class="custom-input" placeholder="Search item name...">
+            </div>
+            <select id="inventory-filter-category" class="custom-select">
+              <option value="all">All Categories</option>
+              <!-- Filled Dynamically -->
+            </select>
+            <select id="inventory-filter-status" class="custom-select">
+              <option value="all">All Stock Statuses</option>
+              <option value="Safe">Safe</option>
+              <option value="Low Stock">Low Stock</option>
+              <option value="Critical">Critical</option>
+              <option value="Out of Stock">Out of Stock</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Inventory Grid -->
+        <div class="inventory-grid" id="inventory-cards-container">
+          <!-- Item Cards rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- MANAGE ITEMS TAB -->
+      <section id="tab-items" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Manage Household Items</h1>
+            <p class="subtitle">Add new custom items, adjust daily consumption schedules, and override units.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" id="btn-create-new-item">➕ Add New Item Definition</button>
+          </div>
+        </div>
+
+        <!-- Filters Bar and Bulk Actions -->
+        <div class="glass-panel" style="padding: 20px; margin-bottom: 20px;">
+          <div class="search-filter-bar" style="margin-bottom: 15px;">
+            <div class="input-group">
+              <span class="input-icon">🔍</span>
+              <input type="text" id="items-search" class="custom-input" placeholder="Search item name...">
+            </div>
+            <select id="items-filter-category" class="custom-select">
+              <option value="all">All Categories</option>
+              <!-- Filled Dynamically -->
+            </select>
+            <select id="items-filter-priority" class="custom-select">
+              <option value="all">All Priorities</option>
+              <option value="essential">Essential</option>
+              <option value="normal">Normal</option>
+              <option value="luxury">Luxury</option>
+            </select>
+            <select id="items-sort-by" class="custom-select">
+              <option value="name-asc">Sort Name (A-Z)</option>
+              <option value="name-desc">Sort Name (Z-A)</option>
+              <option value="category">Sort Category</option>
+            </select>
+          </div>
+          
+          <div id="items-bulk-actions" style="display: flex; gap: 12px; align-items: center; border-top: 1px solid var(--border-light); padding-top: 15px; font-size: 13px;">
+            <span style="font-weight: 600; color: var(--text-dark);">Bulk Actions (<span id="lbl-items-checked-count">0</span> selected):</span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-bulk-delete" style="padding: 4px 8px; border-color: var(--status-critical); color: #fca5a5;">🗑️ Bulk Delete</button>
+            <select id="bulk-category-reassign" class="custom-select" style="height: 28px; font-size: 12px; padding: 2px 10px; width: 180px;">
+              <option value="">Reassign Category...</option>
+              <!-- Category list filled dynamically -->
+            </select>
+            <input type="number" id="bulk-price-update" class="custom-input" style="height: 28px; width: 130px; font-size: 12px; padding-left: 10px;" placeholder="Update Price Paid (₹)">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-apply-bulk-price" style="padding: 4px 8px;">Apply Price</button>
+          </div>
+        </div>
+
+        <!-- Item list table -->
+        <div class="glass-panel">
+          <div class="report-table-wrapper" style="overflow-x: auto;">
+            <table class="report-table" id="items-table-master">
+              <thead>
+                <tr>
+                  <th style="width: 30px;"><input type="checkbox" id="chk-items-master"></th>
+                  <th>Item Name</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Base Scientific Unit</th>
+                  <th>Daily Consumption Rate</th>
+                  <th>Learned Conversions</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="items-list-tbody">
+                <!-- Generated dynamically -->
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Pagination controls -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-size: 13px; color: var(--text-muted);">
+            <div>Showing <span id="lbl-items-start-idx">1</span> to <span id="lbl-items-end-idx">10</span> of <span id="lbl-items-total-count">0</span> items</div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-items-prev-page" style="padding: 4px 10px;">◀ Prev</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-items-next-page" style="padding: 4px 10px;">Next ▶</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SALARY DELAY PLANNER TAB -->
+      <section id="tab-planner" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Salary Delay Simulator</h1>
+            <p class="subtitle">Simulate cash flow and stretch kitchen inventory if your income is delayed by 1 to 3 months.</p>
+          </div>
+        </div>
+
+        <div class="planning-panel">
+          <!-- Control Panel Card -->
+          <div class="glass-panel control-card">
+            <h2>⚙️ Simulation Settings</h2>
+            
+            <div class="form-grid" style="margin-bottom: 0;">
+              <div>
+                <label class="form-label">Cash Buffer (₹)</label>
+                <input type="number" id="planner-cash-input" class="custom-input" style="padding-left: 15px;" value="8000">
+              </div>
+              <div>
+                <label class="form-label">Monthly Salary (₹)</label>
+                <input type="number" id="planner-salary-input" class="custom-input" style="padding-left: 15px;" value="20000">
+              </div>
+            </div>
+
+            <!-- Delay Slider -->
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">Expected Salary Delay</span>
+                <span class="slider-value" id="val-delay-months">0 Months</span>
+              </div>
+              <input type="range" id="slider-delay-months" class="custom-slider" min="0" max="4" step="1" value="0">
+              <span style="font-size: 12px; color: var(--text-dark);">Simulate survival parameters over this period without regular income.</span>
+            </div>
+
+            <!-- Stretch Slider -->
+            <div class="slider-group">
+              <div class="slider-header">
+                <span class="slider-label">Stock Stretch Level (Reduce Intake)</span>
+                <span class="slider-value" id="val-stretch-percent">0%</span>
+              </div>
+              <input type="range" id="slider-stretch-percent" class="custom-slider" min="0" max="30" step="5" value="0">
+              <span style="font-size: 12px; color: var(--text-dark);">Stretch essential stock longer by consuming less per serving (e.g. sugar, oil).</span>
+            </div>
+          </div>
+
+          <!-- Simulation Output Card -->
+          <div class="glass-panel">
+            <h2>📈 Simulation Outcomes</h2>
+            
+            <div class="planning-metrics">
+              <!-- Metric Bars -->
+              <div class="metric-bar-wrap">
+                <div class="metric-bar-label">
+                  <span>Normal Monthly Grocery Spend</span>
+                  <span id="lbl-spend-normal">₹4,200 / mo</span>
+                </div>
+                <div class="metric-bar-bg">
+                  <div class="metric-bar-fill normal" id="bar-spend-normal" style="width: 100%;"></div>
+                </div>
+              </div>
+
+              <div class="metric-bar-wrap">
+                <div class="metric-bar-label">
+                  <span>Survival Essentials Cost (Cut Luxury)</span>
+                  <span id="lbl-spend-survival">₹1,850 / mo</span>
+                </div>
+                <div class="metric-bar-bg">
+                  <div class="metric-bar-fill survival" id="bar-spend-survival" style="width: 44%;"></div>
+                </div>
+              </div>
+
+              <div class="metric-bar-wrap">
+                <div class="metric-bar-label">
+                  <span>Stretched Survival Budget (Stretched Intake)</span>
+                  <span id="lbl-spend-stretched" style="color: var(--accent-blue); font-weight: 600;">₹1,570 / mo</span>
+                </div>
+                <div class="metric-bar-bg">
+                  <div class="metric-bar-fill stretched" id="bar-spend-stretched" style="width: 37%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Survival Status Alert Box -->
+            <div id="planner-survival-box" class="survival-alert-box secure">
+              <strong>Outlook: Secure</strong>
+              <span>Your cash buffer and current groceries are fully sufficient to weather a 0-month delay.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emergency Purchase List -->
+        <div class="glass-panel" style="margin-top: 30px;">
+          <h2>🛒 Emergency / Deficit Shopping List</h2>
+          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+            The list of essential items that will deplete *before* the salary delay ends, and the minimum cost required to purchase safety quantities.
+          </p>
+          <div class="report-table-wrapper">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Depletes In</th>
+                  <th>Deficit (Until Salary)</th>
+                  <th>Estimated Price</th>
+                  <th>Recommended Package size</th>
+                  <th>Purchase Level</th>
+                </tr>
+              </thead>
+              <tbody id="planner-emergency-tbody">
+                <!-- Generated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTS TAB -->
+      <section id="tab-reports" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Financial Reports & Insights</h1>
+            <p class="subtitle">Detailed expenditure reports, category breakdowns, and grocery inflation comparison.</p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+          <!-- Monthly Expenditures Column Chart -->
+          <div class="glass-panel">
+            <h2>📊 Top 10 Grocery Costs per Month</h2>
+            <div class="chart-container" id="reports-costs-chart">
+              <!-- Rendered dynamically as custom columns -->
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dark);">
+              <span>Most Expensive</span>
+              <span>Least Expensive</span>
+            </div>
+          </div>
+
+          <!-- Category Spend Breakdown -->
+          <div class="glass-panel">
+            <h2>🏷️ Category Share</h2>
+            <div id="reports-category-breakdown" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+              <!-- Generated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Inflation and Price comparison tracker -->
+        <div class="glass-panel" style="margin-top: 30px;">
+          <h2>📈 Price History & Package Optimization</h2>
+          <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+            Compares cost-per-base-unit (e.g. per kg or per L) across different package sizes bought. Shows where buying in bulk saved money.
+          </p>
+          <div class="report-table-wrapper">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Cheapest Purchase</th>
+                  <th>Most Expensive Purchase</th>
+                  <th>Base Price Spread</th>
+                  <th>Recommendation</th>
+                </tr>
+              </thead>
+              <tbody id="reports-inflation-tbody">
+                <!-- Generated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PURCHASES & LOGS TAB -->
+      <section id="tab-purchases" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Purchase History & Correction Ledger</h1>
+            <p class="subtitle">Edit previously logged purchases (price, quantity, item, date) with real-time recalculation and audit logs.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-secondary" id="btn-show-audit-trail">📜 View Audit Trail</button>
+            <button type="button" class="btn btn-primary" onclick="openPurchaseModalDirect()">🛒 Record New Buy</button>
+          </div>
+        </div>
+
+        <div class="planning-panel" style="grid-template-columns: 2.2fr 1fr; gap: 20px;">
+          <!-- Purchases Table Grid -->
+          <div class="glass-panel" style="overflow-x: auto; margin-bottom: 0;">
+            <div class="search-filter-bar" style="margin-bottom: 20px;">
+              <div class="input-group">
+                <span class="input-icon">🔍</span>
+                <input type="text" id="purchases-search" class="custom-input" placeholder="Search item, store, brand...">
+              </div>
+              <input type="date" id="purchases-filter-start-date" class="custom-input" style="width: 150px; padding-left: 15px;" placeholder="Start Date">
+              <input type="date" id="purchases-filter-end-date" class="custom-input" style="width: 150px; padding-left: 15px;" placeholder="End Date">
+            </div>
+
+            <div class="spreadsheet-container">
+              <table class="spreadsheet-table" id="purchases-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="width: 30px;">#</th>
+                    <th>Date</th>
+                    <th>Item Name</th>
+                    <th>Qty</th>
+                    <th>Unit</th>
+                    <th>Unit Price (₹)</th>
+                    <th>Total (₹)</th>
+                    <th>Bulk?</th>
+                    <th>Store</th>
+                    <th>Brand</th>
+                    <th>Note</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="purchases-tbody">
+                  <!-- Purchase rows rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top: 15px; font-size: 12px; color: var(--text-dark);">
+              * Click cells directly to correct quantities, prices, or dates. Double click to select. Changes cascade immediately.
+            </div>
+          </div>
+
+          <!-- Audit Trail Side Panel -->
+          <div class="glass-panel" id="audit-trail-panel" style="display: flex; flex-direction: column; max-height: 550px;">
+            <h2>📜 Correction Audit Trail</h2>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">
+              Log of modifications made to purchase records for financial auditing.
+            </p>
+            <div style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 10px;" id="audit-trail-logs">
+              <!-- Logs populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BANK LEDGER TAB -->
+      <section id="tab-bank" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Financial Bank & Cash Account</h1>
+            <p class="subtitle">Manage monthly salaries (received or pending), loan receipts, and additional expenses.</p>
+          </div>
+          <div>
+            <h2 style="margin: 0; font-size: 28px; color: var(--primary);">Balance: ₹<span id="bank-current-balance">0</span></h2>
+          </div>
+        </div>
+
+        <div class="planning-panel" style="margin-bottom: 30px;">
+          <!-- Left side: Log manual receipt or expense -->
+          <div class="glass-panel">
+            <h2>💰 Log Transaction / Receipt</h2>
+            <form id="form-bank-transaction">
+              <div class="form-grid">
+                <div class="form-group-full">
+                  <label class="form-label" for="bank-tx-type">Transaction Type *</label>
+                  <select id="bank-tx-type" class="custom-select" style="width: 100%;" required>
+                    <option value="income">Income Receipt (Gift, Other)</option>
+                    <option value="loan">Loan Receipt (Family Loan, Bank Loan)</option>
+                    <option value="expense">Additional Expense (Rent, Bills, etc.)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="form-label" for="bank-tx-amount">Amount (₹) *</label>
+                  <input type="number" id="bank-tx-amount" class="custom-input" style="padding-left: 15px;" placeholder="e.g. 5000" min="1" required>
+                </div>
+                <div>
+                  <label class="form-label" for="bank-tx-date">Date *</label>
+                  <input type="date" id="bank-tx-date" class="custom-input" style="padding-left: 15px;" required>
+                </div>
+                <div class="form-group-full">
+                  <label class="form-label" for="bank-tx-desc">Source / Description *</label>
+                  <input type="text" id="bank-tx-desc" class="custom-input" style="padding-left: 15px;" placeholder="e.g. Friend Loan, House Rent, Electric Bill" required>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Record Transaction</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Right side: Monthly Salaries scheduler -->
+          <div class="glass-panel">
+            <h2>📅 Monthly Salary Scheduler</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+              Manage salary records month-by-month. Mark as "Received" to credit bank balance, or leave "Delayed/Pending".
+            </p>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+              <input type="month" id="salary-month-input" class="custom-input" style="width: 160px; padding-left: 15px;">
+              <input type="number" id="salary-amount-input" class="custom-input" style="width: 140px; padding-left: 15px;" placeholder="Amount (₹)">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-add-salary-month">➕ Set Salary</button>
+            </div>
+            <div style="max-height: 220px; overflow-y: auto;">
+              <table class="report-table" style="font-size: 14px;">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Salary Qty</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="bank-salaries-tbody">
+                  <!-- Filled dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ledger logs table -->
+        <div class="glass-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2>📊 Ledger Transaction History</h2>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-clear-ledger-history" style="opacity: 0.6;">🗑️ Clear Non-preset History</button>
+          </div>
+          <div class="report-table-wrapper" style="max-height: 400px; overflow-y: auto;">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Source / Description</th>
+                  <th>Cash In (₹)</th>
+                  <th>Cash Out (₹)</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="bank-ledger-tbody">
+                <!-- Generated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Month Close Panel & Unresolved transactions -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px; margin-top: 30px;">
+          <!-- Close month manager -->
+          <div class="glass-panel">
+            <h2>📅 Month-End Close & Carryover</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+              Close the current month to lock its transactions. Carry forward the net cash balance to initialize the next month.
+            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                Current Month: <strong id="lbl-current-ledger-month" style="color: #fff;">July 2026</strong><br>
+                Locked status: <span id="lbl-ledger-month-locked" class="badge badge-normal">Active</span>
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-trigger-month-close">🔒 Close & Initialize Month</button>
+            </div>
+            
+            <div style="border-top: 1px solid var(--border-light); padding-top: 15px; margin-top: 15px;">
+              <h3>Closed Months History</h3>
+              <table class="report-table" style="font-size: 13px; margin-top: 10px;">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th>Income</th>
+                    <th>Expenditure</th>
+                    <th>Closing Bal</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="closed-months-history-tbody">
+                  <!-- Filled dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Unresolved Undefined Source items -->
+          <div class="glass-panel" style="display: flex; flex-direction: column;">
+            <h2>⚠️ Unresolved Undefined-Source Logs</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+              Purchases registered when cash was insufficient, pending source assignment (Loan or salary receipts).
+            </p>
+            <div style="overflow-y: auto; flex-grow: 1; max-height: 250px;" id="unresolved-logs-container">
+              <table class="report-table" style="font-size: 13px;">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Re-assign Source</th>
+                  </tr>
+                </thead>
+                <tbody id="unresolved-logs-tbody">
+                  <!-- Generated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- MoM Analytics Charts -->
+        <div class="glass-panel" style="margin-top: 30px;">
+          <h2>📊 Month-over-Month Cash Balance Analytics</h2>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-top: 15px;">
+            <!-- Column chart of Income vs Expense -->
+            <div>
+              <span style="font-size: 14px; color: var(--text-muted); display: block; margin-bottom: 10px;">MoM Income vs Expenses Comparison</span>
+              <div class="chart-container" id="mom-income-expense-chart" style="height: 200px;">
+                <!-- Chart columns rendered dynamically -->
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dark);">
+                <span>Income (Emerald)</span>
+                <span>Expenses (Rose)</span>
+              </div>
+            </div>
+            <!-- Category distributions MoM -->
+            <div>
+              <span style="font-size: 14px; color: var(--text-muted); display: block; margin-bottom: 10px;">Top Monthly Spending Categories</span>
+              <div id="mom-top-categories" style="display: flex; flex-direction: column; gap: 8px;">
+                <!-- Category listings dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LIVE EXCEL EDITOR TAB -->
+      <section id="tab-sheet" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Live Excel Spreadsheet Editor</h1>
+            <p class="subtitle">Search, filter, and edit cell values directly. Changes update depletion timelines and stats in real-time.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-secondary" id="btn-spreadsheet-download-template">📋 Excel Template</button>
+            <button type="button" class="btn btn-primary" id="btn-spreadsheet-export" style="background: linear-gradient(135deg, #10b981, #059669); border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);">🟢 Export Excel</button>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 20px; margin-bottom: 30px;">
+          <div class="search-filter-bar">
+            <div class="input-group">
+              <span class="input-icon">🔍</span>
+              <input type="text" id="spreadsheet-search" class="custom-input" placeholder="Search spreadsheet items...">
+            </div>
+            <select id="spreadsheet-filter-category" class="custom-select">
+              <option value="all">All Categories</option>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="overflow-x: auto; padding: 15px;">
+          <div class="spreadsheet-container">
+            <table class="spreadsheet-table" id="spreadsheet-table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th style="width: 30px;">#</th>
+                  <th>Item Name</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Base Scientific Unit</th>
+                  <th>House Unit</th>
+                  <th>Daily Consumption Rate</th>
+                  <th>Schedule Type</th>
+                  <th>Schedule Detail</th>
+                  <th>Scientific Override</th>
+                  <th>Current Stock</th>
+                  <th>Avg Price (₹)</th>
+                  <th style="width: 80px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="spreadsheet-tbody">
+                <!-- Editable cells loaded dynamically -->
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-spreadsheet-add-row">➕ Add New Row</button>
+            <span style="font-size: 12px; color: var(--text-dark);">* Click cells directly to edit. Changes save instantly.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- MONTHLY BULK PLANNER TAB -->
+      <section id="tab-monthly" class="tab-content" style="display: none;">
+        <div class="action-header">
+          <div>
+            <h1>Monthly Purchase & Bulk Planner</h1>
+            <p class="subtitle">Manage recurring items bought once for the whole month (e.g. baby milk). Avoid accidental duplicate entries.</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <label class="form-label" style="margin: 0; color: #fff;">Select Month:</label>
+            <input type="month" id="monthly-planner-month" class="custom-input" style="width: 180px; padding-left: 15px;">
+          </div>
+        </div>
+
+        <div class="glass-panel" style="margin-bottom: 30px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+              <button type="button" class="btn btn-primary" id="btn-monthly-bulk-buy">🛒 Buy Selected Items in Bulk</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-monthly-select-all">Select All</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-monthly-select-unbought">Select Unbought</button>
+            </div>
+            <div style="font-size: 16px;">
+              Bank Cash Available: <strong id="monthly-planner-balance" style="color: var(--primary);">₹0</strong>
+            </div>
+          </div>
+
+          <div class="report-table-wrapper">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px;"><input type="checkbox" id="chk-monthly-master"></th>
+                  <th>Item Name</th>
+                  <th>Category</th>
+                  <th>Required Qty (Month)</th>
+                  <th>Last Buy Pack Size</th>
+                  <th>Last Unit Price (₹)</th>
+                  <th>Est. Cost (₹)</th>
+                  <th>Status for Month</th>
+                  <th>Quick Action</th>
+                </tr>
+              </thead>
+              <tbody id="monthly-planner-tbody">
+                <!-- Generated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ADD/EDIT ITEM DEFINITION -->
+  <!-- ========================================== -->
+  <div id="modal-item" class="modal-overlay">
+    <div class="modal-container glass-panel">
+      <div class="modal-header">
+        <h2 id="modal-item-title">✏️ Define Custom Item</h2>
+        <button class="modal-close" onclick="closeModal('modal-item')">&times;</button>
+      </div>
+      <form id="form-item">
+        <input type="hidden" id="form-item-id">
+        <div class="form-grid">
+          <div class="form-group-full">
+            <label class="form-label" for="form-item-name">Item Name *</label>
+            <input type="text" id="form-item-name" class="custom-input" style="padding-left: 15px;" placeholder="e.g. Atta, Sugar, Oil" required list="preset-names-datalist">
+            <datalist id="preset-names-datalist"></datalist>
+          </div>
+          <div>
+            <label class="form-label" for="form-item-category">Category</label>
+            <select id="form-item-category" class="custom-select" style="width: 100%;">
+              <!-- Category options loaded dynamically -->
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="form-item-priority">Survival Priority</label>
+            <select id="form-item-priority" class="custom-select" style="width: 100%;">
+              <option value="essential">Survival Essential (Survival Food)</option>
+              <option value="normal">Normal Need (Milk, Tea, Soap)</option>
+              <option value="luxury">Comfort/Luxury (Ghee, Coffee, Biscuits)</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="form-item-baseunit">Base Scientific Unit</label>
+            <select id="form-item-baseunit" class="custom-select" style="width: 100%;">
+              <option value="g">Grams (g) - Solids</option>
+              <option value="ml">Milliliters (ml) - Liquids</option>
+              <option value="pcs">Pieces (pcs) - Whole items</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="form-item-houseunit">Household Consumption Unit *</label>
+            <input type="text" id="form-item-houseunit" class="custom-input" style="padding-left: 15px;" placeholder="e.g. spoon, bowl, cup, pinch" required>
+          </div>
+          
+          <!-- Consumption Schedule Section -->
+          <div class="form-group-full">
+            <label class="form-label">Normal Consumption Rate & Schedule</label>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+              <span>Consume</span>
+              <input type="number" id="form-item-cons-qty" class="custom-input" style="padding-left: 15px; width: 80px;" value="1" min="0.1" step="any" required>
+              <span id="form-item-cons-unit-lbl">spoon</span>
+              <select id="form-item-schedule-type" class="custom-select">
+                <option value="daily">Daily</option>
+                <option value="meals">Meal-time Wise (Breakfast/Lunch/Dinner)</option>
+                <option value="interval">Every N Days</option>
+                <option value="weekly">Weekly Specific Days</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            
+            <!-- Schedule details subpanel -->
+            <div class="schedule-sub-panel" id="subpanel-schedule-interval" style="display: none;">
+              <label class="form-label">Interval (Days)</label>
+              <input type="number" id="form-item-schedule-interval" class="custom-input" style="padding-left: 15px; width: 100px;" value="2" min="1">
+            </div>
+
+            <div class="schedule-sub-panel" id="subpanel-schedule-weekly" style="display: none;">
+              <label class="form-label">Choose Days of Week</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <label><input type="checkbox" name="weekdays" value="1"> Mon</label>
+                <label><input type="checkbox" name="weekdays" value="2"> Tue</label>
+                <label><input type="checkbox" name="weekdays" value="3"> Wed</label>
+                <label><input type="checkbox" name="weekdays" value="4"> Thu</label>
+                <label><input type="checkbox" name="weekdays" value="5"> Fri</label>
+                <label><input type="checkbox" name="weekdays" value="6"> Sat</label>
+                <label><input type="checkbox" name="weekdays" value="0"> Sun</label>
+              </div>
+            </div>
+
+            <!-- Meals subpanel -->
+            <div class="schedule-sub-panel" id="subpanel-schedule-meals" style="display: none;">
+              <label class="form-label">Meal-time Consumption Breakdown</label>
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <div>
+                  <span style="font-size: 11px; color: var(--text-dark); display: block; margin-bottom: 4px;">Breakfast</span>
+                  <input type="number" id="form-item-meal-breakfast" class="custom-input" style="padding-left: 10px; width: 100%;" value="0" min="0" step="any">
+                </div>
+                <div>
+                  <span style="font-size: 11px; color: var(--text-dark); display: block; margin-bottom: 4px;">Lunch</span>
+                  <input type="number" id="form-item-meal-lunch" class="custom-input" style="padding-left: 10px; width: 100%;" value="0" min="0" step="any">
+                </div>
+                <div>
+                  <span style="font-size: 11px; color: var(--text-dark); display: block; margin-bottom: 4px;">Dinner</span>
+                  <input type="number" id="form-item-meal-dinner" class="custom-input" style="padding-left: 10px; width: 100%;" value="0" min="0" step="any">
+                </div>
+                <div>
+                  <span style="font-size: 11px; color: var(--text-dark); display: block; margin-bottom: 4px;">Snacks</span>
+                  <input type="number" id="form-item-meal-snacks" class="custom-input" style="padding-left: 10px; width: 100%;" value="0" min="0" step="any">
+                </div>
+              </div>
+              <span style="font-size: 11px; color: var(--text-dark); margin-top: 5px; display: block;">Note: The sum of these values will represent your total daily consumption.</span>
+            </div>
+          </div>
+          
+          <!-- Optional Conversion Manual Override -->
+          <div class="form-group-full" style="border-top: 1px solid var(--border-light); padding-top: 15px; margin-top: 10px;">
+            <label class="form-label" style="display: flex; justify-content: space-between;">
+              <span>Scientific Conversion Override (Optional)</span>
+              <span style="font-size: 11px; color: var(--text-dark);">Leave blank to let system back-calculate automatically</span>
+            </label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span>1 <span id="form-item-override-houseunit-lbl">spoon</span> =</span>
+              <input type="number" id="form-item-conversion-value" class="custom-input" style="padding-left: 15px; width: 120px;" placeholder="e.g. 10">
+              <span id="form-item-override-baseunit-lbl">g</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-item')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: LOG NEW PURCHASE -->
+  <!-- ========================================== -->
+  <div id="modal-purchase" class="modal-overlay">
+    <div class="modal-container glass-panel">
+      <div class="modal-header">
+        <h2>🛒 Record Purchase Details</h2>
+        <button class="modal-close" onclick="closeModal('modal-purchase')">&times;</button>
+      </div>
+      <form id="form-purchase">
+        <div class="form-grid">
+          <div class="form-group-full">
+            <label class="form-label" for="form-purchase-item-id">Choose Item *</label>
+            <select id="form-purchase-item-id" class="custom-select" style="width: 100%;" required>
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="form-purchase-qty">Package Size/Qty *</label>
+            <input type="number" id="form-purchase-qty" class="custom-input" style="padding-left: 15px;" placeholder="e.g. 1, 500, 5" min="0.01" step="any" required>
+          </div>
+          <div>
+            <label class="form-label" for="form-purchase-unit">Package Unit *</label>
+            <select id="form-purchase-unit" class="custom-select" style="width: 100%;">
+              <!-- Will be loaded dynamically based on base unit, e.g. kg/g for solids, L/ml for liquids -->
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="form-purchase-price">Price Paid (₹) *</label>
+            <input type="number" id="form-purchase-price" class="custom-input" style="padding-left: 15px;" placeholder="e.g. 120" min="0" required>
+          </div>
+          <div>
+            <label class="form-label" for="form-purchase-date">Purchase Date *</label>
+            <input type="date" id="form-purchase-date" class="custom-input" style="padding-left: 15px;" required>
+          </div>
+          <div>
+            <label class="form-label" for="form-purchase-brand">Brand (Optional)</label>
+            <input type="text" id="form-purchase-brand" class="custom-input" style="padding-left: 15px;" placeholder="e.g. Fortune, Aashirvaad">
+          </div>
+          <div>
+            <label class="form-label" for="form-purchase-store">Store Name (Optional)</label>
+            <input type="text" id="form-purchase-store" class="custom-input" style="padding-left: 15px;" placeholder="e.g. Local Kirana, Supermarket">
+          </div>
+          <div class="form-group-full" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+            <input type="checkbox" id="form-purchase-allow-deficit" value="1">
+            <label for="form-purchase-allow-deficit" style="font-size: 13px; color: var(--text-muted); cursor: pointer; user-select: none;">
+              Allow purchase even if bank balance is insufficient (debt/undefined source)
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-purchase')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Purchase</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: IMPORT DATA VALIDATION PREVIEW -->
+  <!-- ========================================== -->
+  <div id="modal-import-preview" class="modal-overlay">
+    <div class="modal-container glass-panel" style="max-width: 800px;">
+      <div class="modal-header">
+        <h2>📂 Import Preview & Validation Review</h2>
+        <button class="modal-close" onclick="closeModal('modal-import-preview')">&times;</button>
+      </div>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+        Review validation diagnostics before importing. Resolves duplicates and flags formatting issues.
+      </p>
+      
+      <!-- Preview Summary metrics -->
+      <div class="summary-grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+        <div class="stat-card success" style="padding: 12px 15px;">
+          <span class="stat-label" style="font-size: 11px;">Total Valid Rows</span>
+          <span class="stat-val" style="font-size: 20px;" id="lbl-preview-valid-count">0</span>
+        </div>
+        <div class="stat-card alert" style="padding: 12px 15px; border-color: var(--status-low);">
+          <span class="stat-label" style="font-size: 11px;">Duplicates Found</span>
+          <span class="stat-val" style="font-size: 20px; color: var(--status-low);" id="lbl-preview-duplicate-count">0</span>
+        </div>
+        <div class="stat-card alert" style="padding: 12px 15px;">
+          <span class="stat-label" style="font-size: 11px;">Warnings / Defaults</span>
+          <span class="stat-val" style="font-size: 20px; color: var(--status-critical);" id="lbl-preview-warn-count">0</span>
+        </div>
+        <div class="stat-card" style="padding: 12px 15px;">
+          <span class="stat-label" style="font-size: 11px;">Validation Status</span>
+          <span class="stat-val" style="font-size: 14px; color: var(--status-safe);" id="lbl-preview-status-txt">Ready</span>
+        </div>
+      </div>
+
+      <!-- Preview data grid -->
+      <div class="report-table-wrapper" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-light); border-radius: var(--radius-sm);">
+        <table class="report-table" style="font-size: 13px;">
+          <thead>
+            <tr>
+              <th>Row</th>
+              <th>Item Name</th>
+              <th>Category</th>
+              <th>Rate</th>
+              <th>Stock</th>
+              <th>Avg Price</th>
+              <th>Diagnostics / Action</th>
+            </tr>
+          </thead>
+          <tbody id="import-preview-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-actions" style="margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-import-preview')">Cancel Import</button>
+        <button type="button" class="btn btn-secondary" id="btn-confirm-import-overwrite" style="border-color: var(--status-out); color: #fca5a5;">⚠️ Confirm Overwrite</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-import-merge">Confirm Sync & Merge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: LOW BALANCE PURCHASE AUTHORIZATION -->
+  <!-- ========================================== -->
+  <div id="modal-auth-purchase" class="modal-overlay">
+    <div class="modal-container glass-panel" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>⚠️ Cash Deficit Authorization</h2>
+        <button class="modal-close" onclick="closeModal('modal-auth-purchase')">&times;</button>
+      </div>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+        Your spendable balance (₹<span id="lbl-auth-current-balance">0</span>) cannot cover this purchase of ₹<span id="lbl-auth-purchase-cost">0</span>. Choose a trace funding source:
+      </p>
+
+      <form id="form-auth-purchase">
+        <input type="hidden" id="auth-purchase-item-id">
+        <input type="hidden" id="auth-purchase-qty">
+        <input type="hidden" id="auth-purchase-unit">
+        <input type="hidden" id="auth-purchase-price">
+        <input type="hidden" id="auth-purchase-date">
+        <input type="hidden" id="auth-purchase-brand">
+        <input type="hidden" id="auth-purchase-store">
+
+        <div class="form-grid" style="grid-template-columns: 1fr;">
+          <div class="form-group-full">
+            <label class="form-label" for="auth-funding-option">Funding Option *</label>
+            <select id="auth-funding-option" class="custom-select" style="width: 100%;" required>
+              <option value="family">Option 1: Loan from Family Member</option>
+              <option value="external">Option 2: Personal/External Loan</option>
+              <option value="carryover">Option 3: Use Carried Forward Surplus Balance</option>
+              <option value="undefined">Option 4: Log as "Undefined Source" (Pending Debt)</option>
+            </select>
+          </div>
+          
+          <!-- Lender Details -->
+          <div class="form-group-full" id="auth-lender-fields">
+            <label class="form-label" for="auth-lender-name">Lender / Source Name *</label>
+            <input type="text" id="auth-lender-name" class="custom-input" style="padding-left: 15px;" placeholder="e.g. Uncle Amit, HDFC Credit" value="Family Loan">
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-auth-purchase')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Authorize & Record Buy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: MONTH CLOSING MANAGER -->
+  <!-- ========================================== -->
+  <div id="modal-month-close" class="modal-overlay">
+    <div class="modal-container glass-panel" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>🔒 Close Month & Carryover Balance</h2>
+        <button class="modal-close" onclick="closeModal('modal-month-close')">&times;</button>
+      </div>
+      <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+        Locking current month (<span id="lbl-close-target-month">July 2026</span>). All purchase histories and transactions in this month will be locked.
+      </p>
+
+      <form id="form-month-close">
+        <div class="form-grid" style="grid-template-columns: 1fr;">
+          <div class="form-group-full">
+            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 15px; font-size: 14px; line-height: 1.6;">
+              Closing Balance: <strong style="color: var(--primary);">₹<span id="lbl-close-closing-bal">0</span></strong><br>
+              Total Receipts: <strong>₹<span id="lbl-close-total-income">0</span></strong><br>
+              Total Expenditures: <strong>₹<span id="lbl-close-total-exp">0</span></strong>
+            </div>
+          </div>
+          
+          <div class="form-group-full">
+            <label class="form-label">Carryover Action</label>
+            <span style="font-size: 13px; color: var(--text-dark); display: block; margin-bottom: 8px;">
+              The closing balance will be carried forward as the opening balance of the next month.
+            </span>
+          </div>
+
+          <div>
+            <label class="form-label" for="close-next-month-salary">Set Expected Salary for Next Month (₹) *</label>
+            <input type="number" id="close-next-month-salary" class="custom-input" style="padding-left: 15px;" value="20000" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-actions" style="margin-top: 20px;">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-month-close')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Lock Month & Initialize Next Month</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: CLOUD SYNC CONFIGURATION -->
+  <!-- ========================================== -->
+  <div id="modal-cloud-sync" class="modal-overlay">
+    <div class="modal-container glass-panel" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>☁️ Google Drive Cloud Sync</h2>
+        <button class="modal-close" onclick="closeModal('modal-cloud-sync')">&times;</button>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+        Host your database directly in your private Google Drive for free cross-device sync. No developer keys required!
+      </p>
+      
+      <form id="form-cloud-sync">
+        <div class="form-grid" style="grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 10px; display: grid;">
+          <div>
+            <label class="form-label" for="cloud-sync-url">Google Apps Script Web App URL</label>
+            <input type="url" id="cloud-sync-url" class="custom-input" style="padding-left: 15px;" placeholder="https://script.google.com/macros/s/.../exec">
+          </div>
+          <div>
+            <label class="form-label" for="cloud-sync-project">Project / Profile ID</label>
+            <input type="text" id="cloud-sync-project" class="custom-input" style="padding-left: 15px;" placeholder="default" value="default">
+          </div>
+        </div>
+
+        <div id="cloud-profiles-container" style="margin-bottom: 15px; display: none;">
+          <label class="form-label">Available Profiles on Google Drive (Click to Load):</label>
+          <div id="cloud-profiles-list" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;"></div>
+        </div>
+        
+        <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); font-size: 12px; line-height: 1.5; margin-bottom: 15px;">
+          <strong>How to setup in 1 minute:</strong>
+          <ol style="margin-left: 15px; margin-top: 5px;">
+            <li>Go to <a href="https://script.google.com" target="_blank" style="color: var(--primary);">script.google.com</a> and click <strong>New Project</strong>.</li>
+            <li>Replace all default code with this snippet (click inside to copy):
+              <textarea readonly style="width: 100%; height: 60px; background: rgba(0,0,0,0.5); color: #fff; font-family: monospace; font-size: 10px; margin-top: 5px; padding: 5px; border-radius: 4px; border: 1px solid var(--border-light); cursor: pointer;" onclick="this.select(); document.execCommand('copy'); showToast('Apps Script code copied to clipboard!', 'info');">
+function doGet(e) {
+  var action = e.parameter.action;
+  var project = e.parameter.project || "default";
+  var filename = "homebudget_backup_" + project + ".json";
+  if (action === "list") {
+    var files = DriveApp.searchFiles("title contains 'homebudget_backup_' and mimeType = 'application/json' and trashed = false");
+    var list = [];
+    while (files.hasNext()) {
+      var file = files.next();
+      var name = file.getName();
+      var matches = name.match(/homebudget_backup_(.+)\.json/);
+      if (matches) list.push(matches[1]);
+    }
+    return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+  }
+  if (action === "load") {
+    var files = DriveApp.getFilesByName(filename);
+    if (files.hasNext()) {
+      return ContentService.createTextOutput(files.next().getAs("application/json").getDataAsString()).setMimeType(ContentService.MimeType.JSON);
+    }
+    return ContentService.createTextOutput(JSON.stringify({})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+function doPost(e) {
+  var project = e.parameter.project || "default";
+  var filename = "homebudget_backup_" + project + ".json";
+  var files = DriveApp.getFilesByName(filename);
+  var file = files.hasNext() ? files.next() : DriveApp.createFile(filename, "{}", "application/json");
+  file.setContent(e.postData.contents);
+  return ContentService.createTextOutput(JSON.stringify({success:true})).setMimeType(ContentService.MimeType.JSON);
+}
+              </textarea>
+            </li>
+            <li>Click <strong>Deploy</strong> &gt; <strong>New Deployment</strong>. Select <strong>Web App</strong>.</li>
+            <li>Set "Execute as: <strong>Me</strong>" and "Who has access: <strong>Anyone</strong>".</li>
+            <li>Authorize Google permission when prompted, copy the Web App URL, and paste it above!</li>
+          </ol>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-cloud-sync')">Cancel</button>
+          <button type="button" class="btn btn-secondary" id="btn-scan-cloud-profiles">🔍 Scan Profiles</button>
+          <button type="button" class="btn btn-secondary" id="btn-test-cloud-sync">🔌 Test Connection</button>
+          <button type="submit" class="btn btn-primary">Save & Sync</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Feedbacks Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Load script files -->
+  <script src="presets.js"></script>
+  <script src="app.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
