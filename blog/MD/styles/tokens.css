@@ -1,0 +1,66 @@
+/* tokens.css - Custom properties for LLM Ledger theme & model colors */
+
+:root {
+  --bg-app: #0f1219;
+  --bg-sidebar: #161a23;
+  --bg-card: #1e2430;
+  --bg-card-hover: #262d3c;
+  --bg-input: #121620;
+  --bg-active: #2b3548;
+  
+  --border-color: #2e3748;
+  --border-hover: #3d4a60;
+
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --text-highlight: #ffffff;
+
+  --accent-primary: #3b82f6;
+  --accent-primary-hover: #2563eb;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-starred: #fbbf24;
+
+  --model-opus: #c96442;
+  --model-gpt: #10a37f;
+  --model-gemini: #4285f4;
+  --model-grok: #8e8e93;
+  --model-r1: #7c5cff;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Fira Code", "Cascadia Code", Consolas, Monaco, "Courier New", monospace;
+
+  --sidebar-width: 260px;
+  --rail-width: 280px;
+  --header-height: 52px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,0.5);
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
+
+[data-theme="light"] {
+  --bg-app: #f8fafc;
+  --bg-sidebar: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-input: #ffffff;
+  --bg-active: #e2e8f0;
+
+  --border-color: #cbd5e1;
+  --border-hover: #94a3b8;
+
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #94a3b8;
+  --text-highlight: #000000;
+}
