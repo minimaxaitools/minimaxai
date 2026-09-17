@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Alphabet Swipe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;800;900&family=Nunito:wght@700;900&family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
+<style>
+/* STANDALONE LEARNER STYLES */
+.hidden {
+  display: none !important;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 15px;
+  border-radius: 16px;
+  padding: 12px 18px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+  user-select: none;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-primary {
+  background: #f97316;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+}
+.btn-primary:hover {
+  background: #ea580c;
+}
+.btn-secondary {
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+}
+.btn-secondary:hover {
+  background: #e2e8f0;
+}
+.btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+.btn-danger:hover {
+  background: #fecaca;
+}
+.btn-pill {
+  border-radius: 9999px;
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.btn-close-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 16px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-close-circle:hover {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  font-family: 'Fredoka', 'Nunito', sans-serif;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+#app {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #0f172a;
+  touch-action: none;
+}
+
+/* Dynamic Negative Space Background Layer */
+#ambientBg {
+  position: absolute;
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  transition: background 550ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 1;
+  pointer-events: none;
+}
+#ambientBlurImg {
+  position: absolute;
+  inset: -15%;
+  width: 130%;
+  height: 130%;
+  object-fit: cover;
+  filter: blur(48px) saturate(1.4) brightness(0.9);
+  opacity: 0.42;
+  transform: scale(1.1);
+  display: none;
+  transition: opacity 550ms ease;
+}
+#ambientMirrorImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(8px) saturate(1.2);
+  opacity: 0.35;
+  display: none;
+}
+
+/* Stage & Image Wrapper */
+#stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+}
+#imageContainer {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transform-origin: center center;
+  transition: transform 550ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+#mainImg {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 20px;
+  box-shadow: 0 20px 80px rgba(0,0,0,0.45);
+  pointer-events: none;
+}
+
+/* Wobble Living Motion Keyframes */
+.wobble-active #imageContainer {
+  animation:
+    wobbleFloat 4.2s ease-in-out infinite,
+    wobbleBreathe 5.8s ease-in-out infinite;
+}
+@keyframes wobbleFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  25% { transform: translate3d(0, -9px, 0) rotate(-0.60deg); }
+  50% { transform: translate3d(0, 6px, 0) rotate(0.50deg); }
+  75% { transform: translate3d(0, -4px, 0) rotate(-0.40deg); }
+}
+@keyframes wobbleBreathe {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.018; }
+}
+
+/* Typography & Word Display */
+#overlayLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+#charDisplay {
+  position: absolute;
+  font-weight: 900;
+  line-height: 0.95;
+  text-shadow: 0 4px 18px rgba(0,0,0,0.5), 0 2px 0 rgba(0,0,0,0.3);
+  display: none;
+}
+#wordDisplay {
+  position: absolute;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 4px 20px rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.3);
+  display: none;
+}
+.contrast-pill {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+.bouncing-letter {
+  display: inline-block;
+  animation: letterBounce 1.8s ease-in-out infinite;
+}
+@keyframes letterBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+/* Navigation Arrow Fallbacks */
+.nav-btn {
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.nav-btn:hover {
+  transform: scale(1.08);
+  background: rgba(0, 0, 0, 0.55);
+}
+.nav-btn:active {
+  transform: scale(0.92);
+}
+#btnPrevChar { left: 16px; top: 50%; transform: translateY(-50%); }
+#btnNextChar { right: 16px; top: 50%; transform: translateY(-50%); }
+#btnPrevVar  { left: 50%; top: 16px; transform: translateX(-50%); }
+#btnNextVar  { left: 50%; bottom: 16px; transform: translateX(-50%); }
+
+/* Top Status Info Bar & Variation Dots */
+#topStatusBar {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+}
+.var-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transition: all 0.2s ease;
+}
+.var-dot.active {
+  background: #f97316;
+  transform: scale(1.35);
+  box-shadow: 0 0 8px #f97316;
+}
+
+/* Parent Gate Gear & Dialog */
+#btnParentGate {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 15;
+  height: 42px;
+  min-width: 42px;
+  padding: 0 14px;
+  border-radius: 21px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+#btnParentGate:hover {
+  background: rgba(0, 0, 0, 0.75);
+  transform: scale(1.05);
+}
+#btnParentGate.hidden-child {
+  opacity: 0.08; /* Stealth for toddlers: discreet hit target in corner */
+  padding: 0;
+  width: 42px;
+  justify-content: center;
+}
+#btnParentGate.hidden-child .gate-btn-text {
+  display: none;
+}
+#btnParentGate.hidden-child:hover {
+  opacity: 0.9;
+  width: auto;
+  padding: 0 12px;
+}
+#btnParentGate.hidden-child:hover .gate-btn-text {
+  display: inline;
+}
+
+/* Parent PIN Modal */
+#gateModal {
+  position: fixed;
+  inset: 0;
+  z-index: 1002;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.gate-card {
+  background: #fff;
+  color: #0f172a;
+  border-radius: 28px;
+  padding: 26px;
+  width: min(400px, 100%);
+  text-align: center;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+}
+.gate-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.gate-key {
+  padding: 14px;
+  border-radius: 14px;
+  background: #f1f5f9;
+  font-size: 22px;
+  font-weight: 900;
+  color: #0f172a;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s ease;
+}
+.gate-key:hover { background: #e2e8f0; }
+.gate-key:active { background: #cbd5e1; }
+.pin-display {
+  font-size: 28px;
+  letter-spacing: 0.4em;
+  font-weight: 900;
+  padding: 10px;
+  margin-bottom: 4px;
+  color: #f97316;
+}
+
+/* Hold for 3 Seconds Parent Gate */
+.hold-circle-wrap {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin: 20px auto;
+  cursor: pointer;
+}
+.hold-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.hold-bg-circle {
+  fill: none;
+  stroke: #e2e8f0;
+  stroke-width: 8;
+}
+.hold-bar-circle {
+  fill: none;
+  stroke: #f97316;
+  stroke-width: 8;
+  stroke-dasharray: 377;
+  stroke-dashoffset: 377;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.05s linear;
+}
+.hold-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Drawer Backdrop */
+#drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+}
+#drawerBackdrop.open {
+  display: block;
+}
+
+/* Quick Parent Drawer */
+#parentDrawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(390px, 92vw);
+  background: rgba(255, 255, 255, 0.98);
+  color: #0f172a;
+  z-index: 1001;
+  transform: translateX(105%);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding: 24px;
+  overflow-y: auto;
+  box-shadow: -20px 0 60px rgba(0,0,0,0.35);
+}
+#parentDrawer.open {
+  transform: translateX(0);
+}
+
+/* Touch Particle Sparkle */
+.sparkle-particle {
+  position: absolute;
+  pointer-events: none;
+  z-index: 99;
+  border-radius: 50%;
+  animation: popFade 0.6s ease-out forwards;
+}
+@keyframes popFade {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* Return to App Splash Screen */
+#returnSplash {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+.return-card {
+  background: #fff;
+  color: #0f172a;
+  padding: 34px 28px;
+  border-radius: 28px;
+  max-width: 420px;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- AMBIENT BACKGROUND -->
+  <div id="ambientBg">
+    <img id="ambientBlurImg" alt="">
+    <img id="ambientMirrorImg" alt="">
+  </div>
+
+  <!-- CENTER STAGE -->
+  <div id="stage">
+    <div id="imageContainer">
+      <img id="mainImg" draggable="false" alt="Alphabet Illustration">
+      <div id="overlayLayer">
+        <div id="charDisplay"></div>
+        <div id="wordDisplay"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP STATUS & VARIATION DOTS -->
+  <div id="topStatusBar">
+    <span id="txtLetterProgress">A · 1/1</span>
+    <div id="dotsContainer" style="display:flex;gap:5px;align-items:center;"></div>
+  </div>
+
+  <!-- ON-SCREEN ARROW CONTROLS -->
+  <div id="controlsLayer">
+    <button class="nav-btn" id="btnPrevChar" aria-label="Previous Letter">‹</button>
+    <button class="nav-btn" id="btnNextChar" aria-label="Next Letter">›</button>
+    <button class="nav-btn" id="btnPrevVar"  aria-label="Previous Variation">↑</button>
+    <button class="nav-btn" id="btnNextVar"  aria-label="Next Variation">↓</button>
+  </div>
+
+  <!-- PARENT GATE ICON -->
+  <button id="btnParentGate" aria-label="Parent Settings" title="Parent Settings (Click or press P)">
+    <span style="font-size:18px;">⚙</span><span class="gate-btn-text">Parent</span>
+  </button>
+
+  <!-- RETURN TO APP SPLASH -->
+  <div id="returnSplash">
+    <div class="return-card">
+      <div style="font-size:64px;margin-bottom:10px;">👋</div>
+      <h2 style="margin:0 0 8px;font-size:24px;font-weight:900;">Welcome Back!</h2>
+      <p style="margin:0 0 20px;color:#64748b;font-size:14px;">Tap anywhere to resume learning.</p>
+      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:16px;border-radius:14px;" onclick="resumeApp()">
+        Continue Playing
+      </button>
+    </div>
+  </div>
+
+  <!-- PARENT GATE MODAL -->
+  <div id="gateModal" class="hidden">
+    <div class="gate-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h2 style="margin:0;font-size:22px;font-weight:900;">Parent Gate</h2>
+        <button class="btn-close-circle" onclick="closeGateModal()" aria-label="Close">✕</button>
+      </div>
+      <p style="margin:0 0 8px;font-size:13px;color:#64748b;" id="gatePromptText">Enter Parent PIN (Default: <b>1234</b>)</p>
+
+      <div id="gatePinSection">
+        <div class="pin-display" id="pinDisplay">••••</div>
+        <div class="gate-keypad">
+          <button class="gate-key" onclick="enterPinDigit('1')">1</button>
+          <button class="gate-key" onclick="enterPinDigit('2')">2</button>
+          <button class="gate-key" onclick="enterPinDigit('3')">3</button>
+          <button class="gate-key" onclick="enterPinDigit('4')">4</button>
+          <button class="gate-key" onclick="enterPinDigit('5')">5</button>
+          <button class="gate-key" onclick="enterPinDigit('6')">6</button>
+          <button class="gate-key" onclick="enterPinDigit('7')">7</button>
+          <button class="gate-key" onclick="enterPinDigit('8')">8</button>
+          <button class="gate-key" onclick="enterPinDigit('9')">9</button>
+          <button class="gate-key" onclick="clearPin()">C</button>
+          <button class="gate-key" onclick="enterPinDigit('0')">0</button>
+          <button class="gate-key" onclick="submitPin()">✓</button>
+        </div>
+      </div>
+
+      <div id="gateHoldSection" class="hidden">
+        <div class="hold-circle-wrap" id="holdCircleWrap">
+          <svg class="hold-svg" viewBox="0 0 140 140">
+            <circle class="hold-bg-circle" cx="70" cy="70" r="60"></circle>
+            <circle class="hold-bar-circle" id="holdBarCircle" cx="70" cy="70" r="60"></circle>
+          </svg>
+          <div class="hold-text">Hold for<br>3 Seconds</div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px;padding:12px;" onclick="closeGateModal()">
+        ✕ Cancel & Back to Learning
+      </button>
+    </div>
+  </div>
+
+  <!-- DRAWER BACKDROP -->
+  <div id="drawerBackdrop" onclick="closeParentDrawer()"></div>
+
+  <!-- PARENT SETTINGS DRAWER -->
+  <aside id="parentDrawer">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:20px;font-weight:900;display:flex;align-items:center;gap:8px;">
+        <span>⚙</span> Parent Settings
+      </h2>
+      <button class="btn btn-secondary btn-pill" onclick="closeParentDrawer()">✕ Close</button>
+    </div>
+
+    <!-- Active mode banner -->
+    <div id="drawerModeBanner" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:700;color:#334155;">
+      Swipe Mode: <span id="lblDrawerAxis" style="color:#f97316;">Letters ← →, Variations ↑ ↓</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-secondary" style="width:100%;justify-content:space-between;" onclick="swapAxes()">
+        <span>🔄 Swap Swipe Axes</span>
+        <span id="badgeCurrentAxis" style="font-size:12px;opacity:0.75;font-weight:700;">Swap</span>
+      </button>
+
+      <button class="btn btn-secondary" style="width:100%;justify-content:space-between;" onclick="toggleTTS()">
+        <span>🔊 Voice Pronunciation</span>
+        <span id="badgeTTSStatus" style="font-size:12px;opacity:0.75;font-weight:700;">ON</span>
+      </button>
+
+      <button class="btn btn-secondary" style="width:100%;justify-content:space-between;" onclick="toggleWobble()">
+        <span>🎈 Living Wobble Motion</span>
+        <span id="badgeWobbleStatus" style="font-size:12px;opacity:0.75;font-weight:700;">ON</span>
+      </button>
+
+      <button class="btn btn-secondary" style="width:100%;justify-content:space-between;" onclick="togglePinLock()">
+        <span>🔒 Require PIN for Settings</span>
+        <span id="badgePinStatus" style="font-size:12px;opacity:0.75;font-weight:700;">ON</span>
+      </button>
+
+      <button class="btn btn-secondary" style="width:100%;justify-content:space-between;" onclick="toggleStealthMode()">
+        <span>👶 Toddler Stealth Mode (Hide Icon)</span>
+        <span id="badgeStealthStatus" style="font-size:12px;opacity:0.75;font-weight:700;">OFF</span>
+      </button>
+
+      <button class="btn btn-secondary" style="width:100%;justify-content:flex-start;" onclick="requestFullscreen()">
+        <span>⛶ Enter Fullscreen Mode</span>
+      </button>
+
+      <button class="btn btn-secondary" style="width:100%;justify-content:flex-start;" onclick="requestWakeLock()">
+        <span>💡 Keep Screen Awake</span>
+      </button>
+
+      <button class="btn btn-danger" style="width:100%;justify-content:center;margin-top:6px;" onclick="exitToBuilder()">
+        Exit to Builder
+      </button>
+    </div>
+
+    <!-- Big clear return button -->
+    <button class="btn btn-primary" style="width:100%;margin-top:16px;padding:14px;font-size:16px;" onclick="closeParentDrawer()">
+      ✓ Done — Return to Learning
+    </button>
+
+    <hr style="border:0;border-top:1px solid #e2e8f0;margin:18px 0;">
+
+    <h3 style="margin:0 0 6px;font-size:13px;font-weight:800;color:#64748b;">Desktop Keyboard Shortcuts</h3>
+    <div style="font-size:12px;color:#64748b;line-height:1.6;">
+      • <b>← / → or ↑ / ↓</b>: Navigate letters & variations<br>
+      • <b>Spacebar</b>: Speak letter and word<br>
+      • <b>P key</b>: Open Parent Settings<br>
+      • <b>Esc key</b>: Close Parent Settings / Back to Learning
+    </div>
+  </aside>
+</div>
+
+<script>
+/* ============================================================
+   RUNTIME LEARNER SCRIPT
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const PAYLOAD = {"settings":{"charAxis":"horizontal","varAxis":"vertical","loop":true,"showArrows":true,"tapToNext":false,"autoPlay":false,"autoPlaySec":5,"swipeSens":60,"contentOrder":"alphabetical","wobble":true,"wobbleInt":50,"tiltParallax":true,"transSpeed":550,"respectReducedMotion":true,"bgStyle":"smart","imageFit":"contain","showLetter":true,"showWord":true,"letterCase":"upper","wordPos":"bottom","fontFamily":"'Fredoka', 'Nunito', sans-serif","wordSize":56,"bounceLetters":true,"contrastPill":true,"ttsEnabled":true,"speechPhrase":"letter_word","speechRate":0.85,"speechVoice":"","soundChime":true,"autoFullscreen":true,"wakeLock":true,"orientation":"any","trapBackNav":true,"blockGestures":true,"gateMethod":"pin","pin":"1234","settingsLocked":true},"images":[{"id":"img_mu5k2bzo_ypl9fo","src":"CHAR/gemini_gemini-3.1-flash-image_1789643043569.jpeg","file":"gemini_gemini-3.1-flash-image_1789643043569.jpeg","char":"A","word":"Apple","object":"a cute red apple","order":0},{"id":"img_mu5k2bzo_ac7xsm","src":"CHAR/gemini_gemini-3.1-flash-image_1789643088647.jpeg","file":"gemini_gemini-3.1-flash-image_1789643088647.jpeg","char":"A","word":"Apple","object":"a smiling apple","order":1},{"id":"img_mu5k2bzo_pbv9wv","src":"CHAR/gemini_gemini-3.1-flash-image_1789643129378.jpeg","file":"gemini_gemini-3.1-flash-image_1789643129378.jpeg","char":"B","word":"Ball","object":"a colorful children's ball","order":2},{"id":"img_mu5k2bzo_9jfgck","src":"CHAR/gemini_gemini-3.1-flash-image_1789643182559.jpeg","file":"gemini_gemini-3.1-flash-image_1789643182559.jpeg","char":"C","word":"Cat","object":"a cute kitten","order":3},{"id":"img_mu5k2bzo_s73hug","src":"CHAR/gemini_gemini-3.1-flash-image_1789643208334.jpeg","file":"gemini_gemini-3.1-flash-image_1789643208334.jpeg","char":"D","word":"Dog","object":"a cute puppy","order":4},{"id":"img_mu5k2bzo_x2et4s","src":"CHAR/gemini_gemini-3.1-flash-image_1789643241336.jpeg","file":"gemini_gemini-3.1-flash-image_1789643241336.jpeg","char":"E","word":"Elephant","object":"a cute baby elephant","order":5},{"id":"img_mu5k2bzo_kqhnwk","src":"CHAR/gemini_gemini-3.1-flash-image_1789643280845.jpeg","file":"gemini_gemini-3.1-flash-image_1789643280845.jpeg","char":"F","word":"Fish","object":"a colorful tropical fish","order":6},{"id":"img_mu5k2bzo_bda2ac","src":"CHAR/gemini_gemini-3.1-flash-image_1789643322798.jpeg","file":"gemini_gemini-3.1-flash-image_1789643322798.jpeg","char":"G","word":"Goat","object":"a cute baby goat","order":7},{"id":"img_mu5k2bzo_jtukwy","src":"CHAR/gemini_gemini-3.1-flash-image_1789643370781.jpeg","file":"gemini_gemini-3.1-flash-image_1789643370781.jpeg","char":"H","word":"Hen","object":"a cute hen","order":8},{"id":"img_mu5k2bzo_i3ljxl","src":"CHAR/gemini_gemini-3.1-flash-image_1789643401307.jpeg","file":"gemini_gemini-3.1-flash-image_1789643401307.jpeg","char":"I","word":"Ice Cream","object":"a colorful ice cream cone","order":9},{"id":"img_mu5k2bzo_2upfqz","src":"CHAR/gemini_gemini-3.1-flash-image_1789643428088.jpeg","file":"gemini_gemini-3.1-flash-image_1789643428088.jpeg","char":"J","word":"Jug","object":"a cute colorful water jug","order":10},{"id":"img_mu5k2bzo_0e37wu","src":"CHAR/gemini_gemini-3.1-flash-image_1789643460673.jpeg","file":"gemini_gemini-3.1-flash-image_1789643460673.jpeg","char":"K","word":"Kite","object":"a colorful Indian kite","order":11},{"id":"img_mu5k2bzo_sfocib","src":"CHAR/gemini_gemini-3.1-flash-image_1789643491498.jpeg","file":"gemini_gemini-3.1-flash-image_1789643491498.jpeg","char":"L","word":"Lion","object":"a cute lion cub","order":12},{"id":"img_mu5k2bzo_06teis","src":"CHAR/gemini_gemini-3.1-flash-image_1789643547054.jpeg","file":"gemini_gemini-3.1-flash-image_1789643547054.jpeg","char":"M","word":"Mango","object":"a ripe Indian mango","order":13},{"id":"img_mu5k2bzo_lumbor","src":"CHAR/gemini_gemini-3.1-flash-image_1789643589949.jpeg","file":"gemini_gemini-3.1-flash-image_1789643589949.jpeg","char":"N","word":"Nest","object":"a cute bird nest with eggs","order":14},{"id":"img_mu5k2bzo_5zlshs","src":"CHAR/gemini_gemini-3.1-flash-image_1789643661046.jpeg","file":"gemini_gemini-3.1-flash-image_1789643661046.jpeg","char":"O","word":"Orange","object":"a juicy orange fruit","order":15},{"id":"img_mu5k2bzo_d0wj71","src":"CHAR/gemini_gemini-3.1-flash-image_1789643711217.jpeg","file":"gemini_gemini-3.1-flash-image_1789643711217.jpeg","char":"P","word":"Parrot","object":"a colorful Indian parrot","order":16},{"id":"img_mu5k2bzo_ye0scq","src":"CHAR/gemini_gemini-3.1-flash-image_1789643747800.jpeg","file":"gemini_gemini-3.1-flash-image_1789643747800.jpeg","char":"P","word":"Parrot","object":"a cheerful Indian parrot","order":17},{"id":"img_mu5k2bzo_4p88h2","src":"CHAR/zgemini_gemini-3.1-flash-image_1789643775966.jpeg","file":"zgemini_gemini-3.1-flash-image_1789643775966.jpeg","char":"Q","word":"Queen","object":"a cute friendly queen","order":18},{"id":"img_mu5k2bzo_b9e3vl","src":"CHAR/gemini_gemini-3.1-flash-image_1789643804911.jpeg","file":"gemini_gemini-3.1-flash-image_1789643804911.jpeg","char":"Q","word":"Queen","object":"a royal friendly queen","order":19},{"id":"img_mu5k2bzo_gad8ig","src":"CHAR/gemini_gemini-3.1-flash-image_1789643849995.jpeg","file":"gemini_gemini-3.1-flash-image_1789643849995.jpeg","char":"R","word":"Rose","object":"a beautiful red rose","order":20},{"id":"img_mu5k2bzo_k953jp","src":"CHAR/gemini_gemini-3.1-flash-image_1789643914400.jpeg","file":"gemini_gemini-3.1-flash-image_1789643914400.jpeg","char":"S","word":"Sun","object":"a smiling sun","order":21},{"id":"img_mu5k2bzo_64dxav","src":"CHAR/gemini_gemini-3.1-flash-image_1789642488904.jpeg","file":"gemini_gemini-3.1-flash-image_1789642488904.jpeg","char":"T","word":"Tiger","object":"a cute tiger cub","order":22},{"id":"img_mu5k2bzo_r6wtsr","src":"CHAR/Untitled.jpeg","file":"Untitled.jpeg","char":"T","word":"Tiger","object":"a playful tiger cub","order":23},{"id":"img_mu5k2bzo_727ace","src":"CHAR/gemini_gemini-3.1-flash-image_1789644005909.jpeg","file":"gemini_gemini-3.1-flash-image_1789644005909.jpeg","char":"T","word":"Tiger","object":"a smiling tiger cub","order":24},{"id":"img_mu5k2bzo_p9x5ph","src":"CHAR/gemini_gemini-3.1-flash-image_1789644042931.jpeg","file":"gemini_gemini-3.1-flash-image_1789644042931.jpeg","char":"U","word":"Umbrella","object":"a colorful umbrella","order":25},{"id":"img_mu5k2bzo_e0yhad","src":"CHAR/gemini_gemini-3.1-flash-image_1789644081968.jpeg","file":"gemini_gemini-3.1-flash-image_1789644081968.jpeg","char":"V","word":"Van","object":"a cute school van","order":26},{"id":"img_mu5k2bzo_put5o7","src":"CHAR/gemini_gemini-3.1-flash-image_1789644117910.jpeg","file":"gemini_gemini-3.1-flash-image_1789644117910.jpeg","char":"W","word":"Watermelon","object":"a juicy watermelon slice","order":27},{"id":"img_mu5k2bzo_suwqmf","src":"CHAR/gemini_gemini-3.1-flash-image_1789644142633.jpeg","file":"gemini_gemini-3.1-flash-image_1789644142633.jpeg","char":"W","word":"Watermelon","object":"a cute watermelon slice","order":28},{"id":"img_mu5k2bzo_2hhiw0","src":"CHAR/gemini_gemini-3.1-flash-image_1789644188729.jpeg","file":"gemini_gemini-3.1-flash-image_1789644188729.jpeg","char":"X","word":"Xylophone","object":"a colorful children's xylophone","order":29},{"id":"img_mu5k2bzo_jbinxc","src":"CHAR/gemini_gemini-3.1-flash-image_1789644209920.jpeg","file":"gemini_gemini-3.1-flash-image_1789644209920.jpeg","char":"X","word":"Xylophone","object":"a rainbow children's xylophone","order":30},{"id":"img_mu5k2bzo_nkafth","src":"CHAR/gemini_gemini-3.1-flash-image_1789644252396.jpeg","file":"gemini_gemini-3.1-flash-image_1789644252396.jpeg","char":"Y","word":"Yak","object":"a cute fluffy yak","order":31},{"id":"img_mu5k2bzo_kmz5kr","src":"CHAR/gemini_gemini-3.1-flash-image_1789644295003.jpeg","file":"gemini_gemini-3.1-flash-image_1789644295003.jpeg","char":"Z","word":"Zebra","object":"a cute baby zebra","order":32},{"id":"img_mu5k2bzo_z18ky4","src":"CHAR/gemini_gemini-3.1-flash-image_1789644327329.jpeg","file":"gemini_gemini-3.1-flash-image_1789644327329.jpeg","char":"Z","word":"Zebra","object":"a smiling baby zebra","order":33}]};
+const settings = PAYLOAD.settings;
+const rawImages = PAYLOAD.images;
+
+let groups = [];
+let curCharIdx = 0;
+let curVarIdx = 0;
+let wakeLockSentinel = null;
+let autoPlayTimer = null;
+let audioContext = null;
+
+/* DOM ELEMENTS */
+const app = document.getElementById("app");
+const ambientBg = document.getElementById("ambientBg");
+const ambientBlurImg = document.getElementById("ambientBlurImg");
+const ambientMirrorImg = document.getElementById("ambientMirrorImg");
+const stage = document.getElementById("stage");
+const imageContainer = document.getElementById("imageContainer");
+const mainImg = document.getElementById("mainImg");
+const charDisplay = document.getElementById("charDisplay");
+const wordDisplay = document.getElementById("wordDisplay");
+const txtLetterProgress = document.getElementById("txtLetterProgress");
+const dotsContainer = document.getElementById("dotsContainer");
+const returnSplash = document.getElementById("returnSplash");
+
+/* BUILD GROUPS */
+function initGroups() {
+  const map = new Map();
+  rawImages.forEach(img => {
+    const ch = String(img.char || "?").trim();
+    if (!map.has(ch)) map.set(ch, []);
+    map.get(ch).push(img);
+  });
+
+  groups = Array.from(map.entries()).map(([char, items]) => ({
+    char,
+    images: items.sort((a, b) => Number(a.order || 0) - Number(b.order || 0))
+  }));
+
+  if (settings.contentOrder === "alphabetical") {
+    groups.sort((a, b) => a.char.localeCompare(b.char, undefined, { numeric: true }));
+  } else if (settings.contentOrder === "shuffle") {
+    groups.sort(() => Math.random() - 0.5);
+  }
+}
+initGroups();
+
+/* PROCEDURAL CHIME */
+function playSoundChime() {
+  if (!settings.soundChime) return;
+  try {
+    if (!audioContext) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      audioContext = new AC();
+    }
+    if (audioContext.state === "suspended") audioContext.resume();
+
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.35);
+  } catch (_) {}
+}
+
+/* SPARKLE PARTICLES */
+function spawnSparkles(x, y) {
+  const colors = ["#f97316", "#38bdf8", "#4ade80", "#fbbf24", "#f43f5e", "#c084fc"];
+  for (let i = 0; i < 8; i++) {
+    const p = document.createElement("div");
+    p.className = "sparkle-particle";
+    const size = Math.random() * 8 + 6;
+    p.style.width = size + "px";
+    p.style.height = size + "px";
+    p.style.left = (x - size / 2) + "px";
+    p.style.top = (y - size / 2) + "px";
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * 50 + 20;
+    p.style.setProperty("--tx", Math.cos(angle) * dist + "px");
+    p.style.setProperty("--ty", Math.sin(angle) * dist + "px");
+
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 600);
+  }
+}
+
+/* SPEECH TTS */
+function speakCurrent() {
+  if (!settings.ttsEnabled || !("speechSynthesis" in window)) return;
+  const grp = groups[curCharIdx];
+  const item = grp?.images[curVarIdx];
+  if (!grp || !item) return;
+
+  speechSynthesis.cancel();
+
+  let phrase = item.word || grp.char;
+  if (settings.speechPhrase === "letter_word") {
+    phrase = grp.char + "! " + (item.word || "");
+  } else if (settings.speechPhrase === "phonics") {
+    phrase = grp.char + " is for " + (item.word || grp.char);
+  } else if (settings.speechPhrase === "letter_only") {
+    phrase = grp.char;
+  }
+
+  const ut = new SpeechSynthesisUtterance(phrase);
+  ut.rate = Number(settings.speechRate || 0.85);
+  ut.pitch = 1.1; // Friendly warm toddler pitch
+
+  if (settings.speechVoice) {
+    const voices = speechSynthesis.getVoices();
+    const v = voices.find(x => x.name === settings.speechVoice);
+    if (v) ut.voice = v;
+  }
+
+  speechSynthesis.speak(ut);
+}
+
+/* COLOR EXTRACTION & BACKGROUND HARMONY */
+function extractColors(imgEl) {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 40;
+    canvas.height = 40;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(imgEl, 0, 0, 40, 40);
+    const data = ctx.getImageData(0, 0, 40, 40).data;
+
+    let r = 0, g = 0, b = 0, count = 0;
+    for (let i = 0; i < data.length; i += 16) {
+      if (data[i + 3] < 30) continue;
+      r += data[i];
+      g += data[i + 1];
+      b += data[i + 2];
+      count++;
+    }
+    if (!count) return { c1: "#f97316", c2: "#1e293b", textColor: "#fff" };
+
+    r = Math.round(r / count);
+    g = Math.round(g / count);
+    b = Math.round(b / count);
+
+    const c1 = rgbToHex(r, g, b);
+    const c2 = rgbToHex(r * 0.45, g * 0.45, b * 0.45);
+    const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    const textColor = lum > 0.65 ? "#0f172a" : "#ffffff";
+
+    return { c1, c2, textColor };
+  } catch (_) {
+    return { c1: "#f97316", c2: "#0f172a", textColor: "#fff" };
+  }
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b].map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, "0")).join("");
+}
+
+/* RENDER SLIDE */
+function renderSlide() {
+  const grp = groups[curCharIdx];
+  if (!grp) return;
+  const item = grp.images[curVarIdx];
+  if (!item) return;
+
+  mainImg.src = item.src;
+  ambientBlurImg.src = item.src;
+  ambientMirrorImg.src = item.src;
+
+  // Update Status & Dots
+  txtLetterProgress.textContent = grp.char + " · " + (curVarIdx + 1) + "/" + grp.images.length + " (" + (curCharIdx + 1) + "/" + groups.length + ")";
+  dotsContainer.innerHTML = "";
+  grp.images.forEach((_, i) => {
+    const dot = document.createElement("div");
+    dot.className = "var-dot" + (i === curVarIdx ? " active" : "");
+    dotsContainer.appendChild(dot);
+  });
+
+  // Apply Wobble
+  if (settings.wobble && !(settings.respectReducedMotion && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+    app.classList.add("wobble-active");
+  } else {
+    app.classList.remove("wobble-active");
+  }
+
+  // Typography Formatting
+  let charText = grp.char;
+  if (settings.letterCase === "lower") charText = charText.toLowerCase();
+  else if (settings.letterCase === "both") charText = charText.toUpperCase() + " " + charText.toLowerCase();
+
+  charDisplay.textContent = settings.showLetter ? charText : "";
+  charDisplay.style.display = settings.showLetter ? "block" : "none";
+
+  if (settings.showWord && item.word) {
+    wordDisplay.style.display = "block";
+    wordDisplay.style.fontSize = settings.wordSize + "px";
+    wordDisplay.innerHTML = "";
+
+    const wordStr = item.word;
+    [...wordStr].forEach((ch, idx) => {
+      const span = document.createElement("span");
+      span.textContent = ch;
+      if (settings.bounceLetters) {
+        span.className = "bouncing-letter";
+        span.style.animationDelay = (idx * 0.08) + "s";
+      }
+      wordDisplay.appendChild(span);
+    });
+
+    if (settings.contrastPill) {
+      wordDisplay.className = "contrast-pill";
+    } else {
+      wordDisplay.className = "";
+    }
+  } else {
+    wordDisplay.style.display = "none";
+  }
+
+  positionTypography();
+
+  // Color Extraction on load
+  mainImg.onload = () => {
+    const colors = extractColors(mainImg);
+    applyBackground(colors);
+  };
+  // Instant apply if cached
+  if (mainImg.complete) {
+    const colors = extractColors(mainImg);
+    applyBackground(colors);
+  }
+
+  // Arrow controls visibility
+  const arrows = document.getElementById("controlsLayer");
+  if (arrows) arrows.style.display = settings.showArrows ? "block" : "none";
+}
+
+function applyBackground(colors) {
+  const style = settings.bgStyle;
+  ambientBlurImg.style.display = (style === "blur") ? "block" : "none";
+  ambientMirrorImg.style.display = (style === "mirror") ? "block" : "none";
+
+  if (style === "solid") {
+    ambientBg.style.background = colors.c1;
+  } else if (style === "gradient") {
+    ambientBg.style.background = "linear-gradient(135deg, " + colors.c1 + ", " + colors.c2 + ")";
+  } else if (style === "blur" || style === "mirror") {
+    ambientBg.style.background = "radial-gradient(circle at center, " + colors.c1 + " 0%, " + colors.c2 + " 85%)";
+  } else {
+    // Smart spotlight radial glow
+    ambientBg.style.background = "radial-gradient(circle at 35% 25%, " + colors.c1 + " 0%, " + colors.c2 + " 70%)";
+  }
+
+  if (!settings.contrastPill) {
+    wordDisplay.style.color = colors.textColor;
+  }
+}
+
+function positionTypography() {
+  const pos = settings.wordPos;
+  wordDisplay.style.left = "";
+  wordDisplay.style.right = "";
+  wordDisplay.style.top = "";
+  wordDisplay.style.bottom = "";
+  wordDisplay.style.transform = "";
+
+  if (pos === "bottom") {
+    wordDisplay.style.left = "50%";
+    wordDisplay.style.bottom = "5%";
+    wordDisplay.style.transform = "translateX(-50%)";
+  } else if (pos === "top") {
+    wordDisplay.style.left = "50%";
+    wordDisplay.style.top = "5%";
+    wordDisplay.style.transform = "translateX(-50%)";
+  } else if (pos === "left") {
+    wordDisplay.style.left = "3%";
+    wordDisplay.style.top = "50%";
+    wordDisplay.style.transform = "translateY(-50%)";
+  } else if (pos === "right") {
+    wordDisplay.style.right = "3%";
+    wordDisplay.style.top = "50%";
+    wordDisplay.style.transform = "translateY(-50%)";
+  } else if (pos === "bottom-left") {
+    wordDisplay.style.left = "4%";
+    wordDisplay.style.bottom = "5%";
+  } else if (pos === "bottom-right") {
+    wordDisplay.style.right = "4%";
+    wordDisplay.style.bottom = "5%";
+  } else if (pos === "top-left") {
+    wordDisplay.style.left = "4%";
+    wordDisplay.style.top = "5%";
+  } else if (pos === "top-right") {
+    wordDisplay.style.right = "4%";
+    wordDisplay.style.top = "5%";
+  } else {
+    wordDisplay.style.left = "50%";
+    wordDisplay.style.top = "50%";
+    wordDisplay.style.transform = "translate(-50%, -50%)";
+  }
+}
+
+/* NAVIGATION METHODS */
+function navCharacter(dir) {
+  if (!groups.length) return;
+  let next = curCharIdx + dir;
+  if (next < 0) next = settings.loop ? groups.length - 1 : 0;
+  if (next >= groups.length) next = settings.loop ? 0 : groups.length - 1;
+
+  curCharIdx = next;
+  curVarIdx = 0; // Reset to variation 1 on letter change
+  renderSlide();
+  speakCurrent();
+}
+
+function navVariation(dir) {
+  const grp = groups[curCharIdx];
+  if (!grp || grp.images.length <= 1) return;
+  let next = curVarIdx + dir;
+  if (next < 0) next = grp.images.length - 1;
+  if (next >= grp.images.length) next = 0;
+
+  curVarIdx = next;
+  renderSlide();
+  speakCurrent();
+}
+
+/* 2D TOUCH & SWIPE ENGINE */
+let touchStartX = 0;
+let touchStartY = 0;
+let isPointerDown = false;
+let isDragging = false;
+
+app.addEventListener("pointerdown", e => {
+  if (e.target.closest(".nav-btn") || e.target.closest("#btnParentGate") || e.target.closest("#gateModal") || e.target.closest("#parentDrawer") || e.target.closest("#returnSplash")) return;
+  touchStartX = e.clientX;
+  touchStartY = e.clientY;
+  isPointerDown = true;
+  isDragging = false;
+  try { app.setPointerCapture(e.pointerId); } catch (_) {}
+});
+
+app.addEventListener("pointermove", e => {
+  if (!isPointerDown) return;
+  const dx = e.clientX - touchStartX;
+  const dy = e.clientY - touchStartY;
+  if (Math.hypot(dx, dy) > 10) isDragging = true;
+});
+
+app.addEventListener("pointerup", e => {
+  if (!isPointerDown) return;
+  isPointerDown = false;
+
+  const dx = e.clientX - touchStartX;
+  const dy = e.clientY - touchStartY;
+  const absX = Math.abs(dx);
+  const absY = Math.abs(dy);
+  const threshold = Number(settings.swipeSens || 60);
+
+  if (absX >= threshold || absY >= threshold) {
+    // Valid Swipe
+    if (settings.charAxis === "horizontal") {
+      if (absX >= absY) {
+        navCharacter(dx < 0 ? 1 : -1);
+      } else {
+        navVariation(dy < 0 ? 1 : -1);
+      }
+    } else {
+      if (absY >= absX) {
+        navCharacter(dy < 0 ? 1 : -1);
+      } else {
+        navVariation(dx < 0 ? 1 : -1);
+      }
+    }
+  } else {
+    // Tap event
+    playSoundChime();
+    spawnSparkles(e.clientX, e.clientY);
+    if (settings.tapToNext) {
+      navCharacter(1);
+    } else {
+      speakCurrent();
+    }
+  }
+});
+
+/* ON-SCREEN ARROW BUTTONS */
+$("btnPrevChar").onclick = e => { e.stopPropagation(); navCharacter(-1); };
+$("btnNextChar").onclick = e => { e.stopPropagation(); navCharacter(1); };
+$("btnPrevVar").onclick  = e => { e.stopPropagation(); navVariation(-1); };
+$("btnNextVar").onclick  = e => { e.stopPropagation(); navVariation(1); };
+
+/* KEYBOARD SHORTCUTS */
+document.addEventListener("keydown", e => {
+  // If gate modal is open
+  if ($("gateModal") && !$("gateModal").classList.contains("hidden")) {
+    if (e.key === "Escape") {
+      closeGateModal();
+      return;
+    }
+    if (e.key >= "0" && e.key <= "9") {
+      enterPinDigit(e.key);
+      return;
+    }
+    if (e.key === "Backspace") {
+      clearPin();
+      return;
+    }
+    if (e.key === "Enter") {
+      submitPin();
+      return;
+    }
+  }
+
+  // If parent drawer is open
+  if ($("parentDrawer") && $("parentDrawer").classList.contains("open")) {
+    if (e.key === "Escape") {
+      closeParentDrawer();
+      return;
+    }
+  }
+
+  // Main app shortcuts
+  if (e.key === "Escape") {
+    closeParentDrawer();
+    closeGateModal();
+    return;
+  }
+  if (e.key === "p" || e.key === "P") {
+    if ($("parentDrawer") && $("parentDrawer").classList.contains("open")) {
+      closeParentDrawer();
+    } else {
+      if (settings.settingsLocked) {
+        openGateModal();
+      } else {
+        openParentDrawer();
+      }
+    }
+    return;
+  }
+
+  if (e.key === "ArrowLeft")  settings.charAxis === "horizontal" ? navCharacter(-1) : navVariation(-1);
+  if (e.key === "ArrowRight") settings.charAxis === "horizontal" ? navCharacter(1)  : navVariation(1);
+  if (e.key === "ArrowUp")    settings.charAxis === "vertical"   ? navCharacter(-1) : navVariation(-1);
+  if (e.key === "ArrowDown")  settings.charAxis === "vertical"   ? navCharacter(1)  : navVariation(1);
+  if (e.key === " ") { e.preventDefault(); speakCurrent(); }
+});
+
+/* AUTOPLAY */
+function setupAutoPlay() {
+  clearInterval(autoPlayTimer);
+  if (!settings.autoPlay) return;
+  autoPlayTimer = setInterval(() => {
+    navCharacter(1);
+  }, Math.max(2, Number(settings.autoPlaySec || 5)) * 1000);
+}
+
+/* SCREEN WAKE LOCK */
+async function requestWakeLock() {
+  if (!settings.wakeLock || !("wakeLock" in navigator)) return;
+  try {
+    wakeLockSentinel = await navigator.wakeLock.request("screen");
+  } catch (_) {}
+}
+
+/* FULLSCREEN */
+async function requestFullscreen() {
+  if (!settings.autoFullscreen) return;
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch (_) {}
+}
+
+/* ORIENTATION LOCK */
+async function applyOrientationLock() {
+  if (!settings.orientation || settings.orientation === "any") return;
+  if (screen.orientation && screen.orientation.lock) {
+    try {
+      await screen.orientation.lock(settings.orientation);
+    } catch (_) {}
+  }
+}
+
+/* VISIBILITY CHANGE & BACKGROUND RESUME */
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    returnSplash.style.display = "none";
+    requestWakeLock();
+  } else {
+    returnSplash.style.display = "flex";
+  }
+});
+
+function resumeApp() {
+  returnSplash.style.display = "none";
+  requestFullscreen();
+  requestWakeLock();
+  applyOrientationLock();
+}
+
+/* BROWSER SECURITY & GESTURE BLOCKING */
+if (settings.blockGestures) {
+  document.addEventListener("contextmenu", e => e.preventDefault());
+  document.addEventListener("dragstart", e => e.preventDefault());
+  document.addEventListener("selectstart", e => e.preventDefault());
+  document.addEventListener("gesturestart", e => e.preventDefault());
+}
+if (settings.trapBackNav) {
+  history.pushState(null, "", location.href);
+  window.addEventListener("popstate", () => history.pushState(null, "", location.href));
+}
+window.addEventListener("beforeunload", e => {
+  if (settings.trapBackNav) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
+/* PARENT GATE LOGIC */
+let pinBuffer = "";
+let holdTimer = null;
+let holdProgress = 0;
+
+$("btnParentGate").onclick = () => {
+  if ($("parentDrawer") && $("parentDrawer").classList.contains("open")) {
+    closeParentDrawer();
+    return;
+  }
+  if (settings.settingsLocked) {
+    openGateModal();
+  } else {
+    openParentDrawer();
+  }
+};
+
+// Clicking outside the card on the backdrop closes the gate modal
+$("gateModal").onclick = (e) => {
+  if (e.target === $("gateModal")) {
+    closeGateModal();
+  }
+};
+
+function openGateModal() {
+  closeParentDrawer();
+  pinBuffer = "";
+  updatePinDisplay();
+  $("gateModal").classList.remove("hidden");
+  if (settings.gateMethod === "hold") {
+    $("gatePinSection").classList.add("hidden");
+    $("gateHoldSection").classList.remove("hidden");
+    $("gatePromptText").textContent = "Press and hold for 3 full seconds to unlock";
+    initHoldGate();
+  } else {
+    $("gatePinSection").classList.remove("hidden");
+    $("gateHoldSection").classList.add("hidden");
+    $("gatePromptText").innerHTML = 'Enter Parent PIN (Default: <b style="color:#f97316;">' + (settings.pin || '1234') + '</b>)';
+  }
+}
+
+function closeGateModal() {
+  $("gateModal").classList.add("hidden");
+  clearInterval(holdTimer);
+  pinBuffer = "";
+  updatePinDisplay();
+}
+
+function enterPinDigit(d) {
+  if (pinBuffer.length < 8) pinBuffer += d;
+  updatePinDisplay();
+  if (pinBuffer.length === String(settings.pin || "1234").length) {
+    submitPin();
+  }
+}
+function clearPin() {
+  pinBuffer = "";
+  updatePinDisplay();
+}
+function updatePinDisplay() {
+  $("pinDisplay").textContent = pinBuffer ? "•".repeat(pinBuffer.length) : "••••";
+}
+function submitPin() {
+  if (pinBuffer === String(settings.pin || "1234")) {
+    closeGateModal();
+    openParentDrawer();
+  } else {
+    alert("Incorrect PIN. Please enter " + (settings.pin || "1234"));
+    clearPin();
+  }
+}
+
+function initHoldGate() {
+  const wrap = $("holdCircleWrap");
+  const bar = $("holdBarCircle");
+  const maxDash = 377;
+  bar.style.strokeDashoffset = maxDash;
+  holdProgress = 0;
+
+  const startHold = () => {
+    clearInterval(holdTimer);
+    holdTimer = setInterval(() => {
+      holdProgress += 50;
+      const ratio = Math.min(1, holdProgress / 3000);
+      bar.style.strokeDashoffset = maxDash - (maxDash * ratio);
+      if (holdProgress >= 3000) {
+        clearInterval(holdTimer);
+        closeGateModal();
+        openParentDrawer();
+      }
+    }, 50);
+  };
+
+  const cancelHold = () => {
+    clearInterval(holdTimer);
+    holdProgress = 0;
+    bar.style.strokeDashoffset = maxDash;
+  };
+
+  wrap.onpointerdown = startHold;
+  wrap.onpointerup = cancelHold;
+  wrap.onpointerleave = cancelHold;
+}
+
+function openParentDrawer() {
+  closeGateModal();
+  updateParentDrawerBadges();
+  $("parentDrawer").classList.add("open");
+  if ($("drawerBackdrop")) $("drawerBackdrop").classList.add("open");
+}
+function closeParentDrawer() {
+  $("parentDrawer").classList.remove("open");
+  if ($("drawerBackdrop")) $("drawerBackdrop").classList.remove("open");
+}
+
+function updateParentDrawerBadges() {
+  if ($("lblDrawerAxis")) {
+    $("lblDrawerAxis").textContent = (settings.charAxis === "horizontal") 
+      ? "Letters ← →, Variations ↑ ↓" 
+      : "Letters ↑ ↓, Variations ← →";
+  }
+  if ($("badgeCurrentAxis")) {
+    $("badgeCurrentAxis").textContent = settings.charAxis;
+  }
+  if ($("badgeTTSStatus")) {
+    $("badgeTTSStatus").textContent = settings.ttsEnabled ? "ON" : "OFF";
+  }
+  if ($("badgeWobbleStatus")) {
+    $("badgeWobbleStatus").textContent = settings.wobble ? "ON" : "OFF";
+  }
+  if ($("badgePinStatus")) {
+    $("badgePinStatus").textContent = settings.settingsLocked ? "ON (1234)" : "OFF (Direct Open)";
+  }
+  if ($("badgeStealthStatus")) {
+    const isStealth = $("btnParentGate").classList.contains("hidden-child");
+    $("badgeStealthStatus").textContent = isStealth ? "ON (Hidden)" : "OFF (Visible)";
+  }
+}
+
+function swapAxes() {
+  const oldChar = settings.charAxis;
+  settings.charAxis = (oldChar === "horizontal") ? "vertical" : "horizontal";
+  settings.varAxis = (oldChar === "horizontal") ? "horizontal" : "vertical";
+  updateParentDrawerBadges();
+  renderSlide();
+}
+
+function toggleWobble() {
+  settings.wobble = !settings.wobble;
+  updateParentDrawerBadges();
+  renderSlide();
+}
+
+function toggleTTS() {
+  settings.ttsEnabled = !settings.ttsEnabled;
+  updateParentDrawerBadges();
+}
+
+function togglePinLock() {
+  settings.settingsLocked = !settings.settingsLocked;
+  updateParentDrawerBadges();
+}
+
+function toggleStealthMode() {
+  $("btnParentGate").classList.toggle("hidden-child");
+  updateParentDrawerBadges();
+}
+
+function exitToBuilder() {
+  if (!confirm("Return to Builder editor?")) return;
+  window.close();
+}
+
+/* INIT ON LOAD */
+renderSlide();
+setupAutoPlay();
+requestWakeLock();
+applyOrientationLock();
+
+// Request fullscreen on first user touch anywhere
+document.body.addEventListener("pointerdown", () => {
+  requestFullscreen();
+  requestWakeLock();
+}, { once: true });
+
+if (settings.settingsLocked) {
+  $("btnParentGate").classList.add("hidden-child");
+}
+</script>
+</body>
+</html>
