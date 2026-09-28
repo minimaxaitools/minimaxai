@@ -1,0 +1,17 @@
+{
+  "meta": { "title": "Photosynthesis in 30 seconds", "theme": "chalkboardClass", "width": 1920, "height": 1080, "fps": 30, "seed": "lesson-v1" },
+  "scenes": [
+    { "id": "intro", "recipe": "lesson", "beats": [
+      { "text": "Photosynthesis", "recipe": "title" },
+      { "text": "Photosynthesis is called the [kitchen](key) of the plant." },
+      { "text": "Why are leaves green?" }
+    ]},
+    { "id": "steps", "background": "notebook", "beats": [
+      { "text": "First, roots pull up water." },
+      { "text": "Then leaves catch sunlight." },
+      { "text": "Never water a plant [at noon](wrong).", "recipe": "warning" },
+      { "text": "A leaf makes [6](counter) sugar molecules", "recipe": "stat" },
+      { "text": "Imagine a forest breathing out.", "recipe": "reflect" }
+    ]}
+  ]
+}
