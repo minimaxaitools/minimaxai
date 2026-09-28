@@ -1,0 +1,1417 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.local/kinetic/content.schema.json",
+  "title": "KineticEngine content",
+  "description": "Script + annotation payload for KineticEngine. Accepts native kinetic content OR any existing D3 Annotation Studio format (project save v3.x, d3-annotation array, custom-pattern result) OR plain text. Swap only this payload to make a new video.",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/nativeContent"
+    },
+    {
+      "$ref": "#/definitions/annotationProject"
+    },
+    {
+      "$ref": "#/definitions/d3AnnotationArray"
+    },
+    {
+      "$ref": "#/definitions/patternResult"
+    },
+    {
+      "type": "string",
+      "description": "Plain text. Blank-line paragraphs become scenes, sentences become beats. Inline markup allowed."
+    },
+    {
+      "type": "object",
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/meta"
+        },
+        "theme": {
+          "$ref": "#/definitions/themeRef"
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "nativeContent": {
+      "type": "object",
+      "required": [
+        "scenes"
+      ],
+      "properties": {
+        "meta": {
+          "$ref": "#/definitions/meta"
+        },
+        "theme": {
+          "$ref": "#/definitions/themeRef"
+        },
+        "defaults": {
+          "$ref": "#/definitions/defaultsOverride"
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/scene"
+          }
+        },
+        "assets": {
+          "type": "array",
+          "description": "Embedded / referenced media for this video.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "src": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "image",
+                  "svg",
+                  "audio"
+                ]
+              },
+              "keywords": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 16,
+          "description": "Output width in px (default from presets.defaults.width)."
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 16
+        },
+        "fps": {
+          "type": "number",
+          "minimum": 1
+        },
+        "seed": {
+          "type": [
+            "string",
+            "number"
+          ],
+          "description": "Seed for all procedural jitter — same seed, same video."
+        },
+        "pace": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Global speed multiplier for reading/animation timing (1 = normal, 1.3 = faster)."
+        },
+        "theme": {
+          "$ref": "#/definitions/themeRef"
+        },
+        "lang": {
+          "type": "string",
+          "description": "Main language (e.g. hi, en) — map labels and voice default."
+        },
+        "locale": {
+          "type": "string",
+          "description": "Number formatting locale, e.g. en-IN for 1,40,000 (lakh/crore grouping)."
+        },
+        "numerals": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Native digits for counters, e.g. deva (०१२३), beng, arab."
+        },
+        "auto": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "maps": {
+                  "enum": [
+                    "on",
+                    "off",
+                    "smart"
+                  ]
+                },
+                "charts": {
+                  "enum": [
+                    "on",
+                    "off",
+                    "smart"
+                  ]
+                },
+                "numbers": {
+                  "enum": [
+                    "on",
+                    "off",
+                    "smart"
+                  ]
+                },
+                "media": {
+                  "enum": [
+                    "on",
+                    "off",
+                    "smart"
+                  ]
+                },
+                "placeholders": {
+                  "enum": [
+                    "on",
+                    "off",
+                    "smart"
+                  ]
+                },
+                "emoji": {
+                  "enum": [
+                    "on",
+                    "off",
+                    "smart"
+                  ]
+                },
+                "emphasis": {
+                  "enum": [
+                    "on",
+                    "off",
+                    "smart"
+                  ]
+                }
+              }
+            }
+          ],
+          "description": "Auto-Director switches; false disables it for this file."
+        },
+        "voice": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "enum": [
+                    "elevenlabs",
+                    "openai",
+                    "custom",
+                    "webspeech",
+                    "upload",
+                    "off"
+                  ]
+                },
+                "voiceId": {
+                  "type": "string"
+                },
+                "model": {
+                  "type": "string"
+                },
+                "lang": {
+                  "type": "string"
+                },
+                "rate": {
+                  "type": "number"
+                }
+              }
+            }
+          ]
+        },
+        "music": {
+          "description": "Background music asset name (ducked under the narration).",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "asset": {
+                  "type": "string"
+                },
+                "src": {
+                  "type": "string"
+                },
+                "volume": {
+                  "type": "number"
+                },
+                "duck": {
+                  "type": "number"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "themeRef": {
+      "description": "Name of a theme in presets.themes, or an inline theme object (optionally 'extends' a named theme).",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "extends": {
+              "type": "string"
+            },
+            "palette": {
+              "type": "object",
+              "additionalProperties": {
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              }
+            },
+            "typography": {
+              "type": "object"
+            },
+            "material": {
+              "type": "object"
+            },
+            "camera": {
+              "type": "object"
+            },
+            "timing": {
+              "type": "object"
+            },
+            "fragment": {
+              "type": "object"
+            },
+            "layout": {
+              "type": "object"
+            },
+            "defaults": {
+              "type": "object"
+            }
+          }
+        }
+      ]
+    },
+    "defaultsOverride": {
+      "type": "object",
+      "description": "Overrides presets.defaults / theme.defaults for this video or scene.",
+      "properties": {
+        "entry": {
+          "type": "string"
+        },
+        "entryCycle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exit": {
+          "type": "string"
+        },
+        "idle": {
+          "type": "string"
+        },
+        "split": {
+          "$ref": "#/definitions/split"
+        },
+        "camera": {
+          "type": "string"
+        },
+        "cameraMoves": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "staging": {
+          "type": "string"
+        },
+        "stagingCycle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "layout": {
+          "type": "string"
+        },
+        "layoutCycle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "transition": {
+          "type": "string"
+        },
+        "transitionCycle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "background": {
+          "type": "string"
+        },
+        "backgroundCycle": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exitMode": {
+          "$ref": "#/definitions/exitMode"
+        },
+        "stripEntry": {
+          "type": "string"
+        }
+      }
+    },
+    "split": {
+      "enum": [
+        "auto",
+        "word",
+        "phrase",
+        "sentence",
+        "manual"
+      ],
+      "description": "How a sentence is broken into camera shots. auto = punctuation + max words; word = one word per shot; phrase = punctuation only; sentence = one shot; manual = only at '|'."
+    },
+    "exitMode": {
+      "enum": [
+        "shot",
+        "beat",
+        "scene"
+      ],
+      "description": "When fragments leave: when the next shot arrives, when the sentence ends, or never (use with outro)."
+    },
+    "scene": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "description": "Shown in the scene picker."
+        },
+        "beats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/beat"
+          }
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/annotationNode"
+          },
+          "description": "Legacy nodes. With no beats, they are expanded into beats (title → headline, label lines/bullets → follow-up beats). With beats, they attach supplementary motion to their 'target' text."
+        },
+        "duration": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Force the scene length; internal timing is time-stretched to fit."
+        },
+        "staging": {
+          "type": "string",
+          "description": "presets.staging name — where fragments sit in 3D."
+        },
+        "layout": {
+          "type": "string",
+          "description": "presets.layouts name for every shot in the scene."
+        },
+        "split": {
+          "$ref": "#/definitions/split"
+        },
+        "exitMode": {
+          "$ref": "#/definitions/exitMode"
+        },
+        "background": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "$ref": "#/definitions/backgroundInline"
+            }
+          ]
+        },
+        "transition": {
+          "description": "Transition to the NEXT scene.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "required": [
+                "preset"
+              ],
+              "properties": {
+                "preset": {
+                  "type": "string"
+                },
+                "duration": {
+                  "type": "number"
+                },
+                "ease": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "camera": {
+          "$ref": "#/definitions/sceneCamera"
+        },
+        "outro": {
+          "type": "string",
+          "description": "Camera preset used after the last beat (e.g. pullBackReveal)."
+        },
+        "palette": {
+          "type": "object",
+          "description": "Palette overrides for this scene only."
+        },
+        "typography": {
+          "type": "object",
+          "description": "Typography overrides for this scene only."
+        },
+        "theme": {
+          "$ref": "#/definitions/themeRef"
+        },
+        "timing": {
+          "type": "object"
+        },
+        "defaults": {
+          "$ref": "#/definitions/defaultsOverride"
+        },
+        "pattern": {
+          "description": "Custom pattern id (or {id, options, count}) from your CustomPatternRegistry; its guidelines become a drawn-on backdrop and its nodes become beats when the scene has none.",
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "options": {
+                  "type": "object"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              }
+            }
+          ]
+        },
+        "guides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/guideline"
+          }
+        },
+        "guideSize": {
+          "type": "object",
+          "properties": {
+            "w": {
+              "type": "number"
+            },
+            "h": {
+              "type": "number"
+            }
+          }
+        },
+        "voiceId": {
+          "type": "string"
+        }
+      }
+    },
+    "beat": {
+      "description": "One sentence. String form is shorthand for {text}. Inline markup: [text](tags), *text*, | (shot break), \\n (line break).",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "required": [
+            "text"
+          ],
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "tags": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "Tags applied to the whole sentence."
+            },
+            "split": {
+              "$ref": "#/definitions/split"
+            },
+            "entry": {
+              "type": "string",
+              "description": "presets.entry name."
+            },
+            "emphasis": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "presets.emphasis name(s), chained."
+            },
+            "exit": {
+              "type": "string"
+            },
+            "idle": {
+              "type": "string",
+              "description": "presets.loop name."
+            },
+            "layout": {
+              "type": "string"
+            },
+            "staging": {
+              "type": "string"
+            },
+            "strip": {
+              "enum": [
+                "line",
+                "word",
+                "shot",
+                "none"
+              ]
+            },
+            "role": {
+              "type": "string",
+              "description": "Typography role (display, body, hand…)."
+            },
+            "cameraMoves": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Camera presets cycled over this beat's shots."
+            },
+            "speed": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "annotations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/annotationNode"
+              }
+            },
+            "visual": {
+              "$ref": "#/definitions/visual"
+            },
+            "visuals": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/visual"
+              }
+            },
+            "say": {
+              "type": "string",
+              "description": "What the narrator says instead of the displayed text."
+            },
+            "voiceId": {
+              "type": "string"
+            },
+            "audio": {
+              "type": "string",
+              "description": "Your recording for this sentence (asset name or data URL)."
+            },
+            "mute": {
+              "type": "boolean"
+            },
+            "auto": {
+              "type": "boolean",
+              "description": "false = Auto-Director leaves this sentence alone."
+            },
+            "captionLayout": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "sceneCamera": {
+      "type": "object",
+      "properties": {
+        "moves": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Camera presets cycled over the scene's shots."
+        },
+        "mode": {
+          "enum": [
+            "auto",
+            "manual",
+            "additive"
+          ],
+          "description": "manual = keyframes replace the auto camera (missing fields inherit it); additive = keyframes are offsets on top of it."
+        },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/cameraKey"
+          }
+        }
+      }
+    },
+    "cameraKey": {
+      "type": "object",
+      "properties": {
+        "at": {
+          "description": "Seconds (scene-local) or 'shot:N', 'shot:N+0.4', 'beat:N', 'end', 'end-1'.",
+          "oneOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "pattern": "^(shot|beat|end)(:\\d+)?([+-][\\d.]+)?$"
+            }
+          ]
+        },
+        "lookAt": {
+          "type": "string",
+          "pattern": "^shot:\\d+$"
+        },
+        "ease": {
+          "type": "string"
+        },
+        "tx": {
+          "type": "number"
+        },
+        "ty": {
+          "type": "number"
+        },
+        "tz": {
+          "type": "number"
+        },
+        "rotX": {
+          "type": "number"
+        },
+        "rotY": {
+          "type": "number"
+        },
+        "rotZ": {
+          "type": "number"
+        },
+        "zoom": {
+          "type": "number",
+          "description": "1 = shot framed; >1 further away."
+        },
+        "dist": {
+          "type": "number"
+        },
+        "fov": {
+          "type": "number"
+        },
+        "fx": {
+          "type": "number"
+        },
+        "fy": {
+          "type": "number"
+        },
+        "fz": {
+          "type": "number"
+        },
+        "aperture": {
+          "type": "number",
+          "description": "Depth-of-field strength."
+        },
+        "mblur": {
+          "type": "number",
+          "description": "Motion-blur multiplier."
+        }
+      }
+    },
+    "backgroundInline": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "gradient": {
+          "type": "object",
+          "properties": {
+            "to": {
+              "type": "string"
+            }
+          }
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "paperPlanes",
+                  "confetti",
+                  "sunburst",
+                  "dots",
+                  "grid",
+                  "blobs"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "annotationNode": {
+      "type": "object",
+      "description": "Your existing annotation node. Every key from ANNOTATION-REFERENCE.md is accepted unchanged; 'target', 'type' and 'motion' are the only additions.",
+      "properties": {
+        "typeKey": {
+          "enum": [
+            "annotationLabel",
+            "annotationCallout",
+            "annotationCalloutElbow",
+            "annotationCalloutCurve",
+            "annotationCalloutCircle",
+            "annotationCalloutRect",
+            "annotationXYThreshold",
+            "annotationBadge"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "description": "d3 style 'd3.annotationLabel', or a supplement name such as 'arrow' when used inside a native beat."
+        },
+        "target": {
+          "type": "string",
+          "description": "Words in the beat this annotation points at (first match)."
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "dx": {
+          "type": "number"
+        },
+        "dy": {
+          "type": "number"
+        },
+        "nx": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "ny": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "notePositionMode": {
+          "enum": [
+            "offset",
+            "absolute"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "note": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "label": {
+              "type": "string"
+            },
+            "wrap": {
+              "type": "number"
+            },
+            "padding": {
+              "type": "number"
+            },
+            "bgPadding": {
+              "type": "number"
+            }
+          }
+        },
+        "wrap": {
+          "type": "number"
+        },
+        "padding": {
+          "type": "number"
+        },
+        "wrapSplitterEnabled": {
+          "type": "boolean"
+        },
+        "color": {
+          "type": "string"
+        },
+        "badgeText": {
+          "type": "string"
+        },
+        "badgeRadius": {
+          "type": "number"
+        },
+        "subjectRadius": {
+          "type": "number"
+        },
+        "subjectWidth": {
+          "type": "number"
+        },
+        "subjectHeight": {
+          "type": "number"
+        },
+        "subjectFill": {
+          "type": "string"
+        },
+        "subjectFillOpacity": {
+          "type": "number"
+        },
+        "connectorType": {
+          "enum": [
+            "line",
+            "elbow",
+            "curve",
+            "none"
+          ]
+        },
+        "connectorEnd": {
+          "enum": [
+            "arrow",
+            "dot",
+            "none"
+          ]
+        },
+        "connectorEndScale": {
+          "type": "number"
+        },
+        "curveType": {
+          "type": "string"
+        },
+        "curvePoints": {
+          "type": "number"
+        },
+        "noteLineType": {
+          "type": "string"
+        },
+        "noteOrientation": {
+          "type": "string"
+        },
+        "noteAlign": {
+          "type": "string"
+        },
+        "titleFont": {
+          "type": "string"
+        },
+        "titleFontSize": {
+          "type": "number"
+        },
+        "titleFontWeight": {
+          "type": "number"
+        },
+        "labelFont": {
+          "type": "string"
+        },
+        "labelFontSize": {
+          "type": "number"
+        },
+        "labelFontWeight": {
+          "type": "number"
+        },
+        "zIndex": {
+          "type": "number"
+        },
+        "disableParts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "_numberingValue": {
+          "type": [
+            "string",
+            "number"
+          ],
+          "description": "Existing auto-numbering — used as reading order."
+        },
+        "delay": {
+          "type": "number",
+          "description": "Extra delay (s) for the supplementary layer."
+        },
+        "style": {
+          "type": "object",
+          "description": "Per-annotation override of the supplement preset style."
+        },
+        "motion": {
+          "type": "object",
+          "description": "Optional kinetic overrides stored on the node (the bridge panel in Index.html writes these).",
+          "properties": {
+            "order": {
+              "type": "number"
+            },
+            "entry": {
+              "type": "string"
+            },
+            "labelEntry": {
+              "type": "string"
+            },
+            "emphasis": {
+              "type": "string"
+            },
+            "exit": {
+              "type": "string"
+            },
+            "tags": {
+              "type": "string"
+            },
+            "split": {
+              "$ref": "#/definitions/split"
+            },
+            "staging": {
+              "type": "string"
+            },
+            "layout": {
+              "type": "string"
+            },
+            "camera": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            "transition": {
+              "type": "string"
+            },
+            "background": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "guideline": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "description": "Same primitives your custom patterns return in 'guidelines'.",
+      "properties": {
+        "kind": {
+          "enum": [
+            "line",
+            "circle",
+            "rect",
+            "polyline",
+            "path",
+            "dot",
+            "text"
+          ]
+        },
+        "x1": {
+          "type": "number"
+        },
+        "y1": {
+          "type": "number"
+        },
+        "x2": {
+          "type": "number"
+        },
+        "y2": {
+          "type": "number"
+        },
+        "cx": {
+          "type": "number"
+        },
+        "cy": {
+          "type": "number"
+        },
+        "r": {
+          "type": "number"
+        },
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "w": {
+          "type": "number"
+        },
+        "h": {
+          "type": "number"
+        },
+        "points": {
+          "type": "string"
+        },
+        "d": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "strokeWidth": {
+          "type": "number"
+        },
+        "strokeDasharray": {
+          "type": "string"
+        },
+        "fill": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "fontSize": {
+          "type": "number"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "textAnchor": {
+          "type": "string"
+        }
+      }
+    },
+    "annotationProject": {
+      "type": "object",
+      "required": [
+        "annotations"
+      ],
+      "description": "A project saved by D3 Annotation Studio (💾 Save, version 3.x).",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "canvasWidth": {
+          "type": "number"
+        },
+        "canvasHeight": {
+          "type": "number"
+        },
+        "canvasSettings": {
+          "type": "object"
+        },
+        "patternSettings": {
+          "type": "object"
+        },
+        "bgPatternSettings": {
+          "type": "object"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/annotationNode"
+          }
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "d3AnnotationArray": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/annotationNode"
+      },
+      "description": "Output of 📋 d3 JSON."
+    },
+    "patternResult": {
+      "type": "object",
+      "required": [
+        "nodes"
+      ],
+      "description": "Return value of a custom pattern's apply(ctx).",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/annotationNode"
+          }
+        },
+        "guidelines": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/guideline"
+          }
+        },
+        "requiredW": {
+          "type": "number"
+        },
+        "requiredH": {
+          "type": "number"
+        }
+      }
+    },
+    "visual": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "description": "A map, picture/SVG or chart shown in its own camera shot; the sentence becomes its caption (caption:false to keep kinetic text shots).",
+      "properties": {
+        "type": {
+          "enum": [
+            "map",
+            "media",
+            "chart"
+          ]
+        },
+        "caption": {
+          "type": "boolean"
+        },
+        "at": {
+          "enum": [
+            "before",
+            "after"
+          ]
+        },
+        "camera": {
+          "type": "string"
+        },
+        "captionLayout": {
+          "type": "string"
+        },
+        "duration": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "focus": {
+          "type": "string",
+          "description": "map: country code/name, state or city"
+        },
+        "places": {
+          "type": "array"
+        },
+        "routes": {
+          "type": "array"
+        },
+        "regions": {
+          "type": "array"
+        },
+        "highlight": {
+          "type": "array"
+        },
+        "values": {
+          "type": "object"
+        },
+        "region": {
+          "type": "string",
+          "description": "map: amCharts subdivision map, e.g. indiaLow, usaLow"
+        },
+        "style": {},
+        "projection": {
+          "enum": [
+            "naturalEarth",
+            "mercator",
+            "equirect"
+          ]
+        },
+        "lang": {
+          "type": "string"
+        },
+        "annotations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/annotationNode"
+          }
+        },
+        "asset": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "src": {
+          "type": "string"
+        },
+        "frame": {
+          "enum": [
+            "polaroid",
+            "paper",
+            "tape",
+            "circle",
+            "sticker",
+            "none"
+          ]
+        },
+        "entry": {
+          "enum": [
+            "drop",
+            "flip",
+            "unfold",
+            "zoom",
+            "slide"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "kenBurns": {
+          "type": "boolean"
+        },
+        "svg": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "enum": [
+                "auto",
+                "draw",
+                "strokeThenFill",
+                "pop",
+                "build",
+                "assemble",
+                "fade"
+              ]
+            },
+            "animate": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "select": {
+                    "type": "string"
+                  },
+                  "preset": {
+                    "type": "string"
+                  },
+                  "loop": {
+                    "enum": [
+                      "spin",
+                      "pulse",
+                      "float",
+                      "wiggle",
+                      "blink"
+                    ]
+                  },
+                  "delay": {
+                    "type": "number"
+                  },
+                  "duration": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "chart": {
+          "enum": [
+            "bar",
+            "column",
+            "donut",
+            "pie",
+            "progress",
+            "pictogram",
+            "stat",
+            "compare",
+            "line",
+            "timeline"
+          ]
+        },
+        "data": {
+          "type": "array"
+        },
+        "title": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "suffix": {
+          "type": "string"
+        },
+        "decimals": {
+          "type": "integer"
+        },
+        "sort": {
+          "enum": [
+            "asc",
+            "desc"
+          ]
+        }
+      }
+    }
+  }
+}

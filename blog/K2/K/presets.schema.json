@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kinetic.local/presets.schema.json",
+  "title": "Kinetic Engine — presets.motion.json / preset pack",
+  "description": "Shape of presets.motion.json and of every preset pack (presets/*.json). A pack contains only the sections it adds or changes; it is deep-merged over presets.motion.json (objects merge, arrays replace, 'append' adds to arrays, 'remove' deletes keys). Structural rules the schema cannot express (identity rules, name references, primitive types) are checked by `node validate-presets.js` and the Studio's 'Check presets' button. See AI-PRESET-PRD.md.",
+  "type": "object",
+  "additionalProperties": true,
+  "definitions": {
+    "name": { "type": "string", "pattern": "^[a-z][A-Za-z0-9]*$", "description": "camelCase preset name." },
+    "intent": { "type": "string", "minLength": 8, "description": "One sentence: what it looks like and when to use it. Shown in the Studio and read by the Auto-Director / AI." },
+    "color": { "type": "string", "description": "CSS colour or palette token: @paper @paper2 @ink @accent @accent2 @accent3 @highlight @shadow @back @strip[n], optionally with .dark / .light / .a50 (alpha %) modifiers." },
+    "easeRef": {
+      "description": "Name from easings, or an inline curve.",
+      "oneOf": [ { "type": "string" }, { "$ref": "#/definitions/curve" } ]
+    },
+    "curve": {
+      "oneOf": [
+        { "type": "array", "items": { "type": "number" }, "minItems": 4, "maxItems": 4, "description": "cubic-bezier x1,y1,x2,y2" },
+        { "type": "object", "required": ["type"], "properties": {
+          "type": { "enum": ["bezier", "spring", "elastic", "bounce", "anticipate", "steps", "linear"] },
+          "stiffness": { "type": "number" }, "damping": { "type": "number" }, "mass": { "type": "number" },
+          "amplitude": { "type": "number" }, "period": { "type": "number" }, "bounces": { "type": "number" },
+          "overshoot": { "type": "number" }, "steps": { "type": "integer" }, "points": { "type": "array" }
+        } }
+      ]
+    },
+    "key": {
+      "type": "array", "minItems": 2, "maxItems": 3,
+      "items": [ { "type": "number", "minimum": 0, "maximum": 1 }, { "type": "number" }, { "$ref": "#/definitions/easeRef" } ],
+      "description": "[t (0..1 of duration), value, optional ease INTO this key]"
+    },
+    "track": { "type": "array", "items": { "$ref": "#/definitions/key" }, "minItems": 1 },
+    "props": {
+      "type": "object",
+      "propertyNames": { "enum": ["x", "y", "z", "rotX", "rotY", "rotZ", "skewX", "skewY", "blur", "tracking", "lift", "shade", "scale", "scaleX", "scaleY", "opacity", "reveal"] },
+      "additionalProperties": { "$ref": "#/definitions/track" },
+      "description": "Additive channels (identity 0): x y z rotX rotY rotZ skewX skewY blur tracking lift shade. Multiplicative (identity 1): scale scaleX scaleY opacity reveal."
+    },
+    "stagger": {
+      "type": "object",
+      "properties": {
+        "unit": { "enum": ["char", "word"] },
+        "each": { "type": "number", "minimum": 0 },
+        "from": { "enum": ["start", "end", "center", "edges", "random"] },
+        "maxTotal": { "type": "number", "minimum": 0 }
+      }
+    },
+    "anchor": { "enum": ["center", "baseline", "top", "bottom", "left", "right", "topLeft", "bottomLeft"] },
+    "keyframePreset": {
+      "type": "object",
+      "properties": {
+        "intent": { "$ref": "#/definitions/intent" },
+        "extends": { "type": "string" },
+        "duration": { "type": "number", "exclusiveMinimum": 0 },
+        "ease": { "$ref": "#/definitions/easeRef" },
+        "anchor": { "$ref": "#/definitions/anchor" },
+        "stagger": { "$ref": "#/definitions/stagger" },
+        "props": { "$ref": "#/definitions/props" }
+      }
+    },
+    "pose": {
+      "type": "object",
+      "propertyNames": { "enum": ["tx", "ty", "tz", "rotX", "rotY", "rotZ", "dist", "fov", "fx", "fy", "fz", "aperture", "mblur", "zoom"] },
+      "additionalProperties": { "type": "number" }
+    }
+  },
+  "properties": {
+    "$schema": { "type": "string" },
+    "pack": {
+      "type": "object", "description": "Pack header (packs only).",
+      "required": ["name"],
+      "properties": { "name": { "type": "string" }, "version": { "type": "string" }, "author": { "type": "string" }, "intent": { "type": "string" }, "requires": { "type": "array", "items": { "type": "string" }, "description": "Plug-ins this pack needs, e.g. [\"geo\",\"charts\"]." } }
+    },
+    "append": {
+      "type": "object", "description": "Dotted path → array of items appended (deduplicated) to an existing array, e.g. \"themes.paperWhimsy.defaults.entryCycle\".",
+      "additionalProperties": { "type": "array" }
+    },
+    "remove": { "type": "array", "items": { "type": "string" }, "description": "Dotted paths to delete, e.g. \"entry.spinIn\"." },
+    "easings": { "type": "object", "additionalProperties": { "oneOf": [ { "$ref": "#/definitions/curve" }, { "type": "object", "properties": { "intent": { "type": "string" }, "curve": { "$ref": "#/definitions/curve" } }, "required": ["curve"] }, { "type": "string", "pattern": "^_" } ] } },
+    "entry":    { "type": "object", "description": "Every track ENDS at identity.", "additionalProperties": { "oneOf": [ { "$ref": "#/definitions/keyframePreset" }, { "type": "string" } ] } },
+    "emphasis": { "type": "object", "description": "Every track STARTS and ENDS at identity.", "additionalProperties": { "oneOf": [ { "$ref": "#/definitions/keyframePreset" }, { "type": "string" } ] } },
+    "exit":     { "type": "object", "description": "Every track STARTS at identity.", "additionalProperties": { "oneOf": [ { "$ref": "#/definitions/keyframePreset" }, { "type": "string" } ] } },
+    "loop": {
+      "type": "object", "description": "Seamless: first value == last value on every track.",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "period": { "type": "number", "exclusiveMinimum": 0 }, "ease": { "$ref": "#/definitions/easeRef" },
+        "phase": { "enum": ["random", "index"] }, "phaseStep": { "type": "number" }, "fadeIn": { "type": "number" }, "props": { "$ref": "#/definitions/props" } } } ] }
+    },
+    "camera": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "duration": { "type": "number" }, "ease": { "$ref": "#/definitions/easeRef" },
+        "from": { "$ref": "#/definitions/pose", "description": "Offset the camera starts at (relative to the shot's framing), eased to 0." },
+        "props": { "type": "object", "additionalProperties": { "$ref": "#/definitions/track" }, "description": "Extra keyframed offsets over the move (pose channels; zoom is multiplicative)." },
+        "framing": { "$ref": "#/definitions/pose", "description": "Resting pose while the phrase is read (zoom 1 = fit)." },
+        "drift": { "$ref": "#/definitions/pose", "description": "Slow motion added over the hold." },
+        "rackFocus": { "type": "object" }, "motionBlur": { "type": "number", "minimum": 0 } } } ] }
+    },
+    "staging": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "required": ["type"], "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "type": { "enum": ["linear", "ring"] },
+        "step": { "type": "object", "additionalProperties": { "type": "number" } },
+        "alternate": { "type": "array", "items": { "type": "string" } },
+        "jitter": { "type": "object", "additionalProperties": { "type": "number" } },
+        "radius": { "type": "number" }, "angleStep": { "type": "number" }, "angleStart": { "type": "number" }, "facing": { "type": "number" } } } ] }
+    },
+    "layouts": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "mode": { "enum": ["lockup", "center", "left", "cascade", "arc", "caption"] },
+        "width": { "type": "number", "minimum": 0.1, "maximum": 1 }, "maxLines": { "type": "integer", "minimum": 1 }, "lineHeight": { "type": "number" },
+        "maxSize": { "type": "number" }, "cascadeStep": { "type": "number" }, "arcRadius": { "type": "number" }, "arcDirection": { "enum": [1, -1] },
+        "style": { "type": "object" },
+        "paper": { "type": "object", "properties": { "strip": { "enum": ["word", "line", "shot"] }, "pad": { "type": "array" }, "torn": { "type": "number" }, "entry": { "type": "string" }, "ink": { "$ref": "#/definitions/color" }, "stagger": { "type": "number" }, "rotJitter": { "type": "number" }, "lift": { "type": "number" } } } } } ] }
+    },
+    "supplements": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "extends": { "type": "string" },
+        "kind": { "enum": ["underline", "highlight", "circle", "box", "bracket", "strike", "arrow", "counter", "icon", "burst", "sparkle", "badge", "callout", "threshold", "stamp", "label", "ring", "bar"] },
+        "layer": { "enum": ["under", "over"] }, "delay": { "type": "number" }, "duration": { "type": "number" }, "ease": { "$ref": "#/definitions/easeRef" }, "style": { "type": "object" } } } ] }
+    },
+    "transitions": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "required": ["type"], "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "type": { "enum": ["paperWipe", "iris", "matchCut", "fold", "flyThrough", "push", "shutter", "tear"] },
+        "duration": { "type": "number" }, "ease": { "$ref": "#/definitions/easeRef" }, "color": { "$ref": "#/definitions/color" },
+        "angle": { "type": "number" }, "band": { "type": "number" }, "ring": { "type": "number" }, "axis": { "enum": ["x", "y"] },
+        "direction": { "enum": [1, -1] }, "bands": { "type": "integer" }, "stagger": { "type": "number" } } } ] }
+    },
+    "backgrounds": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "color": { "$ref": "#/definitions/color" },
+        "gradient": { "type": "object", "properties": { "to": { "$ref": "#/definitions/color" } } },
+        "layers": { "type": "array", "items": { "type": "object", "required": ["type"], "properties": { "type": { "enum": ["paperPlanes", "confetti", "sunburst", "dots", "grid", "blobs"] } } } } } } ] }
+    },
+    "themes": {
+      "type": "object",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "properties": {
+        "intent": { "$ref": "#/definitions/intent" }, "extends": { "type": "string" },
+        "palette": { "type": "object", "properties": { "strip": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": { "type": ["string", "array"] } },
+        "typography": { "type": "object", "description": "Roles: display, body, hand, data (+ deva, handDeva). Each {family, weight, fallback}. caps, tracking, defaultRole." },
+        "material": { "type": "object" }, "timing": { "type": "object" }, "fragment": { "type": "object" }, "numbers": { "type": "object" },
+        "scriptFallback": { "type": "object" }, "emojiFallback": { "type": "string" },
+        "defaults": { "type": "object", "properties": {
+          "entry": { "type": "string" }, "exit": { "type": "string" }, "idle": { "type": "string" },
+          "entryCycle": { "type": "array", "items": { "type": "string" } }, "cameraMoves": { "type": "array", "items": { "type": "string" } },
+          "stagingCycle": { "type": "array", "items": { "type": "string" } }, "layoutCycle": { "type": "array", "items": { "type": "string" } },
+          "transitionCycle": { "type": "array", "items": { "type": "string" } }, "backgroundCycle": { "type": "array", "items": { "type": "string" } } } } } } ] }
+    },
+    "typeStyles": { "type": "object", "description": "Inline style tags: [word](tag). Keys: role color size(multiplier) caps italic weight outline outlineColor chip chipColor emphasis idle.", "additionalProperties": true },
+    "tagAliases": { "type": "object", "description": "Semantic tag → space-separated list of real tags, e.g. \"important\": \"accent big fx:heartbeat\".", "additionalProperties": { "type": "string" } },
+    "recipes": {
+      "type": "object",
+      "description": "Named bundles of choices applied to a beat (beat.recipe / scene.beatRecipe / scene.recipe) or chosen automatically by auto.recipeRules.",
+      "additionalProperties": { "oneOf": [ { "type": "string" }, { "type": "object", "properties": {
+        "intent": { "$ref": "#/definitions/intent" },
+        "entry": { "type": "string" }, "emphasis": { "type": "string" }, "exit": { "type": "string" }, "idle": { "type": "string" },
+        "layout": { "type": "string" }, "staging": { "type": "string" }, "cameraMoves": { "type": "array", "items": { "type": "string" } },
+        "split": { "enum": ["auto", "phrase", "word", "sentence", "manual"] }, "strip": { "type": "string" }, "role": { "type": "string" },
+        "speed": { "type": "number" }, "captionLayout": { "type": "string" }, "tags": { "type": "string", "description": "Tags added to every word of the beat." },
+        "background": { "type": "string" }, "transition": { "type": "string" }, "exitMode": { "type": "string" }, "outro": { "type": "string" },
+        "palette": { "type": "object" }, "camera": { "type": "object" } } } ] }
+    },
+    "auto": {
+      "type": "object",
+      "properties": {
+        "recipeRules": { "type": "array", "items": { "type": "object", "required": ["recipe", "match"], "properties": { "recipe": { "type": "string" }, "match": { "type": "string", "description": "JavaScript RegExp source, matched case-insensitively (flags iu) against the beat's plain text." }, "intent": { "type": "string" } } } },
+        "titleRecipe": { "type": "string" }, "emphasisCycle": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

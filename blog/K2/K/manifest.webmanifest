@@ -1,0 +1,20 @@
+{
+  "name": "Kinetic Motion Studio",
+  "short_name": "Kinetic",
+  "description": "Data-driven kinetic typography and motion graphics studio",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#171B19",
+  "theme_color": "#1F2421",
+  "categories": ["multimedia", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

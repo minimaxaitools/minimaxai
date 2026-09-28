@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0" />
+  <title>Kinetic Studio</title>
+  
+  <!-- PWA & Mobile Web App Capabilities (iPad Safari, Android, Chrome) -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Kinetic Studio" />
+  <link rel="apple-touch-icon" href="assets/icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1F2421" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#EDE9DF" media="(prefers-color-scheme: light)" />
+  <meta name="format-detection" content="telephone=no" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css" />
+
+  <!-- Optional: your existing custom-pattern runtime (lets scenes use "pattern": "custom-…").
+       Paths assume this folder sits next to Index.html; missing files are ignored. -->
+  <script src="../patterns/custom/custom_pattern_registry.js" onerror="void 0"></script>
+  <script src="../patterns/custom/custom_pattern_manifest.js" onerror="void 0"></script>
+  <script>
+    // Manifest paths are relative to Index.html — re-point them from this sub-folder.
+    if (Array.isArray(window.CustomPatternManifest)) window.CustomPatternManifest = window.CustomPatternManifest.map(p => /^(https?:|\/|\.\.\/)/.test(p) ? p : '../' + p);
+  </script>
+
+  <!-- Muxers for frame-accurate MP4 / WebM encoding (WebCodecs). Optional: PNG export works without them. -->
+  <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.2.2/build/mp4-muxer.js" onerror="void 0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/webm-muxer@5.1.4/build/webm-muxer.js" onerror="void 0"></script>
+
+  <!-- Engine + JSON (the .js wrappers let index.html work from file:// where fetch() of JSON is blocked) -->
+  <script src="engine.js"></script>
+  <script src="presets.motion.js" onerror="void 0"></script>
+  <script src="presets/packs.js" onerror="void 0"></script>
+  <!-- JS plug-ins that add new drawing primitives go here, e.g. -->
+  <!-- <script src="presets/plugin.example.js"></script> -->
+  <script src="content.sample.js" onerror="void 0"></script>
+  <script src="content.hindi.js" onerror="void 0"></script>
+
+  <!-- Smart plug-ins: maps (amCharts geodata + GeoNames), media & SVG, charts, auto-director, voice-over -->
+  <script src="geo/geo-data.js" onerror="void 0"></script>
+  <script src="assets/assets.manifest.js" onerror="void 0"></script>
+  <script src="geo.js"></script>
+  <script src="media.js"></script>
+  <script src="charts.js"></script>
+  <script src="director.js"></script>
+  <script src="voice.js"></script>
+</head>
+<body>
+<div class="app" id="appRoot">
+  <header class="topbar">
+    <button class="btn icon view-btn" id="btnToggleSide" title="Toggle Controls &amp; Sidebar" aria-label="Toggle Sidebar">☰</button>
+    <div class="brand">
+      <h1>Kinetic Studio</h1>
+      <span class="ver" id="engineVersion"></span>
+      <span class="fmt" id="formatBadge" data-kind="native">native</span>
+    </div>
+
+    <!-- Mobile / Tablet Adaptive View Switcher -->
+    <div class="view-switch" id="viewSwitch" role="radiogroup" aria-label="View mode">
+      <button class="view-pill active" id="viewPillPreview" data-view="preview" title="Canvas Preview">🎬 Preview</button>
+      <button class="view-pill" id="viewPillSplit" data-view="split" title="Split Screen">🌗 Split</button>
+      <button class="view-pill" id="viewPillControls" data-view="controls" title="Controls &amp; Editor">⚙️ Controls</button>
+    </div>
+
+    <div class="tb-group">
+      <label for="themeSelect">Theme</label>
+      <select id="themeSelect"><option value="">From content</option></select>
+    </div>
+    <div class="tb-group">
+      <label for="qualitySelect">Preview</label>
+      <select id="qualitySelect">
+        <option value="640">360p (fast)</option>
+        <option value="960" selected>540p</option>
+        <option value="1280">720p</option>
+        <option value="1920">1080p</option>
+      </select>
+    </div>
+    <div class="tb-group">
+      <button class="btn" id="btnOpenFile" title="Open a content JSON, Annotation Studio project, d3 JSON or .txt">Open file…</button>
+      <button class="btn" id="btnSample">Load sample</button>
+      <button class="btn" id="btnSampleHi" title="Hindi + maps + charts + SVG sample">हिन्दी sample</button>
+      <input type="file" id="fileInput" accept=".json,.txt,.md" hidden />
+    </div>
+  </header>
+
+  <main class="work">
+    <aside class="side">
+      <nav class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-content" aria-selected="true" aria-controls="pane-content">Content</button>
+        <button class="tab" role="tab" id="tab-auto" aria-selected="false" aria-controls="pane-auto">Auto</button>
+        <button class="tab" role="tab" id="tab-media" aria-selected="false" aria-controls="pane-media">Media <span class="count" id="missingCount" hidden>0</span></button>
+        <button class="tab" role="tab" id="tab-maps" aria-selected="false" aria-controls="pane-maps">Maps</button>
+        <button class="tab" role="tab" id="tab-voice" aria-selected="false" aria-controls="pane-voice">Voice</button>
+        <button class="tab" role="tab" id="tab-presets" aria-selected="false" aria-controls="pane-presets">Presets</button>
+        <button class="tab" role="tab" id="tab-export" aria-selected="false" aria-controls="pane-export">Export</button>
+        <button class="tab" role="tab" id="tab-warnings" aria-selected="false" aria-controls="pane-warnings">Warnings <span class="count" id="warnCount" hidden>0</span></button>
+      </nav>
+
+      <section class="pane" id="pane-content" role="tabpanel" aria-labelledby="tab-content">
+        <div class="row">
+          <button class="btn primary" id="btnApply" title="Ctrl/Cmd + Enter">Render changes</button>
+          <button class="btn ghost" id="btnFormat">Tidy JSON</button>
+          <button class="btn ghost" id="btnConvert" title="Turn a legacy project / d3 JSON / text into editable native scenes">Convert to scenes</button>
+          <button class="btn ghost" id="btnSaveContent">Save JSON</button>
+        </div>
+        <div class="editor-kb-bar" id="editorKbBar">
+          <span class="kb-hint">📝 Editor</span>
+          <button class="btn sm ghost" id="btnKbFormat" type="button">Tidy JSON</button>
+          <button class="btn sm primary" id="btnKbRender" type="button">Render</button>
+          <button class="btn sm ghost" id="btnKbDone" type="button">Done ✕</button>
+        </div>
+        <textarea id="contentEditor" spellcheck="false" aria-label="Content JSON or plain text"></textarea>
+        <div class="status" id="status">Loading…</div>
+        <p class="hint">Paste native content, a saved Annotation Studio project, a d3-annotation array, a pattern result, or plain text. Inline markup: <code>[words](highlight counter)</code>, <code>*emphasis*</code>, <code>|</code> for a new camera angle.</p>
+      </section>
+
+
+      <section class="pane" id="pane-auto" role="tabpanel" aria-labelledby="tab-auto" hidden>
+        <label class="toggle big"><input type="checkbox" id="autoOn" checked /> Auto-Director</label>
+        <p class="hint">Reads each sentence and adds maps, charts, counters, pictures, emoji and emphasis. Words you tagged yourself are never changed. <b>Smart</b> avoids repeating the same visual in a row.</p>
+        <div class="grid2" id="autoSwitches"></div>
+        <div class="status" id="autoReport">—</div>
+        <div id="autoNotes" class="notes"></div>
+        <div class="row">
+          <button class="btn" id="btnBake" title="Write the Auto-Director's tags into the JSON so you can edit them">Bake into JSON</button>
+          <button class="btn" id="btnAIPrompt">Copy AI prompt</button>
+        </div>
+        <p class="hint">The AI prompt lets ChatGPT, Claude or Gemini turn a chapter or lesson plan into content JSON for this app (maps, charts, SVG, voice lines included).</p>
+      </section>
+
+      <section class="pane" id="pane-media" role="tabpanel" aria-labelledby="tab-media" hidden>
+        <div class="dropbox" id="assetDrop" tabindex="0" role="button" aria-label="Add images, SVG or audio">
+          <b>Drop images, SVG or audio here</b><span>or click to choose · PNG JPG WebP GIF SVG MP3 WAV</span>
+        </div>
+        <input type="file" id="assetInput" multiple accept="image/*,.svg,audio/*" hidden />
+        <div id="missingList"></div>
+        <div class="asset-grid" id="assetGrid"></div>
+        <label class="toggle"><input type="checkbox" id="embedAssets" /> Embed used assets in the JSON when saving (portable, larger file)</label>
+        <p class="hint">Words match assets by file name and keywords, e.g. <code>volcano.jpg</code> appears for "volcano". Tag explicitly with <code>[heart](img)</code>, <code>[plant](svg)</code> or <code>[rocket](img:🚀)</code>. For offline folders put files in <code>kinetic/assets/</code> and run <code>node build-wrappers.js</code>.</p>
+      </section>
+
+      <section class="pane" id="pane-maps" role="tabpanel" aria-labelledby="tab-maps" hidden>
+        <label class="field"><span>Find a place</span>
+          <div class="row"><input type="text" id="placeQuery" placeholder="India · दिल्ली · Madhya Pradesh · 28.6, 77.2" style="flex:1" /><button class="btn" id="btnFindPlace">Find</button></div>
+        </label>
+        <div class="status" id="placeResult">Countries, Indian states and 1,600+ cities (English and Hindi names).</div>
+        <div class="row">
+          <label class="field"><span>Map style</span><select id="mapStyle"></select></label>
+          <label class="field"><span>Projection</span><select id="mapProj"><option value="naturalEarth">Natural Earth</option><option value="mercator">Mercator</option><option value="equirect">Equirectangular</option></select></label>
+          <label class="field"><span>Labels</span><select id="mapLang"><option value="auto">Auto</option><option value="en">English</option><option value="hi">हिन्दी</option></select></label>
+        </div>
+        <label class="field"><span>Upload a country / region map (GeoJSON)</span>
+          <div class="row"><input type="text" id="geoName" placeholder="name, e.g. nepalLow or world" style="flex:1" /><button class="btn" id="btnGeoUpload">Choose file…</button></div>
+        </label>
+        <input type="file" id="geoInput" accept=".json,.geojson" hidden />
+        <label class="field"><span>Add your own places (CSV: name, lat, lon, country, aliases)</span>
+          <textarea id="placesCsv" rows="3" placeholder="Balaghat, 21.81, 80.18, IN, बालाघाट"></textarea>
+        </label>
+        <div class="row"><button class="btn" id="btnAddPlaces">Add places</button><button class="btn" id="btnLoadRegion" title="Download an amCharts subdivision map, e.g. usaLow, chinaLow">Load amCharts map…</button></div>
+        <div id="geoList" class="notes"></div>
+        <p class="hint">Map data: amCharts 5 geodata (keep the credit), GeoNames cities (CC BY 4.0). Use a beat visual for full control: <code>{"type":"map","focus":"IN","places":["Delhi","Mumbai"],"routes":[["Delhi","Mumbai"]]}</code></p>
+      </section>
+
+      <section class="pane" id="pane-voice" role="tabpanel" aria-labelledby="tab-voice" hidden>
+        <label class="toggle big"><input type="checkbox" id="voiceOn" /> Narration</label>
+        <div class="row">
+          <label class="field"><span>Provider</span><select id="voiceProvider"></select></label>
+          <label class="field"><span>Language</span><select id="voiceLang">
+            <option value="auto">Auto (from script)</option><option value="hi">हिन्दी</option><option value="en">English</option><option value="bn">বাংলা</option><option value="mr">मराठी</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="gu">ગુજરાતી</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ur">اردو</option><option value="ar">العربية</option><option value="es">Español</option><option value="fr">Français</option><option value="de">Deutsch</option><option value="ja">日本語</option><option value="zh">中文</option>
+          </select></label>
+        </div>
+        <label class="field" id="voiceKeyRow"><span>API key</span><input type="password" id="voiceKey" autocomplete="off" placeholder="Paste your key" /></label>
+        <label class="toggle" id="voiceRememberRow"><input type="checkbox" id="voiceRemember" /> Remember key on this device</label>
+        <label class="field" id="voiceUrlRow" hidden><span>Endpoint</span><input type="text" id="voiceUrl" placeholder="https://api.openai.com" /></label>
+        <div class="row">
+          <label class="field" style="flex:1"><span>Voice</span><select id="voiceId"><option value="">Load voices first</option></select></label>
+          <label class="field"><span>Show</span><select id="voiceGender"><option value="">All</option><option value="female">Female</option><option value="male">Male</option></select></label>
+          <button class="btn" id="btnVoices">Load voices</button>
+        </div>
+        <div class="row">
+          <label class="field"><span>Model</span><input type="text" id="voiceModel" placeholder="eleven_multilingual_v2" /></label>
+          <label class="field"><span>Speed</span><input type="number" id="voiceRate" min="0.5" max="2" step="0.05" value="1" /></label>
+        </div>
+        <div class="row">
+          <input type="text" id="voiceTest" value="नमस्ते! This is how your lesson will sound." style="flex:1" aria-label="Test sentence" />
+          <button class="btn" id="btnVoiceTest">▶ Try</button>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btnVoiceGen">Generate voice-over</button>
+          <label class="toggle"><input type="checkbox" id="voiceAuto" /> Generate new lines on every render</label>
+        </div>
+        <div class="progress" aria-hidden="true"><i id="voiceBar"></i></div>
+        <div class="status" id="voiceStatus">Browser voice is free but preview-only. ElevenLabs gives word-perfect timing and exports with the video.</div>
+        <div class="row">
+          <label class="field" style="flex:1"><span>Background music</span><select id="musicAsset"><option value="">None</option></select></label>
+          <label class="field"><span>Volume</span><input type="range" id="musicVol" min="0" max="0.6" step="0.02" value="0.2" /></label>
+        </div>
+        <div id="voiceLog" class="notes"></div>
+        <p class="hint">Per sentence you can add <code>"say"</code> (pronunciation), <code>"voiceId"</code> (a second narrator) or <code>"audio"</code> (your own recording). Clips are cached, so re-rendering never pays twice.</p>
+      </section>
+      <section class="pane" id="pane-presets" role="tabpanel" aria-labelledby="tab-presets" hidden>
+        <div class="row">
+          <button class="btn primary" id="btnPackLoad">Load preset pack…</button>
+          <button class="btn" id="btnPackCheck">Check presets</button>
+          <button class="btn ghost" id="btnPackExport" title="Download presets.motion.json with every loaded pack merged in">Save merged</button>
+        </div>
+        <input type="file" id="packInput" accept=".json,.js" multiple hidden />
+        <div id="packList" class="notes"></div>
+        <div class="status" id="packStatus">—</div>
+        <p class="hint">A pack is a small JSON file with new presets (for example written by another AI from <code>AI-PRESET-PRD.md</code>). It merges over <code>presets.motion.json</code>, is checked for mistakes, and is remembered in this browser. For a permanent pack put it in <code>kinetic/presets/</code> and run <code>node build-wrappers.js</code>.</p>
+        <div class="row">
+          <select id="presetCat" aria-label="Preset category"></select>
+          <input type="text" id="presetFilter" placeholder="Filter…" aria-label="Filter presets" />
+        </div>
+        <p class="hint"><b>Try</b> previews a preset on a test line. <b>Copy</b> puts the reference you paste into content on the clipboard.</p>
+        <div id="presetList"></div>
+      </section>
+
+      <section class="pane" id="pane-export" role="tabpanel" aria-labelledby="tab-export" hidden>
+        <label class="field"><span>Format</span>
+          <select id="exFormat">
+            <option value="mp4">MP4 · H.264 (WebCodecs, frame-exact)</option>
+            <option value="recorded">MP4 / WebM · MediaRecorder (universal mobile &amp; iPad)</option>
+            <option value="webm">WebM · VP9 (WebCodecs, frame-exact)</option>
+            <option value="png-seq">PNG sequence .zip (After Effects / Premiere)</option>
+            <option value="png-frame">Current frame .png</option>
+          </select>
+        </label>
+        <div class="row">
+          <label class="field"><span>Width</span><input type="number" id="exWidth" min="16" step="2" value="1920" /></label>
+          <label class="field"><span>Height</span><input type="number" id="exHeight" min="16" step="2" value="1080" /></label>
+          <label class="field"><span>FPS</span><input type="number" id="exFps" min="1" max="120" value="30" /></label>
+        </div>
+        <label class="field"><span>Range</span>
+          <select id="exRange">
+            <option value="all">Whole video</option>
+            <option value="scene">Current scene</option>
+            <option value="custom">Custom (seconds)</option>
+          </select>
+        </label>
+        <label class="toggle"><input type="checkbox" id="exAudio" checked /> Include narration &amp; music</label>
+        <div class="row" id="exCustom" hidden>
+          <label class="field"><span>From</span><input type="number" id="exFrom" step="0.1" value="0" /></label>
+          <label class="field"><span>To</span><input type="number" id="exTo" step="0.1" value="5" /></label>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btnExport">Export</button>
+          <button class="btn" id="btnCancelExport" disabled>Cancel</button>
+        </div>
+        <div class="progress" aria-hidden="true"><i id="exBar"></i></div>
+        <div class="status" id="exStatus">Rendering is frame-by-frame from the timeline, so every frame is exact regardless of machine speed.</div>
+        <p class="hint">MP4 (WebCodecs) is frame-exact for Chrome, Edge, and modern Safari. Universal MediaRecorder (MP4/WebM) and PNG sequence work across all iPad Safari, Android, and desktop browsers.</p>
+      </section>
+
+      <section class="pane" id="pane-warnings" role="tabpanel" aria-labelledby="tab-warnings" hidden>
+        <p class="hint">Missing presets, unknown tags and unmatched annotation targets never stop playback — the engine substitutes a default and lists it here.</p>
+        <div id="warnList"></div>
+      </section>
+    </aside>
+
+    <section class="stage-col">
+      <div class="stage" id="stage">
+        <div class="frame" id="frame">
+          <canvas id="canvas" aria-label="Kinetic typography preview"></canvas>
+          <div class="safe" id="safeArea" hidden></div>
+          <div class="dropzone" id="dropzone" hidden>Drop JSON or text to load</div>
+        </div>
+        <div class="gesture-hint" id="gestureHint">👆 Tap play · ↔ 1-finger scrub · ✌ 2-finger jump · 🤏 Pinch zoom</div>
+        <span class="corner tl" id="cornerScene">—</span>
+        <span class="corner tr" id="cornerRes">—</span>
+      </div>
+
+      <div class="transport">
+        <div class="controls">
+          <button class="btn icon" id="btnPrevScene" title="Previous scene ([)" aria-label="Previous scene">⏮</button>
+          <button class="btn icon" id="btnStepBack" title="Back one frame (←)" aria-label="Back one frame">◂</button>
+          <button class="btn primary icon" id="btnPlay" title="Play / pause (Space)" aria-label="Play">▶</button>
+          <button class="btn icon" id="btnStepFwd" title="Forward one frame (→)" aria-label="Forward one frame">▸</button>
+          <button class="btn icon" id="btnNextScene" title="Next scene (])" aria-label="Next scene">⏭</button>
+          <button class="btn icon" id="btnTheater" title="Theater / Fullscreen mode (Double-tap canvas)" aria-label="Toggle Theater Mode">⤢</button>
+          <span class="timecode" id="timecode">00:00:00:00<small>/ 00:00:00:00</small></span>
+          <label class="toggle"><input type="checkbox" id="loopToggle" checked /> Loop</label>
+          <label class="toggle" for="speedSelect">Speed
+            <select id="speedSelect">
+              <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option>
+            </select>
+          </label>
+          <label class="toggle"><input type="checkbox" id="safeToggle" /> Safe area</label>
+          <span class="spacer"></span>
+          <span class="keys"><kbd>Space</kbd> play · <kbd>←</kbd><kbd>→</kbd> frame · <kbd>Shift</kbd> 1s · <kbd>[</kbd><kbd>]</kbd> scene · <kbd>L</kbd> loop</span>
+        </div>
+        <div class="scrub" id="scrub" role="slider" tabindex="0" aria-label="Timeline" aria-valuemin="0" aria-valuenow="0">
+          <div id="segs"></div>
+          <div class="ticks" id="ticks"></div>
+          <div class="head" id="head"></div>
+        </div>
+        <div class="chips" id="chips" aria-label="Seek to scene"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="studio.js"></script>
+<script src="studio-smart.js"></script>
+<script src="studio-gestures.js"></script>
+<script>
+  if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>

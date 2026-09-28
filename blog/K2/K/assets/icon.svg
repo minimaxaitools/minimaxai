@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1F2421" />
+      <stop offset="100%" stop-color="#111413" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2A541" />
+      <stop offset="100%" stop-color="#C9731B" />
+    </linearGradient>
+    <linearGradient id="recGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F0664D" />
+      <stop offset="100%" stop-color="#C8412A" />
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners for adaptive icons -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <rect width="512" height="512" rx="112" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4" />
+  
+  <!-- Subtle motion grid lines -->
+  <path d="M56 128h400M56 256h400M56 384h400" stroke="rgba(255,255,255,0.04)" stroke-width="2" />
+  <path d="M128 56v400M256 56v400M384 56v400" stroke="rgba(255,255,255,0.04)" stroke-width="2" />
+
+  <!-- Bold Kinetic "K" Geometry -->
+  <!-- Stem -->
+  <rect x="130" y="116" width="52" height="280" rx="16" fill="url(#accent)" />
+  <!-- Upper diagonal branch -->
+  <path d="M196 266 L306 132 C316 120 334 120 346 130 C358 140 359 158 348 171 L252 288 Z" fill="url(#accent)" />
+  <!-- Lower diagonal branch -->
+  <path d="M228 260 L350 376 C362 388 360 406 348 416 C336 426 318 424 306 412 L196 304 Z" fill="url(#accent)" />
+
+  <!-- Kinetic Motion Rings / Wave accent -->
+  <circle cx="390" cy="140" r="18" fill="url(#recGrad)" />
+  <path d="M370 190 Q400 210 430 190" stroke="#F2A541" stroke-width="8" stroke-linecap="round" fill="none" opacity="0.8" />
+  <path d="M360 220 Q400 245 440 220" stroke="#F2A541" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5" />
+</svg>
